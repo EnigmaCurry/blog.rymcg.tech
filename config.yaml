@@ -1,0 +1,60 @@
+author: EnigmaCurry
+baseurl: /
+canonifyurls: true
+copyright: 'Copyright © 2020, EnigmaCurry'
+paginate: 5
+theme: hugo-alageek-theme
+title: blog.rymcg.tech
+params:
+  copyright: '© 2020 EnigmaCurry'
+  copyrightUrl: 'https://blog.rymcg.tech'
+  description: 'Self-hosted, Open Source, Freedom'
+  faviconfile: 'https://blog.rymcg.tech/img/favicon.png'
+  latestpostcount: 5
+  logofile: '/img/logo.jpg'
+  highlightjs: true
+  highlightjslanguages:
+    - bash
+    - css
+    - diff
+    - django
+    - javascript
+    - python
+    - yaml
+  toc: true
+  posts_navigation: true
+  progressively: true
+  #flattr: '?'
+  github: 'enigmacurry'
+  #gitlab: '?'
+  #linkedin: '?'
+  #telegram: '?'
+  #twitter: '?'
+  #mastodon_url: 'https://mastodon.url/?'
+  email: 'ryan@rymcg.tech'
+  # best_posts:
+  #   - title: Migrate to Hugo from Jekyll
+  #     url: /blog/migrate-from-jekyll/
+menu:
+  primary:
+    - identifier: blog
+      name: Blog
+      url: /
+      weight: 10
+    - identifier: enigmacurry.com
+      name: EnigmaCurry.com
+      url: https://www.enigmacurry.com
+      weight: 20
+    - identifier: soundcloud
+      name: Soundcloud
+      url: https://www.soundcloud.com/EnigmaCurry
+      weight: 30
+    - identifier: github
+      name: Github
+      url: https://github.com/EnigmaCurry
+      weight: 40
+  footer:
+    - identifier: tags
+      name: Tags
+      url: /tags/
+      weight: 50

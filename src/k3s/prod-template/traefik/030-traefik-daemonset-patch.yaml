@@ -1,0 +1,9 @@
+- op: add
+  path: "/spec/template/spec/containers/0/args/-"
+  ## Set the staging or production CA server
+  ## For production use `acme-v02` instead of `acme-staging-v02`
+  value: --certificatesresolvers.default.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+- op: add
+  path: "/spec/template/spec/containers/0/args/-"
+  ## Set you email address here:
+  value: --certificatesresolvers.default.acme.email=letsencrypt@example.com

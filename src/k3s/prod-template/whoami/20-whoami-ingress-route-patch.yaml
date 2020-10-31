@@ -1,0 +1,4 @@
+- op: add
+  path: "/spec/routes/0/match"
+  ## domain name for whoami ingress:
+  value: Host(`whoami.example.com`)

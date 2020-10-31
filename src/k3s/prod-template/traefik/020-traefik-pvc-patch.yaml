@@ -1,0 +1,5 @@
+- op: add
+  path: "/spec/storageClassName"
+  # value is local-path if using Local Storage Provider (k3s default)
+  # value is do-block-storage if using DigitalOcean k8s operator
+  value: local-path

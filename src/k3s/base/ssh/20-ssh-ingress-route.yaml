@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ssh
+  namespace: default
+spec:
+  entryPoints:
+    - ssh
+  routes:
+  - match: HostSNI(`*`)
+    kind: Rule
+    services:
+    - name: ssh
+      port: 2222

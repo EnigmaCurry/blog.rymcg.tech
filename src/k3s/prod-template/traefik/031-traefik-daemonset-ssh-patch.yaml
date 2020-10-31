@@ -1,0 +1,9 @@
+- op: add
+  path: "/spec/template/spec/containers/0/ports/-"
+  value:
+    name: ssh
+    containerPort: 2222
+    hostPort: 2222
+- op: add
+  path: "/spec/template/spec/containers/0/args/-"
+  value: --entrypoints.ssh.address=:2222

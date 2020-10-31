@@ -1,0 +1,3 @@
+[submodule "themes/hugo-alageek-theme"]
+	path = themes/hugo-alageek-theme
+	url = https://github.com/gkmngrgn/hugo-alageek-theme.git
