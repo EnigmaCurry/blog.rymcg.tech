@@ -5,6 +5,7 @@ copyright: 'Copyright © 2020, EnigmaCurry'
 paginate: 5
 theme: alageek
 title: blog.rymcg.tech
+enableGitInfo: true
 params:
   copyright: '© 2020 EnigmaCurry'
   copyrightUrl: 'https://blog.rymcg.tech'

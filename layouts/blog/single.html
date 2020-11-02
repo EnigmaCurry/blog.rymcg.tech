@@ -24,7 +24,7 @@
 
                     <div class="mb-4 mb-md-5 meta">
                         <span class="date" title='{{ .Date.Format "Mon Jan 2 2006 15:04:05 MST" }}'>
-                            {{ .Date.Format  "January 02, 2006" }}
+                            Updated {{ .GitInfo.AuthorDate.Format "January 02, 2006" }}
                         </span>
 
                         {{ if not .Params.noauthor }}
@@ -63,12 +63,11 @@
                                         <li class="d-inline middot">
                                             <a href="https://lobste.rs/s/{{ .Params.lobsters_id }}">Lobsters</a>
                                         </li>
-                                    {{ end }}
-                                {{ end }}
+                                        {{ end }}
+                                        {{ end }}
                             </ul>
                         </div>
                     </div>
-
                     <div class="markdown">
                         {{ partial "content" . }}
                     </div>
