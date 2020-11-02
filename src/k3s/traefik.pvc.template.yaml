@@ -8,4 +8,5 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: ${ACME_PVC_SIZE}
+  storageClassName: local-path

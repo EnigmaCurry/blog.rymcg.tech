@@ -3,7 +3,7 @@ baseurl: /
 canonifyurls: true
 copyright: 'Copyright © 2020, EnigmaCurry'
 paginate: 5
-theme: hugo-alageek-theme
+theme: alageek
 title: blog.rymcg.tech
 params:
   copyright: '© 2020 EnigmaCurry'

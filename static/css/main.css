@@ -21,8 +21,7 @@
     color: #000;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
+:root {
         --main-bg-color: #1a1a1a;
         --main-font-color: #f8f9fa;
         --main-link-color: #ffc107;
@@ -35,7 +34,6 @@
         --color-ko-fi: #df5000;
         --color-bmc: #ff813f;
     }
-}
 
 /* Global styles */
 body {
@@ -354,4 +352,8 @@ h6 {
         margin-left: 0;
         margin-right: 0;
     }
+}
+
+#header-desc {
+    margin-top: 10px;
 }
