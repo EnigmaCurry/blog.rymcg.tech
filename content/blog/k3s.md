@@ -160,13 +160,13 @@ cd $DIR
 ```
 
 Download the [environment file
-template](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/env.sh):
+template](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/traefik/env.sh):
 
 ```bash
-curl -Lo env.sh https://git.io/JTQGD
+curl -Lo traefik_env.sh https://git.io/JTpBp
 ```
 
-Edit the file `env.sh` and change the variables according to your own
+Edit the file `traefik_env.sh` and change the variables according to your own
 environment. Required parameters to change: `ACME_EMAIL`, `ACME_SERVER`, `WHOAMI_DOMAIN`
 
  * `ACME_EMAIL` is required, it is your personal/work email address that you
@@ -203,7 +203,7 @@ chmod 0755 render.sh
 ```
 
 Execute the `render.sh` script in order to: download the YAML templates, replace
-variables in the templates from your `env.sh`, and produce the final kubernetes
+variables in the templates from your `traefik_env.sh`, and produce the final kubernetes
 manifest YAML files. Run:
 
 ```bash
@@ -267,7 +267,7 @@ the Common Name (CN) is listed as `Fake LE Intermediate X1` which is the name
 that the Let's Encrypt service (`LE`) assigns it. It could also say ```TRAEFIK
 DEFAULT CERT```. If it says this, then wait a few minutes, and it might still
 change, but if it persists, then something has gone wrong with the ACME process.
-Double check your `env.sh` and check the traefik logs (see next section). As
+Double check your `traefik_env.sh` and check the traefik logs (see next section). As
 long as it says `Fake LE Intermediate X1` you can assume that everything would
 work correctly if you were to move to the production `ACME_SERVER`.
 
@@ -286,7 +286,7 @@ kubectl -n kube-system logs -f daemonset/traefik
 
 To change settings, you go through the same process again. For example, if you
 wish to update `ACME_SERVER` from the staging to the production URL:
- * Edit `env.sh` and update `ACME_SERVER` to:
+ * Edit `traefik_env.sh` and update `ACME_SERVER` to:
    * `https://acme-v02.api.letsencrypt.org/directory`
  * Delete the existing `traefik.yaml`
  * Re-run `./render.sh` to make the new `traefik.yaml`
