@@ -207,7 +207,7 @@ variables in the templates from your `traefik_env.sh`, and produce the final kub
 manifest YAML files. Run:
 
 ```bash
-./render.sh
+./render.sh traefik_env.sh
 ```
 
 You should now have a number of new YAML files rendered and ready to apply to
