@@ -18,8 +18,7 @@ export WHOAMI_DOMAIN='whoami.k3s.example.com'
 ## Required env vars list enforced by render.sh
 export ENV_VARS=(TEMPLATES HTTP_PORT HTTPS_PORT SSH_PORT ACME_EMAIL ACME_SERVER ACME_PVC_SIZE WHOAMI_DOMAIN)
 ## Template source directory or http path
-#TEMPLATE_SRC=${GIT_VENDOR:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
-TEMPLATE_SRC=${GIT_VENDOR:-$(pwd)}
+TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
 ## YAML Template URLs
 export TEMPLATES=(
     $TEMPLATE_SRC/traefik/traefik.pvc.template.yaml
