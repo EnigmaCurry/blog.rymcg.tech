@@ -1,3 +1,4 @@
 prod/
 kustomize
-*.yaml
+/*.yaml
+/*env.sh

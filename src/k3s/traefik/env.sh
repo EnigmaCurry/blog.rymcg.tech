@@ -1,4 +1,7 @@
-### User defined variables:
+### Traefik environment
+## ALL_VARS is the names of all of variables passed to the templates:
+export ALL_VARS=(HTTP_PORT HTTPS_PORT SSH_PORT ACME_EMAIL ACME_SERVER \
+                 ACME_PVC_SIZE WHOAMI_DOMAIN)
 ## Host port for Traefik/HTTP
 export HTTP_PORT=80
 ## Host port for Traefik/HTTP+TLS
@@ -14,12 +17,11 @@ export ACME_PVC_SIZE=1Gi
 ## Domain name to use for the new whoami service
 export WHOAMI_DOMAIN='whoami.k3s.example.com'
 
-## Vars for render.sh functionality:
+## render.sh functionality:
 ## Required env vars list enforced by render.sh
-export ENV_VARS=(TEMPLATES HTTP_PORT HTTPS_PORT SSH_PORT ACME_EMAIL ACME_SERVER ACME_PVC_SIZE WHOAMI_DOMAIN)
-## Template source directory or http path
+## Default template source directory, or http path:
 TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
-## YAML Template URLs
+## YAML Template locations (can be file paths or https:// URLs)
 export TEMPLATES=(
     $TEMPLATE_SRC/traefik/traefik.pvc.template.yaml
     $TEMPLATE_SRC/traefik/traefik.template.yaml

@@ -14,10 +14,23 @@ check_programs() {
 }
 
 check_env() {
+    if [ -z "$ALL_VARS" ]; then
+        echo "Missing ALL_VARS environment variable (list of variables to pass to render)"
+        exit 1
+    fi
+    ALL_VARS+=(TEMPLATES)
     export TEMPLATE_VARS=""
-    for v in "${ENV_VARS[@]}"; do
-        TEMPLATE_VARS=$TEMPLATE_VARS"\$$v"
+    for var in "${ALL_VARS[@]}"; do
+        value=${!var}
+        if [[ -z "$value" ]]; then
+            echo "Missing env var: $var"
+            missing=true
+        fi
+        TEMPLATE_VARS=$TEMPLATE_VARS"\$$var"
     done
+    if [[ -n $missing ]]; then
+       exit 1
+    fi
 }
 
 render() {
@@ -47,6 +60,11 @@ render() {
                 else
                     envsubst $TEMPLATE_VARS < $f > $file
                 fi
+                grep -o '\${[^ ]*}' $file | while read -r var; do
+                    echo "ERROR: Found un-rendered variable name $var in $file"
+                    rm $file
+                    exit 1
+                done
                 echo "Rendered $file"
             fi
         fi
