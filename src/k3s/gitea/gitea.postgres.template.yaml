@@ -33,12 +33,15 @@ spec:
               mountPath: /var/lib/postgresql/data
           env:
             - name: POSTGRES_USER
-              value: ${POSTGRES_USER}
+              valueFrom:
+                secretKeyRef:
+                  name: gitea
+                  key: postgres_user
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres
-                  key: password
+                  name: gitea
+                  key: postgres_password
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
       volumes:
