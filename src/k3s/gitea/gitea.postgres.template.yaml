@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: gitea-postgres
 spec:
   selector:
-    app: postgres
+    app: gitea-postgres
   type: ClusterIP
   ports:
     - port: ${POSTGRES_PORT}
@@ -13,20 +13,20 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: gitea-postgres
 spec:
   selector:
     matchLabels:
-      app: postgres
-  serviceName: postgres
+      app: gitea-postgres
+  serviceName: gitea-postgres
   replicas: 1
   template:
     metadata:
       labels:
-        app: postgres
+        app: gitea-postgres
     spec:
       containers:
-        - name: postgres
+        - name: gitea-postgres
           image: postgres
           volumeMounts:
             - name: gitea-postgres-data
