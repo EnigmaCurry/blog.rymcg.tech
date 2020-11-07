@@ -7,7 +7,7 @@ spec:
     app: gitea-postgres
   type: ClusterIP
   ports:
-    - port: ${POSTGRES_PORT}
+    - port: 5432
       targetPort: 5432
 ---
 apiVersion: apps/v1
