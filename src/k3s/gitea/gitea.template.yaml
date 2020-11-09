@@ -31,57 +31,17 @@ spec:
       - image: ${IMAGE}
         name: gitea
         volumeMounts:
-          - name: gitea-data
+          - name: data
             mountPath: /data
+          - name: config
+            mountPath: /data/gitea/conf
         ports:
         - containerPort: 3000
           name: web
-        env:
-          - name: USER_UID
-            value: "1000"
-          - name: USER_GID
-            value: "1000"
-          - name: DOMAIN
-            value: "${DOMAIN}"
-          - name: SSH_DOMAIN
-            value: "${DOMAIN}"
-          - name: ROOT_URL
-            value: "https://${DOMAIN}/"
-          - name: APP_NAME
-            value: "${APP_NAME}"
-          - name: SSH_PORT
-            value: "${SSH_PORT}"
-          - name: SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: gitea
-                key: secret_key
-          - name: INSTALL_LOCK
-            value: "true"
-          - name: DISABLE_REGISTRATION
-            value: "${DISABLE_REGISTRATION}"
-          - name: REQUIRE_SIGNIN_VIEW
-            value: "${REQUIRE_SIGNIN_VIEW}"
-          - name: DB_TYPE
-            value: postgres
-          - name: DB_HOST
-            value: gitea-postgres
-          - name: DB_NAME
-            valueFrom:
-              secretKeyRef:
-                name: gitea
-                key: postgres_user
-          - name: DB_USER
-            valueFrom:
-              secretKeyRef:
-                name: gitea
-                key: postgres_user
-          - name: DB_PASSWD
-            valueFrom:
-              secretKeyRef:
-                name: gitea
-                key: postgres_password
       volumes:
-        - name: gitea-data
+        - name: data
           persistentVolumeClaim:
             claimName: gitea-data
+        - name: config
+          configMap:
+            name: gitea

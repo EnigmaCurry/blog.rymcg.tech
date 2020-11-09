@@ -11,6 +11,11 @@ check_programs() {
         echo "(Debian/Ubuntu): apt install gettext"
         return 1
     fi
+    if [[ `which kubectl 2> /dev/null` == "" ]]; then
+        echo "Missing kubectl: install kubectl"
+        echo " https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+        return 1
+    fi
     if [[ -n $SECRET && `which kubeseal 2> /dev/null` == "" ]]; then
         echo "Missing kubeseal: https://github.com/bitnami-labs/sealed-secrets/releases"
         return 1
@@ -19,7 +24,7 @@ check_programs() {
 
 check_env() {
     if [ -z "$ALL_VARS" ]; then
-        echo "Missing ALL_VARS environment variable (list of variables to pass to render)"
+        echo "ERROR: Missing ALL_VARS environment variable (list of variables to pass to render)"
         exit 1
     fi
     ALL_VARS+=(TEMPLATES)
@@ -27,7 +32,7 @@ check_env() {
     for var in "${ALL_VARS[@]}"; do
         value=${!var}
         if [[ -z "$value" ]]; then
-            echo "Missing env var: $var"
+            echo "ERROR: Missing env var: $var"
             missing=true
         fi
         TEMPLATE_VARS=$TEMPLATE_VARS"\$$var"
@@ -38,19 +43,21 @@ check_env() {
 }
 
 render() {
-    for f in "${TEMPLATES[@]}"; do
-        if [[ $f == *.template.yaml ]]; then
-            file=$(echo $f | awk -F'/' '{print $NF}' | sed 's/\.template\.yaml/\.yaml/')
+    templates=( ${TEMPLATES[*]} ${SECRET_TEMPLATES[*]} )
+    for f in "${templates[@]}"; do
+        if [[ $f == *.template.* ]]; then
+            file=$(echo $f | awk -F'/' '{print $NF}' | sed 's/\.template//')
             if [[ -f $file ]]; then
-                echo "$file already exists! Delete it first if you wish to recreate it."
+                echo "WARNING: $file already exists! Not overwriting it."
             else
                 if [[ $f == http://* ]]; then
-                    echo "Refusing to download from non-TLS/SSL URL: $f"
+                    echo "ERROR: Refusing to download from non-TLS/SSL URL: $f"
                     exit 1
                 elif [[ $f == https://* ]]; then
                     echo "downloading: $f"
                     tmpfile=$(mktemp)
                     if curl -sfSL "$f" > $tmpfile; then
+                        echo "$TEMPLATE_VARS"
                         envsubst $TEMPLATE_VARS < $tmpfile > $file
                         rm $tmpfile
                     else
@@ -59,7 +66,7 @@ render() {
                         exit 1
                     fi
                 elif [[ -z $f ]]; then
-                    echo "Could not find template file: $f"
+                    echo "ERROR: Could not find template file: $f"
                     exit 1
                 else
                     envsubst $TEMPLATE_VARS < $f > $file
@@ -69,29 +76,59 @@ render() {
                     rm $file
                     exit 1
                 done
-                echo "Rendered $file"
+                echo "OK: Rendered $file"
             fi
         fi
     done
 }
 
-render_secret() {
+render_secrets() {
     SEALED_SECRET=$SECRET.sealed_secret.yaml
+    SECRET_FILES=()
+    for f in "${SECRET_TEMPLATES[@]}"; do
+        if [[ $f == *.template.* ]]; then
+            file=$(echo $f | awk -F'/' '{print $NF}' | sed 's/\.template//')
+            if [[ ! -f $file ]]; then
+                echo "ERROR: secret source file is missing: $file"
+                exit 1
+            fi
+            SECRET_FILES+=($file)
+        fi
+    done
     if [[ -f $SEALED_SECRET ]]; then
-        echo "$SEALED_SECRET already exists! Delete it first if you wish to recreate it."
+        echo "WARNING: $SEALED_SECRET already exists! Not overwriting it."
+        for file in "${SECRET_FILES[@]}"; do
+            echo "INFO: Removing $file"
+            rm $file
+        done
         return
     fi
-    SECRET_TMP=$(mktemp --suffix=.secret.env)
-    for var in "${ALL_SECRETS[@]}"; do
-        read -p "Enter secret called $var: " secret_value
-        echo "$var=$secret_value" >> $SECRET_TMP
-        unset secret_value
+    CREATE_SECRET_CMD="kubectl create secret generic $SECRET --dry-run=client -o json"
+    for file in "${SECRET_FILES[@]}"; do
+        CREATE_SECRET_CMD=$CREATE_SECRET_CMD" --from-file=$file=$file"
     done
-    kubectl create secret generic $SECRET --dry-run=client \
-            --from-env-file=$SECRET_TMP -o json | \
-        kubeseal -o yaml > $SECRET.sealed_secret.yaml
-    rm $SECRET_TMP
-    echo "Rendered $SEALED_SECRET"
+    tmp=$(mktemp --suffix=secret.yaml)
+    $CREATE_SECRET_CMD > $tmp
+    for file in "${SECRET_FILES[@]}"; do
+        echo "INFO: Removing $file"
+        rm $file
+    done
+    kubeseal -o yaml <$tmp > $SEALED_SECRET
+    echo "OK: Rendered sealed secret: $SEALED_SECRET"
+}
+
+ask_secrets() {
+    for var in "${ALL_SECRETS[@]}"; do
+        secret_value=${!var}
+        if [[ -n $secret_value ]]; then
+            echo "OK: Using pre-generated secret for $var: $secret_value"
+        else
+            read -p "INPUT: Enter secret called $var: " secret_value
+        fi
+        declare -g "${var}"="${secret_value}"
+        export "${var}"
+        TEMPLATE_VARS=$TEMPLATE_VARS"\$$var"
+    done
 }
 
 main() {
@@ -99,19 +136,21 @@ main() {
     RENDER_PATH=$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)
     cd $RENDER_PATH
     if (( $# != 1 )); then
-        echo "Requires one argument: Path to env.sh"
+        echo "ERROR: Requires one argument: Path to env.sh"
         exit 1
     elif [[ -z $1 ]]; then
-        echo "$1 not found"
+        echo "ERROR $1 not found"
         exit 1
     fi
     source $1
     check_env
-    echo "Rendering templates .."
+    if [[ -n $SECRET && -n $ALL_SECRETS ]]; then
+        ask_secrets
+    fi
+    echo "OK: Rendering templates .."
     render
     if [[ -n $SECRET && -n $ALL_SECRETS ]]; then
-        echo "Rendering SECRETS .."
-        render_secret
+        render_secrets
     fi
 }
 
