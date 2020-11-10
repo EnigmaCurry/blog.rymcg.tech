@@ -215,9 +215,9 @@ your cluster. Examine them, and when you're satisfied they are correct, apply
 them with `kubectl`:
 
 ```bash
-kubectl apply -f traefik.pvc.yaml
-kubectl apply -f traefik.yaml
-kubectl apply -f whoami.yaml
+kubectl apply -f traefik.pvc.yaml \
+              -f traefik.yaml \
+              -f whoami.yaml
 ```
 
 Keep these files safe, a private git repository is recommended! You can use them

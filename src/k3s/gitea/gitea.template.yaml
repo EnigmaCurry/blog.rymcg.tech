@@ -7,6 +7,7 @@ spec:
   - name: web
     port: 80
     protocol: TCP
+    targetPort: 3000
   selector:
     app: gitea
 ---
@@ -35,13 +36,18 @@ spec:
             mountPath: /data
           - name: config
             mountPath: /data/gitea/conf
+        ## debug:
+        ## command: ["/bin/sh", "-c", "sleep 99999999999"]
         ports:
         - containerPort: 3000
           name: web
+        env:
+          - name: INSTALL_LOCK
+            value: "true"
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: gitea-data
         - name: config
-          configMap:
-            name: gitea
+          secret:
+            secretName: gitea

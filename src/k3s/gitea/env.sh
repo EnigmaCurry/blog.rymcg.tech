@@ -64,6 +64,7 @@ export TEMPLATES=(
     $TEMPLATE_SRC/gitea/gitea.postgres.template.yaml
     $TEMPLATE_SRC/gitea/gitea.pvc.template.yaml
     $TEMPLATE_SRC/gitea/gitea.template.yaml
+    $TEMPLATE_SRC/gitea/gitea.ingress.template.yaml
 )
 ## Secret Templates
 export SECRET_TEMPLATES=(

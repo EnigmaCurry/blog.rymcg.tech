@@ -84,6 +84,13 @@ render() {
 
 render_secrets() {
     SEALED_SECRET=$SECRET.sealed_secret.yaml
+    CREATE_SECRET_CMD="kubectl create secret generic $SECRET --dry-run=client -o json"
+    ### Add arguments for each of ALL_SECRETS
+    for var in "${ALL_SECRETS[@]}"; do
+        secret_value=${!var}
+        CREATE_SECRET_CMD=${CREATE_SECRET_CMD}" --from-literal=$var=$secret_value"
+    done
+    ### Render all SECRET_TEMPLATES
     SECRET_FILES=()
     for f in "${SECRET_TEMPLATES[@]}"; do
         if [[ $f == *.template.* ]]; then
@@ -98,19 +105,18 @@ render_secrets() {
     if [[ -f $SEALED_SECRET ]]; then
         echo "WARNING: $SEALED_SECRET already exists! Not overwriting it."
         for file in "${SECRET_FILES[@]}"; do
-            echo "INFO: Removing $file"
+            echo "INFO: Removing $file from aborted render"
             rm $file
         done
         return
     fi
-    CREATE_SECRET_CMD="kubectl create secret generic $SECRET --dry-run=client -o json"
     for file in "${SECRET_FILES[@]}"; do
         CREATE_SECRET_CMD=$CREATE_SECRET_CMD" --from-file=$file=$file"
     done
     tmp=$(mktemp --suffix=secret.yaml)
     $CREATE_SECRET_CMD > $tmp
     for file in "${SECRET_FILES[@]}"; do
-        echo "INFO: Removing $file"
+        echo "OK: Removing $file now rendered as sealed secret."
         rm $file
     done
     kubeseal -o yaml <$tmp > $SEALED_SECRET
@@ -121,7 +127,7 @@ ask_secrets() {
     for var in "${ALL_SECRETS[@]}"; do
         secret_value=${!var}
         if [[ -n $secret_value ]]; then
-            echo "OK: Using pre-generated secret for $var: $secret_value"
+            echo "OK: Using secret $var from environment : $secret_value"
         else
             read -p "INPUT: Enter secret called $var: " secret_value
         fi

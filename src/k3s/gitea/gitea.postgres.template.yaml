@@ -36,12 +36,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: gitea
-                  key: postgres_user
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: gitea
-                  key: postgres_password
+                  key: POSTGRES_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
       volumes:
