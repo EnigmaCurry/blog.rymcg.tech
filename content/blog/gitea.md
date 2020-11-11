@@ -9,6 +9,9 @@ draft: true
  * This is part 2 of the [k3s](/tags/k3s/) series. 
  * You will install [gitea](https://gitea.io/) on your cluster, in order to host
    private git repositories.
+ * You will install postgresql in order to serve the database for gitea.
+ * Ingress for HTTP and git+SSH will be provided by Traefik, building upon [the
+   prior post](/blog/k3s/).
 
 Self-hosting our own git repositories will serve as the backbone of later
 development and deployment projects, so its one of the first things we want to
@@ -19,14 +22,81 @@ publish private and/or public git repositories.
 # Prepartion
 
 Make sure you have followed [part 1](/blog/k3s) and have your terminal open to
-the configuration directory we previously created.
+the configuration directory we previously created (and already contains
+`render.sh`).
 
 ```bash
+# The directory we used in part 1:
 cd $HOME/git/k3s
 ```
 
+# Sealed Secrets
 
-blah blah blah, once you have the templates rendered apply them to the cluster:
+This deployment will require us to store some secret information, the username
+and password to the postgresql database, and some internal gitea keys. We will
+use [bitnami/sealed-secrets](https://github.com/bitnami-labs/sealed-secrets) in
+order to keep these values encrypted at-rest. It means that we can safely store
+our entire configuration, including keys and passwords, in git, without exposing
+these secrets.
+
+Install the [latest release of
+sealed-secrets](https://github.com/bitnami-labs/sealed-secrets/releases). You
+will need to install the client side tool called `kubeseal`, and also apply the
+cluster side SealedSecret CRD with `kubectl apply`.
+
+Once installed, you should see the `sealed-secrets-controller` started and
+ready:
+
+```
+kubectl -n kube-system get deployment -l name=sealed-secrets-controller
+```
+
+# Config
+
+Download the prepared [environment file for
+gitea](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/gitea/env.sh):
+
+```bash
+curl -Lo gitea_env.sh https://git.io/JkkyV
+```
+
+Edit the `gitea_env.sh` file, review and change the following environment variables:
+
+ * `DOMAIN` - the subdomain to serve gitea
+ * `APP_NAME` - the human friendly name of the gitea service
+ * `DISABLE_REGISTRATION` - if set `true` accounts need to be created manually
+   (see below.)
+ * `REQUIRE_SIGNIN_VIEW` - if set `true` then no public access is allowed
+   without signing in.
+ * `PVC_SIZE` - the storage volume size for all of the git repositories.
+
+The secrets `POSTGRES_USER` `POSTGRES_PASSWORD` are interactively input at
+render time, `render.sh` will ask you for them. You *should not* set them in
+`gitea_env.sh` yourself. There are additional vars `INTERNAL_TOKEN`,
+`JWT_SECRET`, and `SECRET_KEY` which are secret values *generated automatically*
+at render time and put into a sealed secret.. You don't need to enter them, but
+their values will be printed in the render output so that you can verify them.
+
+Render the templates:
+
+```
+./render.sh gitea_env.sh
+```
+
+Wait a minute for the gitea tokens/keys to generate (behind the scenes, this spawns a pod called `gitea-keygen-$RANDOM` and calls the `gitea generate secret` command and sets the variables for you, and cleans up the pod.)
+
+When asked, enter the value for `POSTGRES_USER` (which will also be the name for
+the database, use `gitea` if you're unsure.) and `POSTGRES_PASSWORD`
+
+A bunch of `gitea.*.yaml` files are now generated, notably
+`gitea.sealed_secret.yaml` contains all of the secrets, and the entire gitea
+config file, encrypted into a Sealed Secret. Only your cluster can decrypt this
+file, so it is safe to commit this file inside your (private) git repository,
+along with the rest of your configuration.
+
+Once you have these templates rendered, you can apply them to the cluster.
+
+# Creating gitea on the cluster
 
 ```
 kubectl apply -f gitea.postgres.pvc.yaml \
@@ -37,14 +107,57 @@ kubectl apply -f gitea.postgres.pvc.yaml \
               -f gitea.ingress.yaml
 ```
 
-Once it starts, create the initial admin user (Note that you *cannot* use the
-username `admin`, which is reserved):
+# Deleting gitea from the cluster and/or reconfiguring
+
+If you need to delete these resources, you can re-run ths same kubectl command
+but change `kubectl apply` to `kubectl delete` (using the same `-f` parameters).
+*Note that if you delete from `gitea.pvc.yaml` or `gitea.postgres.pvc.yaml` you
+will be deleting the Persistent Volume Claims, which will in turn delete the
+entire data volumes and all of your hosted git repositories!* So you may want to
+exclude those files from the `kubectl delete` command.
+
+Example to delete gitea except the persistent volume claims (pvc):
+
+```
+# To DELETE gitea (but not the data):
+kubectl delete -f gitea.postgres.yaml \
+               -f gitea.sealed_secret.yaml \
+               -f gitea.yaml \
+               -f gitea.ingress.yaml
+```
+
+
+To reconfigure gitea, you only need to delete the `gitea.sealed_secret.yaml`
+(which contains the gitea app.ini file ) and/or `gitea.yaml` (which contains the
+deployment), by deleting only these files, you will still preserve the data
+stored in the persistent volumes. That's why these files are all separated like
+this, so that you can selectively delete only parts, or everything. When you run
+`./render.sh` only these files that are missing/deleted will be re-rendered,
+existing files are never overwritten.
+
+# Check it works
+
+Once it starts, you should be able to access the `DOMAIN` you set in your web
+browser. If not, check the logs:
+
+```
+kubectl logs deploy/gitea
+```
+
+# Initial account creation
+
+You need to manually create the initial admin user (Note that you *cannot* use
+the username `admin`, which is reserved), this example uses the name `root` and
+the email address `root@example.com`:
 
 ```
 USERNAME=root
 EMAIL=root@example.com
-kubectl exec deploy/gitea -it -- gitea admin user create --username $USERNAME --random-password --admin --email ${EMAIL}
+kubectl exec deploy/gitea -it -- gitea admin user create \
+    --username $USERNAME --random-password --admin --email ${EMAIL}
 ```
 
 The password is randomly generated and printed, but its at the top of the
-output, so you may need to scroll up to see it.
+output, so you may need to scroll up to see it. Once you sign in using this
+account, you can create additional accounts through the web interface.
+

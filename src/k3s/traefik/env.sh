@@ -1,7 +1,9 @@
 ### Traefik environment
 ## ALL_VARS is the names of all of variables passed to the templates:
-export ALL_VARS=(HTTP_PORT HTTPS_PORT SSH_PORT ACME_EMAIL ACME_SERVER \
-                 ACME_PVC_SIZE WHOAMI_DOMAIN)
+export ALL_VARS=(TRAEFIK_IMAGE HTTP_PORT HTTPS_PORT SSH_PORT ACME_EMAIL \
+                 ACME_SERVER ACME_PVC_SIZE WHOAMI_DOMAIN)
+## Container image
+export TRAEFIK_IMAGE=traefik:v2.3
 ## Host port for Traefik/HTTP
 export HTTP_PORT=80
 ## Host port for Traefik/HTTP+TLS
@@ -23,6 +25,8 @@ export WHOAMI_DOMAIN='whoami.k3s.example.com'
 TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
 ## YAML Template locations (can be file paths or https:// URLs)
 export TEMPLATES=(
+    $TEMPLATE_SRC/traefik/traefik.crd.template.yaml
+    $TEMPLATE_SRC/traefik/traefik.rbac.template.yaml
     $TEMPLATE_SRC/traefik/traefik.pvc.template.yaml
     $TEMPLATE_SRC/traefik/traefik.template.yaml
     $TEMPLATE_SRC/traefik/whoami.template.yaml
