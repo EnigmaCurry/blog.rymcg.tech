@@ -35,7 +35,7 @@ spec:
         - --certificatesresolvers.default.acme.tlschallenge=true
         - --certificatesresolvers.default.acme.caserver=${ACME_SERVER}
         - --certificatesresolvers.default.acme.email=${ACME_EMAIL}
-        - --entrypoints.ssh.address=:2222
+        - --entrypoints.ssh.address=:${SSH_PORT}
         image: ${TRAEFIK_IMAGE}
         name: traefik-ingress-lb
         volumeMounts:
@@ -48,7 +48,7 @@ spec:
         - containerPort: 443
           hostPort: ${HTTPS_PORT}
           name: websecure
-        - containerPort: 2222
+        - containerPort: ${SSH_PORT}
           hostPort: ${SSH_PORT}
           name: ssh
         securityContext:

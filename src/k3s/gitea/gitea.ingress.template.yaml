@@ -1,7 +1,21 @@
 apiVersion: traefik.containo.us/v1alpha1
+kind: TraefikService
+metadata:
+  name: gitea-ssh
+  namespace: default
+
+spec:
+  weighted:
+    services:
+      - name: gitea-ssh
+        weight: 1
+        port: ${SSH_PORT}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: gitea
+  name: gitea-web
   namespace: default
 spec:
   entryPoints:
@@ -10,44 +24,23 @@ spec:
   - kind: Rule
     match: Host(`${DOMAIN}`)
     services:
-    - name: gitea
+    - name: gitea-web
       port: 80
   tls:
     certResolver: default
 ---
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: ssh
-subsets:
-- addresses:
-  - ip: 10.5.0.1
-  ports:
-  - port: 22
----
-apiVersion: v1
-kind: Service
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
 metadata:
   name: gitea-ssh
-spec:
-  ports:
-  - name: ssh
-    port: ${SSH_PORT}
-    protocol: TCP
-  selector:
-    app: gitea
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: ssh
   namespace: default
 spec:
   entryPoints:
   - ssh
   routes:
   - kind: Rule
+    ## Domain matching is not possible with SSH, so match all domains:
     match: HostSNI(`*`)
     services:
-    - name: ssh
+    - name: gitea-ssh
       port: ${SSH_PORT}

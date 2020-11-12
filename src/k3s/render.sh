@@ -43,8 +43,7 @@ check_env() {
 }
 
 render() {
-    templates=( ${TEMPLATES[*]} ${SECRET_TEMPLATES[*]} )
-    for f in "${templates[@]}"; do
+    for f in "${TEMPLATES[@]}"; do
         if [[ $f == *.template.* ]]; then
             file=$(echo $f | awk -F'/' '{print $NF}' | sed 's/\.template//')
             if [[ -f $file ]]; then
@@ -150,13 +149,16 @@ main() {
     fi
     source $1
     check_env
-    if [[ -n $SECRET && -n $ALL_SECRETS ]]; then
+    if [[ ! -f $SECRET.sealed_secret.yaml && -n $SECRET && -n $ALL_SECRETS ]]; then
+        TEMPLATES=( ${TEMPLATES[*]} ${SECRET_TEMPLATES[*]} )
         ask_secrets
     fi
     echo "OK: Rendering templates .."
     render
-    if [[ -n $SECRET && -n $ALL_SECRETS ]]; then
+    if [[ ! -f $SECRET.sealed_secret.yaml && -n $SECRET && -n $ALL_SECRETS ]]; then
         render_secrets
+    elif [[ -f $SECRET.sealed_secret.yaml ]]; then
+        echo "WARNING: $SECRET.sealed_secret.yaml already exists! Not overwriting it."
     fi
 }
 

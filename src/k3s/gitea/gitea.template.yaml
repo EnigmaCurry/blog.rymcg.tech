@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: gitea
+  name: gitea-web
 spec:
   ports:
   - name: web
@@ -14,7 +14,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ssh
+  name: gitea-ssh
 spec:
   ports:
   - name: ssh
