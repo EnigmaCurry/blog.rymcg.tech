@@ -1,7 +1,6 @@
 ---
 title: "k3s part 2 : Gitea"
 date: 2020-11-02T15:23:30-08:00
-draft: true
 ---
 
 # Abstract
@@ -32,12 +31,13 @@ cd $HOME/git/k3s
 
 # Sealed Secrets
 
-This deployment will require us to store some secret information, the username
+This deployment will require us to store some secret information: the username
 and password to the postgresql database, and some internal gitea keys. We will
 use [bitnami/sealed-secrets](https://github.com/bitnami-labs/sealed-secrets) in
-order to keep these values encrypted at-rest. It means that we can safely store
-our entire configuration, including keys and passwords, in git, without exposing
-these secrets.
+order to keep these values encrypted while at rest, and can only be decrytped by
+our running cluster. This means that we can safely store our entire
+configuration, including keys and passwords, in git, without exposing these
+secrets.
 
 Install the [latest release of
 sealed-secrets](https://github.com/bitnami-labs/sealed-secrets/releases). You
@@ -160,4 +160,18 @@ kubectl exec deploy/gitea -it -- gitea admin user create \
 The password is randomly generated and printed, but its at the top of the
 output, so you may need to scroll up to see it. Once you sign in using this
 account, you can create additional accounts through the web interface.
+
+# SSH git access
+
+Sign in to your gitea account and add your SSH pubkey to your user settings (the
+contents of your own `~/.ssh/id_rsa.pub`.) Create a new repository, and clone it
+using the URL it provides.
+
+For example:
+
+```
+git clone ssh://git@git.k3s.example.com:2222/root/test1.git
+```
+
+SSH is forwarded through Traefik.
 

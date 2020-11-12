@@ -1,7 +1,7 @@
 ### gitea environment
 ## ALL_VARS is the names of all of variables passed to the templates:
 export ALL_VARS=(IMAGE PVC_SIZE POSTGRES_PVC_SIZE DOMAIN APP_NAME SSH_PORT \
-                 DISABLE_REGISTRATION REQUIRE_SIGNIN_VIEW)
+                 DISABLE_REGISTRATION REQUIRE_SIGNIN_VIEW START_SSH_SERVER)
 
 ## All secrets are input at *render* time, and made into sealed secret(s).
 export SECRET="gitea"
@@ -17,6 +17,8 @@ export IMAGE=gitea/gitea:latest
 export DOMAIN="git.k3s.example.com"
 ## UI title
 export APP_NAME="${DOMAIN}"
+## Start SSH service (or not)
+export START_SSH_SERVER="true"
 ## SSH PORT (external; from traefik)
 export SSH_PORT="2222"
 ## Enable or disable registration:
@@ -27,33 +29,38 @@ export REQUIRE_SIGNIN_VIEW="true"
 export PVC_SIZE=5Gi
 ## Size of database volume:
 export POSTGRES_PVC_SIZE=5Gi
+## postgres user account
+export POSTGRES_USER=gitea
 
 ## Generate tokens/keys:
-echo "Generating gitea tokens/keys ... "
-## INTERNAL_TOKEN is a "Secret used to validate communication within Gitea binary"
-## This is regenerated each time this is rendered, and put into Sealed Secret.
-## Call the gitea binary in a temporary container:
-export INTERNAL_TOKEN=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret INTERNAL_TOKEN 2> /dev/null)
-if [[ $(echo $INTERNAL_TOKEN | wc -c) -lt 50 ]]; then
-    echo "Error generating INTERNAL_TOKEN"
-    echo "Token was: "$INTERNAL_TOKEN
-    exit 1
-fi
-## JWT_SECRET is a "LFS & OAUTH2 JWT authentication secret"
-## This is regenerated each time this is rendered, and put into Sealed Secret.
-## Call the gitea binary in a temporary container:
-export JWT_SECRET=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret JWT_SECRET 2> /dev/null)
-if [[ $(echo $JWT_SECRET | wc -c) -lt 25 ]]; then
-    echo "Error generating JWT_SECRET"
-    exit 1
-fi
-## SECRET_KEY is the "Global secret key"
-## This is regenerated each time this is rendered, and put into Sealed Secret.
-## Call the gitea binary in a temporary container:
-export SECRET_KEY=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret SECRET_KEY 2> /dev/null)
-if [[ $(echo $SECRET_KEY | wc -c) -lt 50 ]]; then
-    echo "Error generating SECRET_KEY"
-    exit 1
+if [[ ! -f gitea.sealed_secret.yaml ]]; then
+    export POSTGRES_PASSWORD=$(tr -dc '[:alnum:]' < /dev/urandom | dd bs=4 count=8 2>/dev/null)
+    echo "Generating gitea tokens/keys ... "
+    ## INTERNAL_TOKEN is a "Secret used to validate communication within Gitea binary"
+    ## This is regenerated each time this is rendered, and put into Sealed Secret.
+    ## Call the gitea binary in a temporary container:
+    export INTERNAL_TOKEN=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret INTERNAL_TOKEN 2> /dev/null)
+    if [[ $(echo $INTERNAL_TOKEN | wc -c) -lt 50 ]]; then
+        echo "Error generating INTERNAL_TOKEN"
+        echo "Token was: "$INTERNAL_TOKEN
+        exit 1
+    fi
+    ## JWT_SECRET is a "LFS & OAUTH2 JWT authentication secret"
+    ## This is regenerated each time this is rendered, and put into Sealed Secret.
+    ## Call the gitea binary in a temporary container:
+    export JWT_SECRET=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret JWT_SECRET 2> /dev/null)
+    if [[ $(echo $JWT_SECRET | wc -c) -lt 25 ]]; then
+        echo "Error generating JWT_SECRET"
+        exit 1
+    fi
+    ## SECRET_KEY is the "Global secret key"
+    ## This is regenerated each time this is rendered, and put into Sealed Secret.
+    ## Call the gitea binary in a temporary container:
+    export SECRET_KEY=$(kubectl run --quiet -i --rm --tty gitea-keygen-$RANDOM --image=gitea/gitea:latest --restart=Never -- /usr/local/bin/gitea generate secret SECRET_KEY 2> /dev/null)
+    if [[ $(echo $SECRET_KEY | wc -c) -lt 50 ]]; then
+        echo "Error generating SECRET_KEY"
+        exit 1
+    fi
 fi
 
 ## Default template source directory, or http path:
