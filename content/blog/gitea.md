@@ -6,8 +6,8 @@ date: 2020-11-02T15:23:30-08:00
 ## Abstract
  
  * This is part 2 of the [k3s](/tags/k3s/) series. 
- * You will install [gitea](https://gitea.io/) on your cluster, in order to host
-   private git repositories.
+ * You will install [gitea](https://gitea.io/) on your cluster, in order to
+   self-host git repositories, similar to github.
  * You will install postgresql in order to serve the database for gitea.
  * Ingress for HTTP and git+SSH will be provided by Traefik, building upon [the
    prior post](/blog/k3s/).
