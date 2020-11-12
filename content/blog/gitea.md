@@ -70,12 +70,11 @@ Edit the `gitea_env.sh` file, review and change the following environment variab
    without signing in.
  * `PVC_SIZE` - the storage volume size for all of the git repositories.
 
-The secrets `POSTGRES_USER` `POSTGRES_PASSWORD` are interactively input at
-render time, `render.sh` will ask you for them. You *should not* set them in
-`gitea_env.sh` yourself. There are additional vars `INTERNAL_TOKEN`,
-`JWT_SECRET`, and `SECRET_KEY` which are secret values *generated automatically*
-at render time and put into a sealed secret.. You don't need to enter them, but
-their values will be printed in the render output so that you can verify them.
+The variables `POSTGRES_USER`, `POSTGRES_PASSWORD`, `INTERNAL_TOKEN`,
+`JWT_SECRET`, and `SECRET_KEY` are all secret values and are *generated
+automatically* at render time and put into a sealed secret. You don't need to
+enter them, but their values will be printed in the render output so that you
+can verify them.
 
 Render the templates:
 
@@ -83,16 +82,15 @@ Render the templates:
 ./render.sh gitea_env.sh
 ```
 
-Wait a minute for the gitea tokens/keys to generate (behind the scenes, this spawns a pod called `gitea-keygen-$RANDOM` and calls the `gitea generate secret` command and sets the variables for you, and cleans up the pod.)
-
-When asked, enter the value for `POSTGRES_USER` (which will also be the name for
-the database, use `gitea` if you're unsure.) and `POSTGRES_PASSWORD`
+Wait a minute for the gitea tokens/keys to generate (behind the scenes, this
+spawns a pod called `gitea-keygen-$RANDOM` and calls the `gitea generate secret`
+command and sets the variables for you, and cleans up the pod.)
 
 A bunch of `gitea.*.yaml` files are now generated, notably
 `gitea.sealed_secret.yaml` contains all of the secrets, and the entire gitea
 config file, encrypted into a Sealed Secret. Only your cluster can decrypt this
-file, so it is safe to commit this file inside your (private) git repository,
-along with the rest of your configuration.
+file, so it is safe to commit this file inside your git repository, along with
+the rest of your configuration.
 
 Once you have these templates rendered, you can apply them to the cluster.
 
@@ -107,7 +105,7 @@ kubectl apply -f gitea.postgres.pvc.yaml \
               -f gitea.ingress.yaml
 ```
 
-# Deleting gitea from the cluster and/or reconfiguring
+# Deleting gitea from the cluster
 
 If you need to delete these resources, you can re-run ths same kubectl command
 but change `kubectl apply` to `kubectl delete` (using the same `-f` parameters).
@@ -126,19 +124,10 @@ kubectl delete -f gitea.postgres.yaml \
                -f gitea.ingress.yaml
 ```
 
-
-To reconfigure gitea, you only need to delete the `gitea.sealed_secret.yaml`
-(which contains the gitea app.ini file ) and/or `gitea.yaml` (which contains the
-deployment), by deleting only these files, you will still preserve the data
-stored in the persistent volumes. That's why these files are all separated like
-this, so that you can selectively delete only parts, or everything. When you run
-`./render.sh` only these files that are missing/deleted will be re-rendered,
-existing files are never overwritten.
-
 # Check it works
 
-Once it starts, you should be able to access the `DOMAIN` you set in your web
-browser. If not, check the logs:
+Once it starts, from your web browser, you should be able to access the URL
+`DOMAIN` you set. If not, check the logs:
 
 ```
 kubectl logs deploy/gitea
@@ -174,4 +163,3 @@ git clone ssh://git@git.k3s.example.com:2222/root/test1.git
 ```
 
 SSH is forwarded through Traefik.
-
