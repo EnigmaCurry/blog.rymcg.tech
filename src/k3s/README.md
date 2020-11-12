@@ -1,7 +1,7 @@
 # k3s blog
 
 These are the kubernetes resources from [my blog posts about
-k3](https://blog.rymcg.tech/tags/k3s/)
+k3s](https://blog.rymcg.tech/tags/k3s/)
 
 ## Features
 
