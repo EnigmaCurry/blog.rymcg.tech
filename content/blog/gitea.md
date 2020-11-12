@@ -3,7 +3,7 @@ title: "k3s part 2 : Gitea"
 date: 2020-11-02T15:23:30-08:00
 ---
 
-# Abstract
+## Abstract
  
  * This is part 2 of the [k3s](/tags/k3s/) series. 
  * You will install [gitea](https://gitea.io/) on your cluster, in order to host
@@ -18,7 +18,7 @@ install on our cluster. Gitea is an open-source lightweight github-like
 experience without external service dependencies, allowing us to create and
 publish private and/or public git repositories.
 
-# Prepartion
+## Prepartion
 
 Make sure you have followed [part 1](/blog/k3s) and have your terminal open to
 the configuration directory we previously created (and already contains
@@ -29,7 +29,7 @@ the configuration directory we previously created (and already contains
 cd $HOME/git/k3s
 ```
 
-# Sealed Secrets
+## Sealed Secrets
 
 This deployment will require us to store some secret information: the username
 and password to the postgresql database, and some internal gitea keys. We will
@@ -51,7 +51,7 @@ ready:
 kubectl -n kube-system get deployment -l name=sealed-secrets-controller
 ```
 
-# Config
+## Config
 
 Download the prepared [environment file for
 gitea](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/gitea/env.sh):
@@ -94,7 +94,7 @@ the rest of your configuration.
 
 Once you have these templates rendered, you can apply them to the cluster.
 
-# Creating gitea on the cluster
+## Creating gitea on the cluster
 
 ```
 kubectl apply -f gitea.postgres.pvc.yaml \
@@ -105,7 +105,7 @@ kubectl apply -f gitea.postgres.pvc.yaml \
               -f gitea.ingress.yaml
 ```
 
-# Deleting gitea from the cluster
+## Deleting gitea from the cluster
 
 If you need to delete these resources, you can re-run ths same kubectl command
 but change `kubectl apply` to `kubectl delete` (using the same `-f` parameters).
@@ -124,7 +124,7 @@ kubectl delete -f gitea.postgres.yaml \
                -f gitea.ingress.yaml
 ```
 
-# Check it works
+## Check it works
 
 Once it starts, from your web browser, you should be able to access the URL
 `DOMAIN` you set. If not, check the logs:
@@ -133,7 +133,7 @@ Once it starts, from your web browser, you should be able to access the URL
 kubectl logs deploy/gitea
 ```
 
-# Initial account creation
+## Initial account creation
 
 You need to manually create the initial admin user (Note that you *cannot* use
 the username `admin`, which is reserved), this example uses the name `root` and
@@ -150,7 +150,7 @@ The password is randomly generated and printed, but its at the top of the
 output, so you may need to scroll up to see it. Once you sign in using this
 account, you can create additional accounts through the web interface.
 
-# SSH git access
+## SSH git access
 
 Sign in to your gitea account and add your SSH pubkey to your user settings (the
 contents of your own `~/.ssh/id_rsa.pub`.) Create a new repository, and clone it
