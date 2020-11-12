@@ -1,6 +1,7 @@
 ---
 title: "k3s part 2 : Gitea"
 date: 2020-11-02T15:23:30-08:00
+tags: ['k3s', 'kubernetes']
 ---
 
 ## Abstract
