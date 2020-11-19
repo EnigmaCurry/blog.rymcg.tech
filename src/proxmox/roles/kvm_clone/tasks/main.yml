@@ -31,7 +31,7 @@
   uri:
     url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ inventory_hostname }}/qemu/{{ template_id }}/clone"
     method: POST
-    validate_certs: "{{ proxmox_verify_ssl }}"
+    validate_certs: "{{ proxmox_client_verify_ssl }}"
     body_format: form-urlencoded
     headers:
       Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
@@ -51,7 +51,7 @@
   uri:
     url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
     method: PUT
-    validate_certs: "{{ proxmox_verify_ssl }}"
+    validate_certs: "{{ proxmox_client_verify_ssl }}"
     body_format: form-urlencoded
     headers:
       Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
@@ -72,7 +72,7 @@
   when: kvm_state.failed
   uri:
     url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
-    validate_certs: "{{ proxmox_verify_ssl }}"
+    validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: PUT
     headers:
       Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
@@ -85,7 +85,7 @@
   when: kvm_state.failed
   uri:
     url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/resize"
-    validate_certs: "{{ proxmox_verify_ssl }}"
+    validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: PUT
     headers: 
       Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
@@ -99,7 +99,7 @@
   when: "state == 'started'"
   uri:
     url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/status/start"
-    validate_certs: "{{ proxmox_verify_ssl }}"
+    validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: POST
     headers: 
       Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"

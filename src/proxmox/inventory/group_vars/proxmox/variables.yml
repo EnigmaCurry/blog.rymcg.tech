@@ -21,10 +21,9 @@ core_ssh_keys: "{{ vault_core_ssh_keys }}"
 ## If you do this on public network, you MUST setup TLS/SSL!!
 proxmox_external_client_subnets: []
 
-## Configure Proxmox API to require trusted TLS
-## It should be set True if `proxmox_external_client_subnets` is specified!
-## It is fine to leave this as False if only accessing API from localhost.
-proxmox_verify_ssl: False
+## Configure Proxmox client (ansible) to require trusted TLS.
+## Default is False, because the client accesses localhost API and thus unnecessary.
+proxmox_client_verify_ssl: False
 
 proxmox_kvm_admin: "root@pam"
 ## Read the root password from the vault, don't change this here:

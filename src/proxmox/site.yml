@@ -32,7 +32,7 @@
     - uri:
         url: "https://{{ inventory_hostname }}:8006/api2/json/access/ticket"
         method: POST
-        validate_certs: "{{ proxmox_verify_ssl }}"
+        validate_certs: "{{ proxmox_client_verify_ssl }}"
         body_format: form-urlencoded
         body:
           username: "{{ proxmox_root }}"
