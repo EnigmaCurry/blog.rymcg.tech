@@ -1,68 +1,40 @@
+# Name of cluster to create
 proxmox_cluster: pve
 
-proxmox_root: "root@pam"
-## Read the root password from the vault and copy here at runtime:
-proxmox_root_password: "{{ vault_proxmox_root_password }}"
-core_ssh_keys: "{{ vault_core_ssh_keys }}"
-proxmox_domain: "app.shln.rymcg.tech"
 proxmox_master_node: nuc3
+proxmox_domain: "app.shln.rymcg.tech"
+proxmox_root: "root@pam"
 proxmox_public_interface: eno1
 proxmox_trunk_interface: vmbr0
 promox_public_network: 10.13.13.0/24
 proxmox_master_ip: 10.13.13.11
 proxmox_public_netmask: 255.255.255.0
 proxmox_public_gateway: 10.13.13.1
+## Read the root password from the vault, don't change this here:
+proxmox_root_password: "{{ vault_proxmox_root_password }}"
+## Read ssh public keys from vault (unnecessary except to conceal identities).
+## These are default keys for VMs unless otherwise specified
+## (don't change this, edit the vault instead):
+core_ssh_keys: "{{ vault_core_ssh_keys }}"
 
-proxmox_external_client_subnets:
-  - 10.13.13.3/32
+## Specify external IPs allowed to access the dashboard:
+## If you do this on public network, you MUST setup TLS/SSL!!
+proxmox_external_client_subnets: []
 
-## TODO: Setup TLS before going to PROD
+## Configure Proxmox API to require trusted TLS
+## It should be set True if `proxmox_external_client_subnets` is specified!
+## It is fine to leave this as False if only accessing API from localhost.
 proxmox_verify_ssl: False
 
 proxmox_kvm_admin: "root@pam"
-## Read the root password from the vault and copy here at runtime:
+## Read the root password from the vault, don't change this here:
 proxmox_kvm_admin_password: "{{ vault_proxmox_root_password }}"
 
-## Proxmox node ids are used in automagic IP assignment for vm subnets:
-## Examples: vmbr1 = 10.10.1.0/24
-##            nuc1 = 10.10.1.1
-##            nuc2 = 10.10.1.2
-##            nuc3 = 10.10.1.3
-##
-##           vmbr2 = 10.10.2.0/24
-##            nuc1 = 10.10.2.1
-##            nuc2 = 10.10.2.2
-##            nuc3 = 10.10.2.3
-##
-proxmox_nodes:
-  nuc3:
-    id: 1
+ubuntu_focal_cloud_image_url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+ubuntu_focal_cloud_image: /var/lib/vz/template/iso/focal-server-cloudimg-amd64.img
 
-## Virtual Machine subnets:
-## cluster=False prevents routes between hosts for same subnet
-## You should keep these sequential for vmbr0, vmbr1, etc...
-proxmox_vlans:
-  1000:
-    network: 10.10.0.0/24
-    cluster: False
-  100:
-    network: 10.10.1.0/24
-  200:
-    network: 10.10.2.0/24
-  300:
-    network: 10.10.3.0/24
-  400:
-    network: 10.10.4.0/24
-  500:
-    network: 10.10.5.0/24
-  600:
-    network: 10.10.6.0/24
-  700:
-    network: 10.10.7.0/24
-  800:
-    network: 10.10.8.0/24
-  900:
-    network: 10.10.9.0/24
+proxmox_template_ids:
+  ubuntu_focal: 9000
 
 ### Proxmox KVM instance sizes:
 ### (names are loosly based off AWS instance sizes)
@@ -97,11 +69,3 @@ proxmox_instance_sizes:
   c1.xlarge:
     ram: 16
     cpu: 6
-
-ubuntu_focal_cloud_image_url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
-ubuntu_focal_cloud_image: /var/lib/vz/template/iso/focal-server-cloudimg-amd64.img
-
-proxmox_template_ids:
-  ubuntu_focal:
-    nuc3: 9000
-

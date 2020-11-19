@@ -14,7 +14,7 @@
     template: "{{ template | default('ubuntu_focal') }}"
 
 - set_fact:
-    template_id: "{{ proxmox_template_ids[template][inventory_hostname]  }}"
+    template_id: "{{ proxmox_template_ids[template] }}"
     ip_address: "{{ ip_address }}"
     cidr: "{{ cidr | default(24)}}"
 
