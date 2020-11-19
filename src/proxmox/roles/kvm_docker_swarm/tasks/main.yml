@@ -1,0 +1,8 @@
+- name: Create test KVM
+  proxmox:
+    vmid: 100
+    node: nuc1
+    api_user: "{{ proxmox_kvm_admin }}"
+    api_password: "{{ proxmox_kvm_admin_password }}"
+    api_host: nuc1
+

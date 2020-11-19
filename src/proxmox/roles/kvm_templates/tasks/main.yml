@@ -1,0 +1,26 @@
+- name: Check for ubuntu_focal template type
+  command: "qm config {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }}"
+  register: ubuntu_focal_template_status
+  ignore_errors: true
+  changed_when: false
+
+- name: Create ubuntu_focal template (1 core 512MB RAM)
+  when: ubuntu_focal_template_status.rc > 0
+  command: "qm create {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }} -name ubuntu-focal -memory 512 -net0 virtio,bridge=vmbr0 -serial0 socket -vga serial0"
+
+- name: Import ubuntu_focal disk image
+  when: ubuntu_focal_template_status.rc > 0
+  command: "qm importdisk {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }} {{ ubuntu_focal_cloud_image }} local-lvm"
+
+- name: Attach ubuntu_focal disk
+  when: ubuntu_focal_template_status.rc > 0
+  command: "qm set {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }} -scsihw virtio-scsi-pci -scsi0 local-lvm:vm-{{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }}-disk-0"
+
+- name: Create ubuntu_focal boot settings
+  when: ubuntu_focal_template_status.rc > 0
+  command: "qm set {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }} -ide2 local-lvm:cloudinit -boot c -bootdisk scsi0"
+
+- name: Convert ubuntu_focal to template
+  when: ubuntu_focal_template_status.rc > 0
+  command: "qm template {{ proxmox_template_ids['ubuntu_focal'][inventory_hostname] }}"
+

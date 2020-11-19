@@ -1,0 +1,43 @@
+- assert:
+    that:
+      - "100 <= id < 1000"
+    fail_msg: "KVM ID ({{ id }}) must be within range 100 to 1000"
+
+- set_fact:
+    id: "{{ id | int}}"
+    id_str: "{{ id | string }}"
+
+- set_fact:
+    vlan: "{{ id_str[0] + '00' }}"
+    subnet_index: "{{ id_str[0] }}"
+    ip_index: "{{ id_str[-2:] }}"
+
+- set_fact:
+    name: "{{ name | default(id_str) }}"
+    template: "{{ template | default('ubuntu_focal') }}"
+    bridge: "vmbr0"
+    ip_address: "10.10.{{ subnet_index }}.1{{ ip_index }}"
+    gateway: "10.10.{{ subnet_index }}.{{ proxmox_nodes[host].id }}"
+    memory: "{{ proxmox_instance_sizes[size].ram * 1024 | int }}"
+    cores: "{{ proxmox_instance_sizes[size].cpu | int }}"
+    disk_size: "{{ volumes.root | default('10G') }}"
+    state: "{{ state | default('started') }}"
+    cluster: "{{ proxmox_vlans[vlan].cluster | default(True) }}"
+
+- name: Create KVM instance id={{ id }}
+  when: "inventory_hostname == proxmox_master_node"
+  include_role:
+    name: kvm_clone
+
+# - name: Firewall for KVM ip={{ ip_address }} on vmbr{{ vmbr_index }}
+#   when: "host == inventory_hostname"
+#   template:
+#     src: routes.sh.j2
+#     dest: /etc/firewall.d/kvm_{{ id }}.sh
+#     mode: 0700
+#   notify: restart firewall
+
+# - name: Route KVM ip={{ ip_address }} to public interface
+#   when: "host != inventory_hostname"
+#   command: ip route flush {{ ip_address }}/32
+#   changed_when: false

@@ -1,0 +1,4 @@
+proxmox_public_ips:
+  - 10.13.13.11
+proxmox_vmbr0_ip: 10.10.0.1
+proxmox_vmbr0_netmask: 255.255.0.0

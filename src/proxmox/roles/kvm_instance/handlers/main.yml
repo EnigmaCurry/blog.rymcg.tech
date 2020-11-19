@@ -1,0 +1,3 @@
+---
+- name: restart firewall
+  command: /etc/firewall.sh

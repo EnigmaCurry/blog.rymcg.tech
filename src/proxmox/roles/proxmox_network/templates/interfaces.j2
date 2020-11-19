@@ -1,0 +1,28 @@
+## Ansible maintained /etc/network/interfaces file.
+## Don't edit /etc/network/interfaces yourself.
+## Edit the template: proxmox-ansible/roles/proxmox-server/tasks/interfaces.j2
+
+auto lo
+iface lo inet loopback
+
+auto {{ proxmox_public_interface }}
+iface {{ proxmox_public_interface }} inet static
+        address  {{ proxmox_public_ips[0] }}
+        netmask  {{ proxmox_public_netmask }}
+        gateway  {{ proxmox_public_gateway }}
+
+
+auto {{ proxmox_trunk_interface }}
+iface {{ proxmox_trunk_interface }} inet static
+        address  10.10.0.1
+        netmask  {{ proxmox_vmbr0_netmask }}
+        bridge-ports none
+        bridge-stp off
+        bridge-fd 0
+        # On startup run the external firewall script
+        # to setup IP Masquerading and port forwards: 
+        post-up /etc/firewall.sh
+{% for i in range(9) %}
+        up ip addr add 10.10.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
+        down ip addr del 10.10.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
+{% endfor %}

@@ -1,0 +1,75 @@
+#!/bin/bash
+set -e
+
+source /etc/firewall_helpers.sh
+
+## Reset all rules:
+reset
+
+## Public ports:
+{% for public_ip in proxmox_public_ips %}
+# SSH
+port_open_tcp {{ proxmox_public_interface }} {{ public_ip }} 22
+# Web
+port_open_tcp {{ proxmox_public_interface }} {{ public_ip }} 80
+# Web
+port_open_tcp {{ proxmox_public_interface }} {{ public_ip }} 443
+{% endfor %}
+
+# ## Cluster ports:
+# ## https://pve.proxmox.com/wiki/Ports
+# {% for public_ip in proxmox_public_ips %}
+# cluster_port_open_tcp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 8006
+# cluster_port_open_udp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 5404
+# cluster_port_open_udp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 5405
+# cluster_port_open_tcp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 3128
+# cluster_port_open_tcp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 111
+# cluster_port_open_tcp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 6789
+# cluster_port_open_tcp $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 6789
+# cluster_port_open_tcp_range $PUBLIC_BRIDGE_INTERFACE {{ public_ip }} 6800 7300
+# {% endfor %}
+
+# ## Allow cluster multicast
+# exe iptables -A INPUT -s $PUBLIC_SUBNET -i $PUBLIC_BRIDGE_INTERFACE -m pkttype --pkt-type multicast -j ACCEPT
+
+# ## Ceph cluster private interface:
+# {% if ceph_nic is defined %}
+# allow_private_interface {{ ceph_nic }}
+# {% endif %}
+
+## Ping from anywhere:
+allow_ping {{ proxmox_public_interface }}
+
+## Allow select external subnets to access admin ports
+{% for subnet in proxmox_external_client_subnets %}
+exe iptables -A INPUT -p tcp -m tcp -s {{ subnet }} --dport 8006 -j ACCEPT
+{% endfor %}
+
+## Load extra configs from other modules:
+mkdir -p /etc/firewall.d
+for file in /etc/firewall.d/*.sh; do
+    if [ -x "$file" ]; then
+        echo "## Running firewall script: $file"
+        $file
+    fi
+done
+
+masquerade {{ proxmox_trunk_interface }} 10.10.0.0/16
+set_routes {{ proxmox_trunk_interface }} 10.10.0.0/16
+
+# ## IP Masquerading for private VM subnets
+# {% for vlan, subnet in proxmox_vlans.items() %}
+#   {% if subnet.nat | default(True) %}
+#   masquerade {{ proxmox_trunk_interface }} {{ subnet.network }}
+#   {% endif %}
+#   {% if subnet.cluster | default(True) %}
+#   {% for node, values in proxmox_nodes.items() %}
+#     {% if node != inventory_hostname %}
+#       set_routes {{ proxmox_trunk_interface }} {{ subnet.network }}
+#     {% endif %}
+#   {% endfor %}
+#   {% endif %}
+# {% endfor %}
+
+## default rules catch-all
+default_rules

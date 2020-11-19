@@ -1,0 +1,107 @@
+## Only modify KVM if it doesn't already exist:
+- name: "Get KVM id={{ id }} state"
+  proxmox_kvm:
+    api_user: "{{ proxmox_kvm_admin }}"
+    api_password: "{{ proxmox_kvm_admin_password }}"
+    api_host: "{{ inventory_hostname }}"
+    node: "{{ host }}"
+    vmid: "{{ id }}"
+    state: current
+  register: kvm_state
+  ignore_errors: true
+
+- set_fact:
+    template: "{{ template | default('ubuntu_focal') }}"
+
+- set_fact:
+    template_id: "{{ proxmox_template_ids[template][inventory_hostname]  }}"
+    ip_address: "{{ ip_address }}"
+    cidr: "{{ cidr | default(24)}}"
+
+- set_fact:
+    cipassword: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+
+- debug: var="ip_address"
+- debug: var="cidr"
+#- debug: var="cipassword"
+
+
+- name: "Clone KVM template={{ template_id }} id={{ id }} host={{ host }}"
+  when: kvm_state.failed
+  uri:
+    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ inventory_hostname }}/qemu/{{ template_id }}/clone"
+    method: POST
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    body_format: form-urlencoded
+    headers:
+      Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_auth_token.json.data.CSRFPreventionToken }}"
+    body:
+      newid: "{{ id }}"
+      name: "{{ name }}"
+      target: "{{ host }}"
+
+- name: "Wait for KVM clone..."
+  when: kvm_state.failed
+  pause:
+    seconds: 10
+
+- name: "Configure KVM id={{ id }} cloud_init"
+  when: kvm_state.failed
+  uri:
+    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
+    method: PUT
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    body_format: form-urlencoded
+    headers:
+      Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_auth_token.json.data.CSRFPreventionToken }}"
+    body:
+      cores: "{{ cores }}"
+      sockets: "{{ sockets }}"
+      memory: "{{ memory }}"
+      ciuser: "{{ ciuser }}"
+      cipassword: "{{ cipassword | default(None) }}"
+      nameserver: "{{ nameserver }}"
+      ipconfig0: "ip={{ ip_address }}/{{ cidr }},gw={{ gateway }}"
+      searchdomain: "{{ searchdomain }}"
+      sshkeys: "{{ \"\n\".join(sshkeys)|urlencode|replace('/','%2F') }}"
+      onboot: "{{ onboot | default(1) }}"
+
+- name: "Configure KVM id={{ id }} network"
+  when: kvm_state.failed
+  uri:
+    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    method: PUT
+    headers:
+      Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_auth_token.json.data.CSRFPreventionToken }}"
+    body_format: form-urlencoded
+    body:
+      net0: "virtio,bridge={{ bridge }}"
+
+- name: "Resize disk of KVM id={{ id }}"
+  when: kvm_state.failed
+  uri:
+    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/resize"
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    method: PUT
+    headers: 
+      Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_auth_token.json.data.CSRFPreventionToken }}"
+    body_format: form-urlencoded
+    body:
+      disk: "scsi0"
+      size: "{{ disk_size }}"
+
+- name: "Set KVM id={{ id }} state={{state}}"
+  when: "state == 'started'"
+  uri:
+    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/status/start"
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    method: POST
+    headers: 
+      Cookie: "PVEAuthCookie={{ proxmox_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_auth_token.json.data.CSRFPreventionToken }}"
+

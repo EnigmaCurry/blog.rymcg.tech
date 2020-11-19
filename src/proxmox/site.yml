@@ -1,0 +1,78 @@
+- name: Secure cluster nodes
+  hosts: proxmox
+  roles:
+    - ssh_server
+  tags:
+    - install
+
+- name: Setup Networking and Firewall
+  hosts: proxmox
+  roles:
+    - proxmox_network
+  tags:
+    - install
+
+- name: Create master cluster node
+  hosts: proxmox_master
+  roles:
+    - proxmox_master
+  tags:
+    - install
+
+- name: Add cluster nodes
+  hosts: proxmox
+  roles:
+    - proxmox_server
+  tags:
+    - install
+
+- name: Get promox API auth token
+  hosts: proxmox
+  tasks:
+    - uri:
+        url: "https://{{ inventory_hostname }}:8006/api2/json/access/ticket"
+        method: POST
+        validate_certs: "{{ proxmox_verify_ssl }}"
+        body_format: form-urlencoded
+        body:
+          username: "{{ proxmox_root }}"
+          password: "{{ proxmox_root_password }}"
+      register: proxmox_auth_token
+  tags:
+    - ceph
+    - config
+    - core
+
+- name: Prepare KVM template image downloads
+  hosts: proxmox_master
+  roles:
+    - kvm_templates_prep
+  tags:
+    - config
+    - templates
+
+- name: Create KVM templates
+  hosts: proxmox
+  roles:
+    - kvm_templates
+  tags:
+    - config
+    - templates
+
+- name: Create KVM Core Virtual Machine Firewalls
+  hosts: proxmox
+  roles:
+    - kvm_core_vms_firewalls
+  tags:
+    - config
+    - core
+    - firewall
+
+- name: Create KVM Core Virtual Machines
+  hosts: proxmox
+  roles:
+    - kvm_core_vms
+  tags:
+    - config
+    - core
+    - firewall

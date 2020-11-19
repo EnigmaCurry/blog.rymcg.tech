@@ -1,0 +1,166 @@
+PUBLIC_BRIDGE_INTERFACE={{ proxmox_public_interface }}
+PUBLIC_SUBNET={{ promox_public_network }}
+
+exe() { ( echo "## $*"; $*; ) }
+
+reset() {
+  exe iptables -P INPUT ACCEPT
+  exe iptables -P FORWARD ACCEPT
+  exe iptables -P OUTPUT ACCEPT
+  exe iptables -t nat -F
+  exe iptables -t mangle -F
+  exe iptables -F
+  exe iptables -X
+  exe ebtables -F INPUT
+  exe ebtables -F FORWARD
+  exe ebtables -F OUTPUT
+}
+
+masquerade() {
+  if [ "$#" -ne 2 ]; then
+    echo "masquerade: Specify arguments: SOURCE_INTERFACE SOURCE_SUBNET"
+    exit 1
+  fi
+  SOURCE_INTERFACE=$1; SOURCE_SUBNET=$2
+  echo 1 > /proc/sys/net/ipv4/ip_forward
+  ## Block forwarding to RFC1918 networks:
+  exe iptables -A FORWARD -i $SOURCE_INTERFACE -d 192.168.0.0/16,172.16.0.0/12,10.0.0.0/8 -m state --state NEW,INVALID -j DROP
+  ## NAT public network access:
+  exe iptables -A FORWARD -i $SOURCE_INTERFACE -o $PUBLIC_BRIDGE_INTERFACE -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+  exe iptables -A FORWARD -i $PUBLIC_BRIDGE_INTERFACE -o $SOURCE_INTERFACE -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+  exe iptables -t nat -A POSTROUTING -s $SOURCE_SUBNET -o $PUBLIC_BRIDGE_INTERFACE -j MASQUERADE
+}
+
+port_forward() {
+  if [ "$#" -ne 3 ]; then
+    echo "port_forward: Specify arguments: SOURCE_PORT DEST_HOST DEST_PORT"
+    exit 1
+  fi
+  echo 1 > /proc/sys/net/ipv4/ip_forward
+  SOURCE_PORT=$1; DEST_HOST=$2; DEST_PORT=$3;
+  exe iptables -t nat -A PREROUTING -p tcp -i $PUBLIC_BRIDGE_INTERFACE \
+      --dport $SOURCE_PORT -j DNAT --to-destination $DEST_HOST:$DEST_PORT
+  exe iptables -A FORWARD -p tcp -d $DEST_HOST \
+      --dport $DEST_PORT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+}
+
+port_open_tcp() {
+  if [ "$#" -ne 3 ]; then
+    echo "port_open_tcp: Specify arguments: INTERFACE DEST_HOST DEST_PORT"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT=$3;
+  exe iptables -A INPUT -p tcp -m tcp -d $DEST_HOST --dport $DEST_PORT -i $INTERFACE -j ACCEPT
+}
+
+port_open_udp() {
+  if [ "$#" -ne 3 ]; then
+    echo "port_open_udp: Specify arguments: INTERFACE DEST_HOST DEST_PORT"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT=$3;
+  exe iptables -A INPUT -p udp -m udp --dport $DEST_PORT -i $INTERFACE -j ACCEPT
+}
+
+cluster_port_open_tcp() {
+  if [ "$#" -ne 3 ]; then
+    echo "cluster_port_open_tcp: Specify arguments: INTERFACE DEST_HOST DEST_PORT"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT=$3;
+  exe iptables -A INPUT -p tcp -m tcp -s $PUBLIC_SUBNET -d $DEST_HOST --dport $DEST_PORT -j ACCEPT
+}
+
+cluster_port_open_tcp_range() {
+  if [ "$#" -ne 4 ]; then
+    echo "cluster_port_open_tcp: Specify arguments: INTERFACE DEST_HOST DEST_PORT_MIN DEST_PORT_MAX"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT_MIN=$3; DEST_PORT_MAX=$4
+  exe iptables -A INPUT -p tcp -m tcp -s $PUBLIC_SUBNET -i $INTERFACE -m multiport --dports $DEST_PORT_MIN:$DEST_PORT_MAX -j ACCEPT
+}
+
+cluster_port_open_udp() {
+  if [ "$#" -ne 3 ]; then
+    echo "cluster_port_open_udp: Specify arguments: INTERFACE DEST_HOST DEST_PORT"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT=$3;
+  exe iptables -A INPUT -p udp -m udp -s $PUBLIC_SUBNET -d $DEST_HOST --dport $DEST_PORT -j ACCEPT
+}
+
+cluster_port_open_udp_range() {
+  if [ "$#" -ne 4 ]; then
+    echo "cluster_port_open_udp: Specify arguments: INTERFACE DEST_HOST DEST_PORT_MIN DEST_PORT_MAX"
+    exit 1
+  fi
+  INTERFACE=$1; DEST_HOST=$2; DEST_PORT_MIN=$3; DEST_PORT_MAX=$4
+  exe iptables -A INPUT -p udp -m udp -s $PUBLIC_SUBNET -i $INTERFACE -m multiport --dports $DEST_PORT_MIN:$DEST_PORT_MAX -j ACCEPT
+}
+
+port_open_dhcp() {
+  if [ "$#" -ne 1 ]; then
+    echo "port_open_dhcp: Specify arguments: INTERFACE"
+    exit 1
+  fi
+  INTERFACE=$1;
+  exe iptables -A INPUT -p udp --dport 67:69 --sport 67:69 -i $INTERFACE -j ACCEPT
+}
+
+port_open_tftp() {
+  if [ "$#" -ne 2 ]; then
+    echo "port_open_tftp: Specify arguments: INTERFACE GATEWAY"
+    exit 1
+  fi
+  INTERFACE=$1; GATEWAY=$2
+  exe modprobe ip_conntrack ip_conntrack_tftp
+  # TFTP requires all udp ports to be opened to the gateway:
+  exe iptables -A INPUT -i $INTERFACE -d $GATEWAY/32 -p udp -j ACCEPT
+}
+
+allow_ping() {
+  if [ "$#" -ne 1 ]; then
+    echo "allow_ping: Specify arguments: INTERFACE"
+    exit 1
+  fi
+  INTERFACE=$1;
+  exe iptables -A INPUT -p icmp --icmp-type echo-request -i $INTERFACE -j ACCEPT
+}
+
+allow_private_interface() {
+  if [ "$#" -ne 1 ]; then
+    echo "allow_private_interface: Specify arguments: INTERFACE"
+    exit 1
+  fi
+  INTERFACE=$1;
+  exe iptables -A INPUT -i $INTERFACE -j ACCEPT
+}
+
+set_routes() {
+  if [ "$#" -lt 2 ]; then
+    echo "add_routes: Specify arguments: INTERFACE ROUTE1 [ROUTE2 ...]"
+    exit 1
+  fi
+  set -e
+  INTERFACE=$1;
+  shift;
+  for item; do
+    exe ip route flush $item
+    exe ip route add $item dev $INTERFACE
+  done
+}
+
+
+default_rules() {
+  exe iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+  exe iptables -A INPUT -i lo -j ACCEPT
+  exe iptables -P INPUT DROP
+  exe iptables -P FORWARD DROP
+  exe iptables -P OUTPUT ACCEPT
+}
+
+export PUBLIC_BRIDGE_INTERFACE
+export PUBLIC_SUBNET
+export -f exe
+export -f port_open_tcp
+export -f port_forward

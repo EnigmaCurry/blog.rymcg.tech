@@ -1,0 +1,96 @@
+- name: Get local API auth token
+  uri:
+    url: "https://localhost:8006/api2/json/access/ticket"
+    method: POST
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    body_format: form-urlencoded
+    body:
+      username: "{{ proxmox_root }}"
+      password: "{{ proxmox_root_password }}"
+  register: proxmox_local_auth_token
+
+- name: Get cluster information from local server
+  uri:
+    url: "https://localhost:8006/api2/json/cluster/config/join"
+    method: GET
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    headers: 
+      Cookie: "PVEAuthCookie={{ proxmox_local_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_local_auth_token.json.data.CSRFPreventionToken }}"
+  register: local_cluster_info
+  ignore_errors: true
+
+- name: Get promox master API auth token
+  when: local_cluster_info.json.data == None
+  uri:
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/access/ticket"
+    method: POST
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    body_format: form-urlencoded
+    body:
+      username: "{{ proxmox_root }}"
+      password: "{{ proxmox_root_password }}"
+  register: proxmox_master_auth_token
+
+- name: Get cluster information from proxmox master
+  when: local_cluster_info.json.data == None
+  uri:
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/cluster/config/join"
+    method: GET
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    headers: 
+      Cookie: "PVEAuthCookie={{ proxmox_master_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_master_auth_token.json.data.CSRFPreventionToken }}"
+  register: master_cluster_info
+
+- name: Join cluster
+  when: local_cluster_info.json.data == None
+  uri:
+    url: "https://localhost:8006/api2/json/cluster/config/join"
+    method: POST
+    validate_certs: "{{ proxmox_verify_ssl }}"
+    headers:
+      Cookie: "PVEAuthCookie={{ proxmox_local_auth_token.json.data.ticket }}"
+      CSRFPreventionToken: "{{ proxmox_local_auth_token.json.data.CSRFPreventionToken }}"
+    body_format: form-urlencoded
+    body:
+      hostname: "{{ master_cluster_info.json.data.nodelist[0].name }}"
+      fingerprint: "{{ master_cluster_info.json.data.nodelist[0].pve_fp }}"
+      password: "{{ proxmox_root_password }}"
+  register: cluster_join_info
+
+- name: Decomercialify
+  replace:
+    path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+    regexp: "^(\\s*)?if \\(data\\.status \\!== \\'Active\\'\\) \\{"
+    replace: "                if (false) {"
+
+- name: Remove enterprise repository
+  file:
+    state: absent
+    path: /etc/apt/sources.list.d/pve-enterprise.list
+
+- name: Install community repository 
+  copy:
+    dest: /etc/apt/sources.list.d/pve-no-subscription.list
+    content: |
+      deb http://download.proxmox.com/debian stretch pve-no-subscription
+
+- name: Update and upgrade apt packages
+  apt:
+    upgrade: "yes"
+    force_apt_get: "yes"
+    update_cache: "yes"
+    cache_valid_time: 86400 #One day
+
+- name: Install VM dependencies
+  apt:
+    name:
+      - cloud-init
+      - python-pip
+      - python3-pip
+    force_apt_get: "yes"
+
+- name: Install proxmoxer module
+  pip:
+    name: proxmoxer

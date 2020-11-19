@@ -1,0 +1,12 @@
+- name: KVM test instance 101
+  include_role:
+    name: kvm_instance
+  vars:
+    id: 101
+    host: nuc3
+    name: test
+    size: m1.small
+    volumes:
+      root: 20G
+    sshkeys: "{{ core_ssh_keys }}"
+
