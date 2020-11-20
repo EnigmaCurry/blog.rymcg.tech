@@ -1,15 +1,36 @@
 # Name of cluster to create
 proxmox_cluster: pve
 
+## The real hostname of the server:
 proxmox_master_node: nuc3
+## The full domain of the server:
 proxmox_domain: "app.shln.rymcg.tech"
+## Root user is authenticated locally (non-LDAP by default):
 proxmox_root: "root@pam"
+
+## The name of the public network interface
 proxmox_public_interface: eno1
+## The name of the VM bridge interface (this interface will be created)
 proxmox_trunk_interface: vmbr0
-promox_public_network: 10.13.13.0/24
+## The Public network information, set by your LAN or ISP:
 proxmox_master_ip: 10.13.13.11
 proxmox_public_netmask: 255.255.255.0
 proxmox_public_gateway: 10.13.13.1
+promox_public_network: 10.13.13.0/24
+
+## Each block of VMs has a /24 subnet (ID range 100 is 10.10.1.0/24, 200 is
+## 10.10.2.0/24, etc)
+## VM IP addresses are assigned automatically (static) based upon the VM ID:
+## - VM ID 100 translates to the ip 10.10.1.100 (network 10.10.1.0/24)
+## - VM ID 201 translates to the ip 10.10.2.101 (network 10.10.2.0/24)
+## - VM ID 299 translates to the ip 10.10.2.199 (network 10.10.2.0/24)
+## - VM ID 999 translates to the ip 10.10.9.199 (network 10.10.9.0/24)
+## Note that last octet is never below 100 and never more than 199.
+## The entire /16 subnet is assigned to the trunk interface
+## (10.10.0.0 -> 10.10.255.255)
+## network_prefix is the first two octets of the /16 IP address space:
+proxmox_trunk_ip_prefix: 10.10
+
 ## Read the root password from the vault, don't change this here:
 proxmox_root_password: "{{ vault_proxmox_root_password }}"
 ## Read ssh public keys from vault (unnecessary except to conceal identities).

@@ -7,15 +7,15 @@ iface lo inet loopback
 
 auto {{ proxmox_public_interface }}
 iface {{ proxmox_public_interface }} inet static
-        address  {{ proxmox_public_ips[0] }}
+        address  {{ proxmox_master_ip }}
         netmask  {{ proxmox_public_netmask }}
         gateway  {{ proxmox_public_gateway }}
 
 
 auto {{ proxmox_trunk_interface }}
 iface {{ proxmox_trunk_interface }} inet static
-        address  10.10.0.1
-        netmask  {{ proxmox_vmbr0_netmask }}
+        address  {{ proxmox_trunk_ip_prefix }}.0.1
+        netmask  255.255.0.0
         bridge-ports none
         bridge-stp off
         bridge-fd 0
@@ -23,6 +23,6 @@ iface {{ proxmox_trunk_interface }} inet static
         # to setup IP Masquerading and port forwards: 
         post-up /etc/firewall.sh
 {% for i in range(9) %}
-        up ip addr add 10.10.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
-        down ip addr del 10.10.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
+        up ip addr add {{ proxmox_trunk_ip_prefix }}.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
+        down ip addr del {{ proxmox_trunk_ip_prefix }}.{{ i+1 }}.1 dev {{ proxmox_trunk_interface }} label {{ proxmox_trunk_interface }}:{{ i }}
 {% endfor %}

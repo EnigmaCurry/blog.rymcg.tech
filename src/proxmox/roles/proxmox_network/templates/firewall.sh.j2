@@ -7,10 +7,8 @@ source /etc/firewall_helpers.sh
 reset
 
 ## Public ports:
-{% for public_ip in proxmox_public_ips %}
 # SSH
-port_open_tcp {{ proxmox_public_interface }} {{ public_ip }} 22
-{% endfor %}
+port_open_tcp {{ proxmox_master_ip }} {{ public_ip }} 22
 
 ## Ping from anywhere:
 allow_ping {{ proxmox_public_interface }}
@@ -30,8 +28,8 @@ for file in /etc/firewall.d/*.sh; do
 done
 
 ## IP masquerading for entire VM subnet
-masquerade {{ proxmox_trunk_interface }} 10.10.0.0/16
-set_routes {{ proxmox_trunk_interface }} 10.10.0.0/16
+masquerade {{ proxmox_trunk_interface }} {{ proxmox_trunk_ip_prefix }}.0.0/16
+set_routes {{ proxmox_trunk_interface }} {{ proxmox_trunk_ip_prefix }}.0.0/16
 
 ## default rules catch-all
 default_rules
