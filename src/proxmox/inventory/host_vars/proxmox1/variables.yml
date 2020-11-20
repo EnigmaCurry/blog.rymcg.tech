@@ -1,22 +1,38 @@
-# Name of cluster to create
-proxmox_cluster: pve
+## This file reads values from the Vault.
+## Alternative, non-vault example values are provided as comments.
 
+## Name of cluster to create
+#proxmox_cluster: pve
+proxmox_cluster: "{{ vault_proxmox_cluster }}"
+
+## The SSH alias for the proxmox server
+#proxmox_ansible_host: proxmox1
+proxmox_ansible_host: "{{ vault_proxmox_ansible_host }}"
 ## The real hostname of the server:
-proxmox_master_node: nuc3
+#proxmox_master_node: pve-east-1
+proxmox_master_node: "{{ vault_proxmox_master_node }}"
 ## The full domain of the server:
-proxmox_domain: "app.shln.rymcg.tech"
+#proxmox_domain: pve.rymcg.tech
+proxmox_domain: "{{ vault_proxmox_domain }}"
 ## Root user is authenticated locally (non-LDAP by default):
-proxmox_root: "root@pam"
+#proxmox_root: "root@pam"
+proxmox_root: "{{ vault_proxmox_root }}"
 
 ## The name of the public network interface
-proxmox_public_interface: eno1
+#proxmox_public_interface: eno1
+proxmox_public_interface: "{{ vault_proxmox_public_interface }}"
 ## The name of the VM bridge interface (this interface will be created)
-proxmox_trunk_interface: vmbr0
+#proxmox_trunk_interface: vmbr0
+proxmox_trunk_interface: "{{ vault_proxmox_trunk_interface }}"
 ## The Public network information, set by your LAN or ISP:
-proxmox_master_ip: 10.13.13.11
-proxmox_public_netmask: 255.255.255.0
-proxmox_public_gateway: 10.13.13.1
-promox_public_network: 10.13.13.0/24
+#proxmox_master_ip: 192.0.2.1
+proxmox_master_ip: "{{ vault_proxmox_master_ip }}"
+#proxmox_public_netmask: 255.255.255.0
+proxmox_public_netmask: "{{ vault_proxmox_public_netmask }}"
+#proxmox_public_gateway: 10.13.13.1
+proxmox_public_gateway: "{{ vault_proxmox_public_gateway }}"
+#promox_public_network: 10.13.13.0/24
+promox_public_network: "{{ vault_proxmox_public_network }}"
 
 ## Each block of VMs has a /24 subnet (ID range 100 is 10.10.1.0/24, 200 is
 ## 10.10.2.0/24, etc)
@@ -29,63 +45,28 @@ promox_public_network: 10.13.13.0/24
 ## The entire /16 subnet is assigned to the trunk interface
 ## (10.10.0.0 -> 10.10.255.255)
 ## network_prefix is the first two octets of the /16 IP address space:
-proxmox_trunk_ip_prefix: 10.10
+#proxmox_trunk_ip_prefix: 10.10
+proxmox_trunk_ip_prefix: "{{ vault_proxmox_trunk_ip_prefix }}"
 
 ## Read the root password from the vault, don't change this here:
+#proxmox_root_password: changeme
 proxmox_root_password: "{{ vault_proxmox_root_password }}"
-## Read ssh public keys from vault (unnecessary except to conceal identities).
-## These are default keys for VMs unless otherwise specified
-## (don't change this, edit the vault instead):
+## core ssh keys are default keys for VM accounts unless otherwise specified
+#core_ssh_keys: ["ssh-rsa AAAA..."]
 core_ssh_keys: "{{ vault_core_ssh_keys }}"
 
 ## Specify external IPs allowed to access the dashboard:
 ## If you do this on public network, you MUST setup TLS/SSL!!
-proxmox_external_client_subnets: []
+#proxmox_external_client_subnets: []
+proxmox_external_client_subnets: "{{ vault_proxmox_external_client_subnets }}"
 
 ## Configure Proxmox client (ansible) to require trusted TLS.
 ## Default is False, because the client accesses localhost API and thus unnecessary.
-proxmox_client_verify_ssl: False
+#proxmox_client_verify_ssl: False
+proxmox_client_verify_ssl: "{{ vault_proxmox_client_verify_ssl }}"
 
-proxmox_kvm_admin: "root@pam"
-## Read the root password from the vault, don't change this here:
-proxmox_kvm_admin_password: "{{ vault_proxmox_root_password }}"
+#proxmox_kvm_admin: "root@pam"
+proxmox_kvm_admin: "{{ vault_proxmox_kvm_admin }}"
+#proxmox_kvm_admin_password: changeme
+proxmox_kvm_admin_password: "{{ vault_proxmox_kvm_admin_password }}"
 
-ubuntu_focal_cloud_image_url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
-ubuntu_focal_cloud_image: /var/lib/vz/template/iso/focal-server-cloudimg-amd64.img
-
-proxmox_template_ids:
-  ubuntu_focal: 9000
-
-### Proxmox KVM instance sizes:
-### (names are loosly based off AWS instance sizes)
-proxmox_instance_sizes:
-  m1.nano:
-    ram: 0.5
-    cpu: 1
-  m1.micro:
-    ram: 1
-    cpu: 1
-  m1.small:
-    ram: 2
-    cpu: 2
-  m1.medium:
-    ram: 4
-    cpu: 2
-  m1.large:
-    ram: 8
-    cpu: 2
-  m1.xlarge:
-    ram: 16
-    cpu: 4
-  c1.small:
-    ram: 2
-    cpu: 4
-  c1.medium:
-    ram: 4
-    cpu: 4
-  c1.large:
-    ram: 8
-    cpu: 4
-  c1.xlarge:
-    ram: 16
-    cpu: 6

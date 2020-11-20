@@ -1,0 +1,51 @@
+- name: k3s node 201
+  include_role:
+    name: kvm_instance
+  vars:
+    id: 201
+    host: "{{ proxmox_master_node }}"
+    user: root
+    name: k3s-201
+    size: m1.small
+    volumes:
+      root: 20G
+    sshkeys: "{{ core_ssh_keys }}"
+
+- name: k3s node 202
+  include_role:
+    name: kvm_instance
+  vars:
+    id: 202
+    host: "{{ proxmox_master_node }}"
+    user: root
+    name: k3s-202
+    size: m1.small
+    volumes:
+      root: 20G
+    sshkeys: "{{ core_ssh_keys }}"
+
+- name: k3s node 203
+  include_role:
+    name: kvm_instance
+  vars:
+    id: 203
+    host: "{{ proxmox_master_node }}"
+    user: root
+    name: k3s-203
+    size: m1.small
+    volumes:
+      root: 20G
+    sshkeys: "{{ core_ssh_keys }}"
+
+- name: Create /etc/firewall.d
+  file:
+    path: "/etc/firewall.d"
+    state: directory
+
+- name: Create k3s KVM firewall rules
+  template:
+    src: k3s_kvm_firewall.sh
+    dest: /etc/firewall.d/k3s_kvm_firewall.sh
+    mode: 0700
+  notify: restart firewall
+

@@ -1,0 +1,39 @@
+ubuntu_focal_cloud_image_url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+ubuntu_focal_cloud_image: /var/lib/vz/template/iso/focal-server-cloudimg-amd64.img
+
+proxmox_template_ids:
+  ubuntu_focal: 9000
+
+### Proxmox KVM instance sizes:
+### (names are loosly based off AWS instance sizes)
+proxmox_instance_sizes:
+  m1.nano:
+    ram: 0.5
+    cpu: 1
+  m1.micro:
+    ram: 1
+    cpu: 1
+  m1.small:
+    ram: 2
+    cpu: 2
+  m1.medium:
+    ram: 4
+    cpu: 2
+  m1.large:
+    ram: 8
+    cpu: 2
+  m1.xlarge:
+    ram: 16
+    cpu: 4
+  c1.small:
+    ram: 2
+    cpu: 4
+  c1.medium:
+    ram: 4
+    cpu: 4
+  c1.large:
+    ram: 8
+    cpu: 4
+  c1.xlarge:
+    ram: 16
+    cpu: 6

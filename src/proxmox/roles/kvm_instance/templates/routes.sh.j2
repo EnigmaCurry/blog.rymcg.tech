@@ -2,4 +2,4 @@ set -e
 
 source /etc/firewall_helpers.sh
 
-set_routes vmbr0.{{ vlan }} {{ ip_address }}/32
+set_routes {{ proxmox_trunk_interface }} {{ ip_address }}/32

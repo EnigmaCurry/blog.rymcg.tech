@@ -8,7 +8,7 @@ reset
 
 ## Public ports:
 # SSH
-port_open_tcp {{ proxmox_master_ip }} {{ public_ip }} 22
+port_open_tcp {{ proxmox_public_interface }} {{ proxmox_master_ip }} 22
 
 ## Ping from anywhere:
 allow_ping {{ proxmox_public_interface }}

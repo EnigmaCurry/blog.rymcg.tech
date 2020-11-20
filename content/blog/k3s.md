@@ -45,14 +45,14 @@ about high availability (multi-node redundancy.)
    ```bash
    #!/bin/bash
    VOLUME=/dev/sda
-   umount $VOLUME
-   if (! blkid $VOLUME); then 
-     mkfs.ext4 $VOLUME
+   umount ${VOLUME}
+   if (! blkid ${VOLUME}); then 
+     mkfs.ext4 ${VOLUME}
    fi
    mkdir -p /opt/local-path-provisioner
-   echo "$VOLUME /opt/local-path-provisioner " \
+   echo "${VOLUME} /opt/local-path-provisioner " \
         "ext4 defaults,nofail,discard 0 0" | sudo tee -a /etc/fstab
-   mount $VOLUME
+   mount ${VOLUME}
    apt-get update -y
    apt-get install -y curl
    ```
@@ -111,7 +111,7 @@ as your workstation. `kubectl` is our local tool to access the cluster.
  * `k3sup` will install k3s on your droplet using the SSH key you defined during
    droplet creation. `k3sup` will also take care of installing another key file
    required for `kubectl` to access your cluster. That key is created locally in
-   your `$HOME/.kube` directory, which you must keep safe, as it provides full
+   your `${HOME}/.kube` directory, which you must keep safe, as it provides full
    access to your cluster.
 
 ## Create the cluster
@@ -154,9 +154,9 @@ On your workstation, create a new directory (anywhere) to store the YAML files
 for this deployment.
 
 ```bash
-DIR=$HOME/git/k3s
-mkdir -p $DIR
-cd $DIR
+DIR=${HOME}/git/k3s
+mkdir -p ${DIR}
+cd ${DIR}
 ```
 
 Download the [environment file

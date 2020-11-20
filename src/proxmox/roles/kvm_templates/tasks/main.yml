@@ -6,7 +6,7 @@
 
 - name: Create ubuntu_focal template (1 core 512MB RAM)
   when: ubuntu_focal_template_status.rc > 0
-  command: "qm create {{ proxmox_template_ids['ubuntu_focal'] }} -name ubuntu-focal -memory 512 -net0 virtio,bridge=vmbr0 -serial0 socket -vga serial0"
+  command: "qm create {{ proxmox_template_ids['ubuntu_focal'] }} -name ubuntu-focal -memory 512 -net0 virtio,bridge={{ proxmox_trunk_interface }} -serial0 socket -vga serial0"
 
 - name: Import ubuntu_focal disk image
   when: ubuntu_focal_template_status.rc > 0

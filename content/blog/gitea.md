@@ -48,7 +48,7 @@ cluster side SealedSecret CRD with `kubectl apply`.
 Once installed, you should see the `sealed-secrets-controller` started and
 ready:
 
-```
+```bash
 kubectl -n kube-system get deployment -l name=sealed-secrets-controller
 ```
 
@@ -79,7 +79,7 @@ can verify them.
 
 Render the templates:
 
-```
+```bash
 ./render.sh gitea_env.sh
 ```
 
@@ -97,7 +97,7 @@ Once you have these templates rendered, you can apply them to the cluster.
 
 ## Creating gitea on the cluster
 
-```
+```bash
 kubectl apply -f gitea.postgres.pvc.yaml \
               -f gitea.postgres.yaml \
               -f gitea.pvc.yaml \
@@ -117,7 +117,7 @@ exclude those files from the `kubectl delete` command.
 
 Example to delete gitea except the persistent volume claims (pvc):
 
-```
+```bash
 # To DELETE gitea (but not the data):
 kubectl delete -f gitea.postgres.yaml \
                -f gitea.sealed_secret.yaml \
@@ -130,7 +130,7 @@ kubectl delete -f gitea.postgres.yaml \
 Once it starts, from your web browser, you should be able to access the URL
 `DOMAIN` you set. If not, check the logs:
 
-```
+```bash
 kubectl logs deploy/gitea
 ```
 
@@ -140,11 +140,13 @@ You need to manually create the initial admin user (Note that you *cannot* use
 the username `admin`, which is reserved), this example uses the name `root` and
 the email address `root@example.com`:
 
-```
+```bash
 USERNAME=root
 EMAIL=root@example.com
+```
+```bash
 kubectl exec deploy/gitea -it -- gitea admin user create \
-    --username $USERNAME --random-password --admin --email ${EMAIL}
+    --username ${USERNAME} --random-password --admin --email ${EMAIL}
 ```
 
 The password is randomly generated and printed, but its at the top of the
@@ -159,7 +161,7 @@ using the URL it provides.
 
 For example:
 
-```
+```bash
 git clone ssh://git@git.k3s.example.com:2222/root/test1.git
 ```
 

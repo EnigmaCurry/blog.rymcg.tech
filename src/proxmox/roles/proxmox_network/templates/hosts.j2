@@ -15,5 +15,5 @@ ff02::3 ip6-allhosts
 
 # Cluster IPs
 {% for host in groups['proxmox'] %}
-{{ hostvars[host].ansible_default_ipv4.address }} {{ host }} {{ host }}.{{ proxmox_domain }}
+{{ hostvars[host].ansible_default_ipv4.address }} {{ proxmox_master_node }} {{ proxmox_master_node }}.{{ proxmox_domain }}
 {% endfor  %}

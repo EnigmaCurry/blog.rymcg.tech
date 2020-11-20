@@ -3,8 +3,8 @@
   proxmox_kvm:
     api_user: "{{ proxmox_kvm_admin }}"
     api_password: "{{ proxmox_kvm_admin_password }}"
-    api_host: "{{ inventory_hostname }}"
-    node: "{{ host }}"
+    api_host: "{{ proxmox_master_node }}"
+    node: "{{ proxmox_master_node }}"
     vmid: "{{ id }}"
     state: current
   register: kvm_state
@@ -26,10 +26,10 @@
 #- debug: var="cipassword"
 
 
-- name: "Clone KVM template={{ template_id }} id={{ id }} host={{ host }}"
+- name: "Clone KVM template={{ template_id }} id={{ id }} host={{ proxmox_master_node }}"
   when: kvm_state.failed
   uri:
-    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ inventory_hostname }}/qemu/{{ template_id }}/clone"
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/nodes/{{ proxmox_master_node }}/qemu/{{ template_id }}/clone"
     method: POST
     validate_certs: "{{ proxmox_client_verify_ssl }}"
     body_format: form-urlencoded
@@ -39,7 +39,7 @@
     body:
       newid: "{{ id }}"
       name: "{{ name }}"
-      target: "{{ host }}"
+      target: "{{ proxmox_master_node }}"
 
 - name: "Wait for KVM clone..."
   when: kvm_state.failed
@@ -49,7 +49,7 @@
 - name: "Configure KVM id={{ id }} cloud_init"
   when: kvm_state.failed
   uri:
-    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/nodes/{{ proxmox_master_node }}/qemu/{{ id }}/config"
     method: PUT
     validate_certs: "{{ proxmox_client_verify_ssl }}"
     body_format: form-urlencoded
@@ -71,7 +71,7 @@
 - name: "Configure KVM id={{ id }} network"
   when: kvm_state.failed
   uri:
-    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/config"
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/nodes/{{ proxmox_master_node }}/qemu/{{ id }}/config"
     validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: PUT
     headers:
@@ -84,7 +84,7 @@
 - name: "Resize disk of KVM id={{ id }}"
   when: kvm_state.failed
   uri:
-    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/resize"
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/nodes/{{ proxmox_master_node }}/qemu/{{ id }}/resize"
     validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: PUT
     headers: 
@@ -98,7 +98,7 @@
 - name: "Set KVM id={{ id }} state={{state}}"
   when: "state == 'started'"
   uri:
-    url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ host }}/qemu/{{ id }}/status/start"
+    url: "https://{{ proxmox_master_node }}:8006/api2/json/nodes/{{ proxmox_master_node }}/qemu/{{ id }}/status/start"
     validate_certs: "{{ proxmox_client_verify_ssl }}"
     method: POST
     headers: 

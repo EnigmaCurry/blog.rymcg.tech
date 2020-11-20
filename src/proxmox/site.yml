@@ -30,7 +30,7 @@
   hosts: proxmox
   tasks:
     - uri:
-        url: "https://{{ inventory_hostname }}:8006/api2/json/access/ticket"
+        url: "https://{{ proxmox_master_node }}:8006/api2/json/access/ticket"
         method: POST
         validate_certs: "{{ proxmox_client_verify_ssl }}"
         body_format: form-urlencoded
@@ -39,7 +39,7 @@
           password: "{{ proxmox_root_password }}"
       register: proxmox_auth_token
   tags:
-    - ceph
+    - k3s
     - config
     - core
 
@@ -76,3 +76,18 @@
     - config
     - core
     - firewall
+
+- name: Create k3s Virtual Machines
+  hosts: proxmox
+  roles:
+    - kvm_k3s_vms
+  tags:
+    - config
+    - k3s
+
+- name: Install k3s master
+  hosts: k3s_master
+  roles:
+    - k3s_master
+  tags:
+    - k3s

@@ -15,7 +15,7 @@
 - set_fact:
     name: "{{ name | default(id_str) }}"
     template: "{{ template | default('ubuntu_focal') }}"
-    bridge: "vmbr0"
+    bridge: "{{ proxmox_trunk_interface }}"
     ip_address: "{{ proxmox_trunk_ip_prefix }}.{{ subnet_index }}.1{{ ip_index }}"
     gateway: "{{ proxmox_trunk_ip_prefix }}.{{ subnet_index }}.1"
     memory: "{{ proxmox_instance_sizes[size].ram * 1024 | int }}"
@@ -25,19 +25,13 @@
     cluster: true
 
 - name: Create KVM instance id={{ id }}
-  when: "inventory_hostname == proxmox_master_node"
   include_role:
     name: kvm_clone
 
-# - name: Firewall for KVM ip={{ ip_address }} on vmbr{{ vmbr_index }}
-#   when: "host == inventory_hostname"
-#   template:
-#     src: routes.sh.j2
-#     dest: /etc/firewall.d/kvm_{{ id }}.sh
-#     mode: 0700
-#   notify: restart firewall
+- name: Firewall for KVM ip={{ ip_address }} on {{ proxmox_trunk_interface }}
+  template:
+    src: routes.sh.j2
+    dest: /etc/firewall.d/kvm_{{ id }}.sh
+    mode: 0700
+  notify: restart firewall
 
-# - name: Route KVM ip={{ ip_address }} to public interface
-#   when: "host != inventory_hostname"
-#   command: ip route flush {{ ip_address }}/32
-#   changed_when: false
