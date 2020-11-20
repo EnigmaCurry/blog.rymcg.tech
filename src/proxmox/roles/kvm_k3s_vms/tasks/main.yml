@@ -1,4 +1,4 @@
-- name: k3s node 201
+- name: Create k3s node 201
   include_role:
     name: kvm_instance
   vars:
@@ -11,7 +11,7 @@
       root: 20G
     sshkeys: "{{ core_ssh_keys }}"
 
-- name: k3s node 202
+- name: Create k3s node 202
   include_role:
     name: kvm_instance
   vars:
@@ -24,7 +24,7 @@
       root: 20G
     sshkeys: "{{ core_ssh_keys }}"
 
-- name: k3s node 203
+- name: Create k3s node 203
   include_role:
     name: kvm_instance
   vars:

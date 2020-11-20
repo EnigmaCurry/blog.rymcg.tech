@@ -201,13 +201,13 @@ Here are the list of important files, that you (may) need to edit:
    configured SSH as per the above instructions, with the suggested aliases
    `proxmox1`, `k3s-201`, `k3s-202`, and `k3s-203`, then you can ignore this
    file.
-
- * [inventory/group_vars/proxmox/vault.yml](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/inventory/group_vars/proxmox/vault.yml) -
-   this is an encrypted configuration (vault), containing secrets, it will be
-   created next.
    
  * [roles/kvm_k3s_vms/tasks/main.yml](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/roles/kvm_k3s_vms/tasks/main.yml) -
    this is the role that sets up the VMs used for k3s.
+
+ * `inventory/group_vars/proxmox/vault.yml` - this is an encrypted configuration
+   (vault), containing secrets, it will be created in the next step.
+
 
 ## Create Ansible Vault (secrets)
 
@@ -233,12 +233,12 @@ vault_proxmox_kvm_admin: "root@pam"
 ## If kvm admin is root, use the same password as above:
 vault_proxmox_kvm_admin_password: "changeme"
 
-## Default VM SSH keys:
+## Default VM SSH keys (copy from your $HOME/.ssh/id_rsa.pub):
 vault_core_ssh_keys:
   - "ssh-rsa your-long-ssh-public-key-here"
   - "ssh-rsa your-second-long-ssh-public-key-here"
   
-## SSH host alias
+## SSH host alias (same name as configured in $HOME/.ssh/config)
 vault_proxmox_ansible_host: proxmox1
 ## Proxmox real server host name:
 vault_proxmox_master_node: pve-east-1
@@ -246,11 +246,11 @@ vault_proxmox_master_node: pve-east-1
 vault_proxmox_cluster: pve
 
 ## Network
-# domain without the hostname
+# domain without the hostname part
 vault_proxmox_domain: pve.rymcg.tech
 # primary public network interface name
 vault_proxmox_public_interface: eno1
-# VM bridge interface name (will be created)
+# private VM bridge interface name (will be created)
 vault_proxmox_trunk_interface: vmbr0
 # public ip address assigned to public interface
 vault_proxmox_master_ip: 192.0.2.2
@@ -258,11 +258,12 @@ vault_proxmox_public_netmask: 255.255.255.0
 vault_proxmox_public_gateway: 192.0.2.1
 # CIDR notated public network/mask
 vault_proxmox_public_network: 192.0.2.0/24
-# first two octets of the VM IP address space (/16 network)
+# first two octets of the private VM IP address space (/16 network)
 vault_proxmox_trunk_ip_prefix: 10.10
 
 ## Serve API to localhost only by default:
 vault_proxmox_external_client_subnets: []
+# no ssl verification is necessary when API is localhost only:
 vault_proxmox_client_verify_ssl: False
 ```
 
@@ -312,50 +313,35 @@ close the editor, and the vault will be safely re-encrypted.
 The network setup you did in the installer was only temporary, the ansible
 playbook sets up new networking.
 
-Each block of VMs has a /24 subnet (ID range 100 is 10.10.1.0/24, 200 is
-10.10.2.0/24, etc). VM IP addresses are assigned automatically (static) based
+Each block of VMs has a /24 subnet (ID range 100 is `10.10.1.0/24`, 200 is
+`10.10.2.0/24`, etc). VM IP addresses are assigned deterministicly (static) based
 upon the VM ID. For example:
 
- * VM ID 100 translates to the ip 10.10.1.100 (network 10.10.1.0/24)
- * VM ID 201 translates to the ip 10.10.2.101 (network 10.10.2.0/24)
- * VM ID 299 translates to the ip 10.10.2.199 (network 10.10.2.0/24)
- * VM ID 999 translates to the ip 10.10.9.199 (network 10.10.9.0/24)
+ * VM ID 100 translates to the ip `10.10.1.100` (network `10.10.1.0/24`)
+ * VM ID 201 translates to the ip `10.10.2.101` (network `10.10.2.0/24`)
+ * VM ID 299 translates to the ip `10.10.2.199` (network `10.10.2.0/24`)
+ * VM ID 999 translates to the ip `10.10.9.199` (network `10.10.9.0/24`)
 
 Note that last octet is never below 100 and never more than 199. (100 IPs. The
 rest of the IPs in each subnet are reserved.) The entire /16 subnet is assigned
-to the trunk interface (10.10.0.0 -> 10.10.255.255)
-
-Edit the file `inventory/host_vars/proxmox1/variables.yml`, review and change
-the following:
-
- * `proxmox_master_node` - the real hostname of the server
- * `proxmox_domain` - the domain name (without the hostname)
- * `proxmox_public_interface` - the public ethernet device name
- * `proxmox_master_ip` - the IP address assigned to the public interface
- * `proxmox_public_gateway` - the IP address of the public gateway
- * `proxmox_public_network` - the CIDR notated network/mask of the public network.
- * `proxmox_trunk_ip_prefix` - the first two octets of the private VM IP
-   addresses. Default is `10.10` for the address space `10.10.0.0` to
-   `10.10.255.255`.
- * `proxmox_instance_sizes` - names for variously sized VMs. These are loosely
-   based off of AWS instance sizes (eg `m1.large`, `c1.medium`). Each size
-   specifies the number of virtual CPUs and the amount of RAM. These are
-   completly configurable, so you can make up your own instance size
-   names/configs and add them to the list.
+to the trunk interface (`10.10.0.0` -> `10.10.255.255`). Note that the `10.10`
+prefix can be changed to something else in your vault configuration.
    
 ## k3s VM creation
 
 The `kvm_k3s_vms` role will create three Ubuntu 20.04 nodes for a k3s cluster.
-Look at `roles/kvm_k3s_vms/tasks/main.yml`, a VM is created declaratively by
-using this syntax (example of a single node):
+Look at
+[roles/kvm_k3s_vms/tasks/main.yml](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/roles/kvm_k3s_vms/tasks/main.yml),
+a VM is created declaratively by using this syntax (example of a single node
+creation):
 
 ```
-- name: k3s node 201
+- name: Create k3s node 201
   include_role:
     name: kvm_instance
   vars:
     id: 201
-    host: proxmox1
+    host: "{{ proxmox_master_node }}"
     user: root
     name: k3s-201
     size: m1.small
@@ -364,27 +350,40 @@ using this syntax (example of a single node):
     sshkeys: "{{ core_ssh_keys }}"
 ```
 
+This delegates to the `kvm_instance` role to do the actual instance creation,
+but also defines custom variables particular to the instance such as host name,
+volumes, and the instance size.
+
 Explanation of `vars`:
  
- * `id` The Proxmox VM ID - this is an integer that identifies the specific
+ * `id` - The Proxmox VM ID - this is an integer that identifies the specific
    Virtual Machine. Minimum ID is 100. As explained above, the VM ID directly
    corresponds to the IP address it will have. The ID `201` will have the IP
    address `10.10.2.101`.
- * `host` the SSH hostname of the proxmox server.
- * `user` the default username to create in the VM. This use will have `sudo`
-   privileges.
- * `name` the hostname of the VM.
- * `size` the size name as described in `proxmox_instance_sizes`, `m1.small`
+ * `host` - the hostname of the proxmox server, (`proxmox_master_node` set in
+   your vault).
+ * `user` - the default username to create in the VM. If not `root`, this user
+   will be granted `sudo` privileges.
+ * `name` - the hostname of the VM.
+ * `size` - the size name as described in `proxmox_instance_sizes`, `m1.small`
    gives you 2GB of RAM and 2 virtual CPUs.
- * `volumes` the names and sizes of all attached storage. You must set a `root`
+ * `volumes` - the names and sizes of all attached storage. You must set a `root`
    volume size.
- * `sshkeys` the list of SSH keys to install into the `user` account inside the
+ * `sshkeys` - the list of SSH keys to install into the `user` account inside the
    VM. Using the value `{{ core_ssh_keys }}` will install the default keys
    stored in the vault.
 
+Review the list of `proxmox_instance_sizes` in
+[inventory/group_vars/proxmox/variables.yml](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/inventory/group_vars/proxmox/variables.yml) -
+These names are loosely based off of AWS EC2 instance sizes (eg `m1.large`,
+`c1.medium`). Each size specifies the number of virtual CPUs and the amount of
+RAM to assign to the VM. These are completly configurable, so you can make up
+your own instance size names/configs and add them to the list.
+
+
 ## Run the playbook
 
-Once everything is configured, run the playbook to configure everything:
+Once everything is configured, run the playbook to setup everything:
 
 ```bash
 ansible-playbook site.yml
