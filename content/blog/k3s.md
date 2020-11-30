@@ -304,7 +304,7 @@ kubectl -n kube-system logs -f daemonset/traefik
    this is seemingly caused by deploying `whoami` too quickly after installing
    the Traefik CRDs, but the problem is easily solved by restarting traefik one
    time. Kubernetes has no concept of "restarting" a pod, so the appropriate way
-   to do is to delete the Pod, and have it automatically recreated by the
+   to do it is to delete the Pod, and have it automatically recreated by the
    DaemonSet:
    
    ```kubectl -n kube-system delete pod -l name=traefik-ingress-lb```
