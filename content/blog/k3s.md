@@ -104,8 +104,10 @@ as your workstation. `kubectl` is our local tool to access the cluster.
        
  * Install [k3sup](https://github.com/alexellis/k3sup) (a remote k3s installer tool) on your workstation:
  ```bash
- curl -sLS https://get.k3sup.dev | sh
- sudo install k3sup /usr/local/bin/
+   curl -sLSo /tmp/k3s_install.sh https://get.k3sup.dev
+ ```
+ ```bash
+   sudo sh /tmp/k3s_install.sh )
  ```
  
  * `k3sup` will install k3s on your droplet using the SSH key you defined during
@@ -122,8 +124,8 @@ as your workstation. `kubectl` is our local tool to access the cluster.
  ```bash
  mkdir -p ${HOME}/.kube && \
    read -p "Enter the droplet Floating IP address: " IP_ADDRESS && \
-   k3sup install --ip ${IP_ADDRESS} --k3s-extra-args '--no-deploy traefik' \
-       --local-path ${HOME}/.kube/config
+   k3sup install --ip ${IP_ADDRESS} --local-path ${HOME}/.kube/config \
+     --k3s-extra-args '--no-deploy traefik --no-flannel'
  ```
  * Test kubectl :
  
