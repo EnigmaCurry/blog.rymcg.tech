@@ -22,7 +22,9 @@ export WHOAMI_DOMAIN='whoami.k3s.example.com'
 ## render.sh functionality:
 ## Required env vars list enforced by render.sh
 ## Default template source directory, or http path:
-TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
+## TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
+TEMPLATE_SRC=$(pwd)
+
 ## YAML Template locations (can be file paths or https:// URLs)
 export TEMPLATES=(
     $TEMPLATE_SRC/traefik/traefik.crd.template.yaml

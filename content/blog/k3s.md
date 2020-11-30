@@ -12,7 +12,7 @@ tags: ['k3s', 'kubernetes']
    account.)
  * This can be used for small self-hosted apps and development purposes.
  * You will create an attached volume for pod storage.
- * You will set up a DigitalOcean firewall.
+ * You will setup a DigitalOcean firewall.
  * You will install [Traefik](https://traefik.io) (v2) as an ingress controller
    for your cluster. This allows you to expose your pods to the internet and
    automatically generate ACME (Let's Encrypt) certificates for TLS/SSL
@@ -104,17 +104,18 @@ as your workstation. `kubectl` is our local tool to access the cluster.
        
  * Install [k3sup](https://github.com/alexellis/k3sup) (a remote k3s installer tool) on your workstation:
  ```bash
-   curl -sLSo /tmp/k3s_install.sh https://get.k3sup.dev
+   curl -sLSo /tmp/k3sup_install.sh https://get.k3sup.dev
  ```
+ Examine `/tmp/k3sup_install.sh`, you can never be too careful when running scripts from the internet. Now run the k3sup installer as root:
  ```bash
-   sudo sh /tmp/k3s_install.sh )
+   sudo sh /tmp/k3sup_install.sh
  ```
  
- * `k3sup` will install k3s on your droplet using the SSH key you defined during
-   droplet creation. `k3sup` will also take care of installing another key file
-   required for `kubectl` to access your cluster. That key is created locally in
-   your `${HOME}/.kube` directory, which you must keep safe, as it provides full
-   access to your cluster.
+ * `k3sup` can install k3s on your droplet, **from your workstation**, using the
+   SSH key you defined during droplet creation. `k3sup` will also take care of
+   installing another key file required for `kubectl` to access your cluster.
+   That key is created locally in your `${HOME}/.kube` directory, which you must
+   keep safe, as it provides full access to your remote cluster.
 
 ## Create the cluster
 
@@ -149,27 +150,41 @@ as your workstation. `kubectl` is our local tool to access the cluster.
  ```bash
  kubectl -n local-path-storage get pod
  ```
- 
+
+## Download YAML templates
+
+The necessary YAML templates are contained in a git mono-repo, which holds all
+of the files for this entire blog. The k3s related files are all in a
+sub-directory called
+[src/k3s](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s).
+Clone this repository to your workstation:
+
+```bash
+UPSTREAM=${HOME}/git/vendor/enigmacurry/blog.rymcg.tech
+git clone https://github.com/EnigmaCurry/blog.rymcg.tech.git ${UPSTREAM}
+cd ${UPSTREAM}/src/k3s
+```
+
+You should copy these files to your own repository, here's how to create the new
+repository:
+
+```bash
+NEW_K3S=${HOME}/git/k3s
+mkdir -p ${NEW_K3S}
+cp -a ${UPSTREAM}/src/k3s/* ${NEW_K3S}
+cd ${NEW_K3S}
+git init
+echo "Git repo initialized in ${NEW_K3S}"
+```
+
+As you make changes to these files, make sure to commit and then push them to
+your own private git host. These is *your* cluster config now.
+
 ## Deploy Traefik on k3s
 
-On your workstation, create a new directory (anywhere) to store the YAML files
-for this deployment.
-
-```bash
-DIR=${HOME}/git/k3s
-mkdir -p ${DIR}
-cd ${DIR}
-```
-
-Download the [environment file
-template](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/traefik/env.sh):
-
-```bash
-curl -Lo traefik_env.sh https://git.io/JTpBp
-```
-
-Edit the file `traefik_env.sh` and change the variables according to your own
-environment. Required parameters to change: `ACME_EMAIL`, `ACME_SERVER`, `WHOAMI_DOMAIN`
+Edit the file `traefik/env.sh` and change the variables according to your own
+environment. Required parameters to change: `ACME_EMAIL`, `ACME_SERVER`,
+`WHOAMI_DOMAIN`
 
  * `ACME_EMAIL` is required, it is your personal/work email address that you
    will be sending to Let's Encrypt. You will get emails every 3 months when
@@ -195,21 +210,12 @@ environment. Required parameters to change: `ACME_EMAIL`, `ACME_SERVER`, `WHOAMI
    create `WHOAMI_DOMAIN` as a subdomain of this, for example
    `whoami.k3s.example.com`
 
-You can find all of the [prepared YAML templates in the git repostory for this
-website](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s).
-Use this bash script to automate the download and rendering of these templates:
+Execute the `render.sh` script in order to produce the final kubernetes manifest
+YAML files, which will replace variables found in the templates with the values
+specified in the `traefik/env.sh`. Run:
 
 ```bash
-curl -Lo render.sh https://git.io/JTQG5
-chmod 0755 render.sh
-```
-
-Execute the `render.sh` script in order to: download the YAML templates, replace
-variables in the templates from your `traefik_env.sh`, and produce the final kubernetes
-manifest YAML files. Run:
-
-```bash
-./render.sh traefik_env.sh
+./render.sh traefik/env.sh
 ```
 
 You should now have a number of new YAML files rendered and ready to apply to
@@ -277,7 +283,7 @@ the Common Name (CN) is listed as `Fake LE Intermediate X1` which is the name
 that the Let's Encrypt service (`LE`) assigns it. It could also say ```TRAEFIK
 DEFAULT CERT```. If it says this, then wait a few minutes, and it might still
 change, but if it persists, then something has gone wrong with the ACME process.
-Double check your `traefik_env.sh` and check the traefik logs (see next section). As
+Double check your `traefik/env.sh` and check the traefik logs (see next section). As
 long as it says `Fake LE Intermediate X1` you can assume that everything would
 work correctly if you were to move to the production `ACME_SERVER`.
 
@@ -296,7 +302,7 @@ kubectl -n kube-system logs -f daemonset/traefik
 
 To change settings, you go through the same process again. For example, if you
 wish to update `ACME_SERVER` from the staging to the production URL:
- * Edit `traefik_env.sh` and update `ACME_SERVER` to:
+ * Edit `traefik/env.sh` and update `ACME_SERVER` to:
    * `https://acme-v02.api.letsencrypt.org/directory`
  * Delete the existing `traefik.yaml`
  * Re-run `./render.sh` to make the new `traefik.yaml`

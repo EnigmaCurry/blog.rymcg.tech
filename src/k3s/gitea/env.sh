@@ -64,7 +64,9 @@ if [[ ! -f gitea.sealed_secret.yaml ]]; then
 fi
 
 ## Default template source directory, or http path:
-TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
+## TEMPLATE_SRC=${TEMPLATE_SRC:-https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s}
+TEMPLATE_SRC=$(pwd)
+
 ## YAML Template locations (can be file paths or https:// URLs)
 export TEMPLATES=(
     $TEMPLATE_SRC/gitea/gitea.postgres.pvc.template.yaml

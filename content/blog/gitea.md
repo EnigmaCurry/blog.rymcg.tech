@@ -54,14 +54,7 @@ kubectl -n kube-system get deployment -l name=sealed-secrets-controller
 
 ## Config
 
-Download the prepared [environment file for
-gitea](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/k3s/gitea/env.sh):
-
-```bash
-curl -Lo gitea_env.sh https://git.io/JkkyV
-```
-
-Edit the `gitea_env.sh` file, review and change the following environment variables:
+Edit the `gitea/env.sh` file, review and change the following environment variables:
 
  * `DOMAIN` - the subdomain to serve gitea
  * `APP_NAME` - the human friendly name of the gitea service
@@ -80,7 +73,7 @@ can verify them.
 Render the templates:
 
 ```bash
-./render.sh gitea_env.sh
+./render.sh gitea/env.sh
 ```
 
 Wait a minute for the gitea tokens/keys to generate (behind the scenes, this

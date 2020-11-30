@@ -1,6 +1,6 @@
-# k3s blog
+# k3s YAML templates
 
-These are the kubernetes resources from [my blog posts about
+These are the kubernetes resources from [EnigmaCurry's blog posts about
 k3s](https://blog.rymcg.tech/tags/k3s/)
 
 ## Features
