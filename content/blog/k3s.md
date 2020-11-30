@@ -127,7 +127,7 @@ as your workstation. `kubectl` is our local tool to access the cluster.
  mkdir -p ${HOME}/.kube && \
    read -p "Enter the droplet Floating IP address: " IP_ADDRESS && \
    k3sup install --ip ${IP_ADDRESS} --local-path ${HOME}/.kube/config \
-     --k3s-extra-args '--no-deploy traefik --no-flannel'
+     --k3s-extra-args '--no-deploy traefik'
  ```
  * Test kubectl :
  
