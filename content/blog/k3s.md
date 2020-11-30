@@ -178,7 +178,7 @@ echo "Git repo initialized in ${NEW_K3S}"
 ```
 
 As you make changes to these files, make sure to commit and then push them to
-your own private git host. These is *your* cluster config now.
+your own private git host. This is *your* cluster config now.
 
 ## Deploy Traefik on k3s
 
