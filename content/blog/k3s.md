@@ -218,8 +218,14 @@ them with `kubectl`:
 kubectl apply -f traefik.crd.yaml \
               -f traefik.rbac.yaml \
               -f traefik.pvc.yaml \
-              -f traefik.yaml \
-              -f whoami.yaml
+              -f traefik.yaml
+```
+
+Create the whoami service separately, as it depends on the Traefik CRD to exist
+first:
+
+```
+kubectl apply -f whoami.yaml
 ```
 
 Keep these files safe, a private git repository is recommended! You can use them
