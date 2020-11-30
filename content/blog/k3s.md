@@ -298,6 +298,16 @@ kubectl -n kube-system logs -f daemonset/traefik
 ```
 (Press Ctrl-C anytime to quit monitoring the logs)
 
+## Common errors
+
+ * `Error while building TraefikService: subset not found for default/whoami` -
+   this is seemingly caused by deploying `whoami` too quickly after installing
+   the Traefik CRDs, but the problem is easily solved by restarting traefik one
+   time. Kubernetes has no concept of "restarting" a pod, so the appropriate way
+   to do is to delete the Pod, and have it automatically recreated by the
+   DaemonSet:
+   
+   ```kubectl -n kube-system delete pod -l name=traefik-ingress-lb```
 
 ## Changing parameters and redeploying
 
