@@ -56,8 +56,9 @@ about high availability (multi-node redundancy.)
    apt-get update -y
    apt-get install -y curl
    ```
- * Assign your ssh key
- * Confirm details and create the droplet.
+ * Assign your workstation's ssh client key to the droplet, to allow remote
+   management.
+ * Confirm the details and finalize the droplet creation.
  * From the DigitalOcean platform, [create a
    firewall](https://cloud.digitalocean.com/droplets/new):
  
