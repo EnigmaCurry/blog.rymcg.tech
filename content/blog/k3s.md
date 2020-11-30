@@ -105,7 +105,7 @@ as your workstation. `kubectl` is our local tool to access the cluster.
        
  * Install [k3sup](https://github.com/alexellis/k3sup) (a remote k3s installer tool) on your workstation:
  ```bash
-   curl -sLSo /tmp/k3sup_install.sh https://get.k3sup.dev
+   curl -Lo /tmp/k3sup_install.sh https://get.k3sup.dev
  ```
  Examine `/tmp/k3sup_install.sh`, you can never be too careful when running scripts from the internet. Now run the k3sup installer as root:
  ```bash
