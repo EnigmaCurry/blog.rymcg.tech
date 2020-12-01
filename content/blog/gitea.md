@@ -185,7 +185,7 @@ Go to the gitea repository settings, go to `Git Hooks`, edit the hook called
 
 ```bash
 #!/bin/bash
-MIRROR_REPO="git@github.com:EnigmaCurry/barrel-k3s.git"
+MIRROR_REPO="git@github.com:GITHUB_USERNAME/GITHUB_REPO_NAME.git"
 KNOWNHOSTS=$(mktemp)
 
 ## Public known ssh key for github:
@@ -193,11 +193,11 @@ cat <<'EOF' > ${KNOWNHOSTS}
 github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
 EOF
 
-## Deploy key for remote mirror:
+## Private ssh deploy key for remote mirror:
 KEYFILE=$(mktemp)
 cat <<'EOF' > ${KEYFILE}
 -----BEGIN OPENSSH PRIVATE KEY-----
-YOUR SSH KEY GOES HERE
+YOUR DEPLOY KEY GOES HERE
 -----END OPENSSH PRIVATE KEY-----
 EOF
 
@@ -209,7 +209,10 @@ rm ${KEYFILE}
 
 You need to change `MIRROR_REPO` to be the git SSH URL for the remote github
 repository. Also change the SSH key (starting with `----BEGIN OPENSSH PRIVATE
-KEY` and END) to the contents of the file just created `gitea_rsa`.
+KEY` and END) to the contents of the file just created `gitea_rsa`. (Make sure
+you don't delete the lines that say `EOF`, put your text on the lines before it,
+if you're unfamiliar, this is called a bash
+[HEREDOC](https://tldp.org/LDP/abs/html/here-docs.html).)
 
 Save the Git Hook. Now when you push to this repository, it will automatically
 be pushed to the mirror as well.
