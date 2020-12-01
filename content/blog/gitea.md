@@ -213,3 +213,9 @@ KEY` and END) to the contents of the file just created `gitea_rsa`.
 
 Save the Git Hook. Now when you push to this repository, it will automatically
 be pushed to the mirror as well.
+
+Delete the temporary ssh key from your workstation:
+
+```bash
+rm gitea_rsa gitea_rsa.pub
+```
