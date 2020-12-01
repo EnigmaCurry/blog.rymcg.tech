@@ -12,7 +12,6 @@ tags: ['k3s', 'kubernetes']
    account.)
  * This can be used for small self-hosted apps and development purposes.
  * You will create an attached volume for pod storage.
- * You will setup a DigitalOcean firewall.
  * You will install [Traefik](https://traefik.io) (v2) as an ingress controller
    for your cluster. This allows you to expose your pods to the internet and
    automatically generate ACME (Let's Encrypt) certificates for TLS/SSL
@@ -54,28 +53,24 @@ about high availability (multi-node redundancy.)
         "ext4 defaults,nofail,discard 0 0" | sudo tee -a /etc/fstab
    mount ${VOLUME}
    apt-get update -y
-   apt-get install -y curl
+   apt-get install -y curl ufw
+   ufw allow 22/tcp
+   ufw allow 80/tcp
+   ufw allow 443/tcp
+   ufw allow 6443/tcp
+   ufw allow 2222/tcp
+   ufw enable
+   systemctl enable --now ufw
    ```
+ * This script includes initial firewall (`ufw`) rules for ports:
+   * 22 (ssh)
+   * 80 (http)
+   * 443 (https)
+   * 6443 (kubenetes API)
+   * 2222 (gitea SSH; see the [next post]((/blog/gitea/))
  * Assign your workstation's ssh client key to the droplet, to allow remote
    management.
  * Confirm the details and finalize the droplet creation.
- * From the DigitalOcean platform, [create a
-   firewall](https://cloud.digitalocean.com/droplets/new):
- 
-   * Give it a name, maybe `k3s`
- 
-   * Open TCP port 22 for SSH
-   
-   * Open TCP port 80 for unencrypted HTTP
-   
-   * Open TCP port 443 for TLS encrypted HTTPS
-   
-   * Open TCP port 6443 for Kubernetes (kubectl) access
-   
-   * **Apply the firewall to your droplet or tag.**
-   
-   * From the droplet page, under `Networking` you can confirm that the firewall
-     rules are applied to the droplet.
    
  * Assign a [floating IP
    address](https://cloud.digitalocean.com/networking/floating_ips)
