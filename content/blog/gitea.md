@@ -63,6 +63,10 @@ Edit the `gitea/env.sh` file, review and change the following environment variab
  * `REQUIRE_SIGNIN_VIEW` - if set `true` then no public access is allowed
    without signing in.
  * `PVC_SIZE` - the storage volume size for all of the git repositories.
+ * `DISABLE_GIT_HOOKS` - If set `false`, any user with Admin or Git Hooks
+   permission can create git hooks. Git hooks are able to modify the container
+   with root permissions, so you must trust all users that you give this
+   permission. Set to `true` to completetly disable git hooks.
 
 The variables `POSTGRES_USER`, `POSTGRES_PASSWORD`, `INTERNAL_TOKEN`,
 `JWT_SECRET`, and `SECRET_KEY` are all secret values and are *generated
