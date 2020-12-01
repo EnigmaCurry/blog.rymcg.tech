@@ -64,9 +64,9 @@ Edit the `gitea/env.sh` file, review and change the following environment variab
    without signing in.
  * `PVC_SIZE` - the storage volume size for all of the git repositories.
  * `DISABLE_GIT_HOOKS` - If set `false`, any user with Admin or Git Hooks
-   permission can create git hooks. Git hooks are able to modify the container
-   with root permissions, so you must trust all users that you give this
-   permission. Set to `true` to completetly disable git hooks.
+   permission can create git hooks. Git hooks run with admin privileges, so you
+   must trust all users that you give this permission to. Set to `true` to
+   completetly disable git hooks.
 
 The variables `POSTGRES_USER`, `POSTGRES_PASSWORD`, `INTERNAL_TOKEN`,
 `JWT_SECRET`, and `SECRET_KEY` are all secret values and are *generated
@@ -163,3 +163,53 @@ git clone ssh://git@git.k3s.example.com:2222/root/test1.git
 ```
 
 SSH is forwarded through Traefik.
+
+## Mirror repositories to GitHub or elsewhere
+
+You can mirror your gitea repositories to another git host, like GitHub. This
+has to be setup seperately for each repository you wish to mirror.
+
+Create a new SSH key to use as a deploy key:
+
+```bash
+ssh-keygen -f gitea_rsa
+```
+
+Do not enter a passphrase, it must be an unencrypted SSH key.
+
+Create a new repository on GitHub. Go to the settings, then `Deploy keys` and
+add the new key contained in the file just created called `gitea_rsa.pub`
+
+Go to the gitea repository settings, go to `Git Hooks`, edit the hook called
+`post-receive` and enter this script:
+
+```bash
+#!/bin/bash
+MIRROR_REPO="git@github.com:EnigmaCurry/barrel-k3s.git"
+KNOWNHOSTS=$(mktemp)
+
+## Public known ssh key for github:
+cat <<'EOF' > ${KNOWNHOSTS}
+github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+EOF
+
+## Deploy key for remote mirror:
+KEYFILE=$(mktemp)
+cat <<'EOF' > ${KEYFILE}
+-----BEGIN OPENSSH PRIVATE KEY-----
+YOUR SSH KEY GOES HERE
+-----END OPENSSH PRIVATE KEY-----
+EOF
+
+## Push changes to mirror using deploy key and known hosts file:
+GIT_SSH_COMMAND="/usr/bin/ssh -i ${KEYFILE} -o UserKnownHostsFile=${KNOWNHOSTS}" git push --mirror ${MIRROR_REPO}
+rm ${KNOWNHOSTS}
+rm ${KEYFILE}
+```
+
+You need to change `MIRROR_REPO` to be the git SSH URL for the remote github
+repository. Also change the SSH key (starting with `----BEGIN OPENSSH PRIVATE
+KEY` and END) to the contents of the file just created `gitea_rsa`.
+
+Save the Git Hook. Now when you push to this repository, it will automatically
+be pushed to the mirror as well.
