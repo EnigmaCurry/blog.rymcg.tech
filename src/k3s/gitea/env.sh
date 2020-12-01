@@ -1,7 +1,8 @@
 ### gitea environment
 ## ALL_VARS is the names of all of variables passed to the templates:
 export ALL_VARS=(IMAGE PVC_SIZE POSTGRES_PVC_SIZE DOMAIN APP_NAME SSH_PORT \
-                 DISABLE_REGISTRATION REQUIRE_SIGNIN_VIEW START_SSH_SERVER)
+                 DISABLE_REGISTRATION DISABLE_GIT_HOOKS REQUIRE_SIGNIN_VIEW \
+                 START_SSH_SERVER)
 
 ## All secrets are input at *render* time, and made into sealed secret(s).
 export SECRET="gitea"
@@ -23,6 +24,8 @@ export START_SSH_SERVER="true"
 export SSH_PORT="2222"
 ## Enable or disable registration:
 export DISABLE_REGISTRATION="true"
+## Allow git hooks for users with Git Hooks permission.
+export DISABLE_GIT_HOOKS="false"
 ## Require sign-in
 export REQUIRE_SIGNIN_VIEW="true"
 ## Size of data volume:
