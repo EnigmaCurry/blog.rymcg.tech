@@ -3,6 +3,7 @@ title: "k3s part3: Container Registry"
 url: "blog/registry"
 date: 2020-12-01T13:32:03-07:00
 tags: ['k3s', 'kubernetes']
+draft: true
 ---
 
 ## Links
