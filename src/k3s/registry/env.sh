@@ -1,6 +1,6 @@
 ### gitea environment
 ## ALL_VARS is the names of all of variables passed to the templates:
-export ALL_VARS=(IMAGE)
+export ALL_VARS=(IMAGE HTPASSWD_REALM)
 
 export IMAGE=registry:2
 
@@ -9,8 +9,11 @@ export SECRET="registry"
 ## List of the *names* of all of the secret variables to ask for:
 ## Variables not defined are interactively asked for.
 ## Variables that are defined, are used as-is.
-export ALL_SECRETS=(HTPASSWD)
+export ALL_SECRETS=(HTPASSWD HA_SHARED_SECRET S3_ACCESS_KEY S3_SECRET_KEY \
+                    S3_REGION S3_ENDPOINT S3_BUCKET)
 
+## Basic Auth Realm:
+export HTPASSWD_REALM="Registry Realm"
 
 ## Generate passwords:
 if [[ ! -f registry.sealed_secret.yaml ]]; then
@@ -21,6 +24,9 @@ if [[ ! -f registry.sealed_secret.yaml ]]; then
         echo "Error generating HTPASSWD"
         exit 1
     fi
+
+    export HA_SHARED_SECRET=$(head -c 16 /dev/urandom | shasum | cut -d " " -f 1)
+
 fi
 
 ## Default template source directory, or http path:
@@ -29,6 +35,7 @@ TEMPLATE_SRC=$(pwd)
 
 ## YAML Template locations (can be file paths or https:// URLs)
 export TEMPLATES=(
+    $TEMPLATE_SRC/registry/registry.configmap.template.yaml
     $TEMPLATE_SRC/registry/registry.template.yaml
 )
 ## Secret Templates
