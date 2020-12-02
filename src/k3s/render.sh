@@ -122,11 +122,25 @@ render_secrets() {
     echo "OK: Rendered sealed secret: $SEALED_SECRET"
 }
 
+ask_vars() {
+    for var in "${ALL_VARS[@]}"; do
+        value=${!var}
+        if [[ -n $value ]]; then
+            echo "OK: Using variable $var from environment: $value"
+        else
+            read -p "INPUT: Enter value called $var: " value
+        fi
+        declare -g "${var}"="${value}"
+        export "${var}"
+        TEMPLATE_VARS=$TEMPLATE_VARS"\$$var"
+    done
+}
+
 ask_secrets() {
     for var in "${ALL_SECRETS[@]}"; do
         secret_value=${!var}
         if [[ -n $secret_value ]]; then
-            echo "OK: Using secret $var from environment : $secret_value"
+            echo "OK: Using secret $var from environment: $secret_value"
         else
             read -p "INPUT: Enter secret called $var: " secret_value
         fi
@@ -148,6 +162,7 @@ main() {
         exit 1
     fi
     source $1
+    ask_vars
     check_env
     if [[ ! -f $SECRET.sealed_secret.yaml && -n $SECRET && -n $ALL_SECRETS ]]; then
         TEMPLATES=( ${TEMPLATES[*]} ${SECRET_TEMPLATES[*]} )
