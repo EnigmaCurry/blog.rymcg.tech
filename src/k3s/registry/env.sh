@@ -1,32 +1,34 @@
-### gitea environment
+### registry env
+source util.sh
+
+## Lists of template variable names.
+## Unspecified/commented vars from these lists, will be queried for input during render.
 ## ALL_VARS is the names of all of variables passed to the templates:
-export ALL_VARS=(IMAGE HTPASSWD_REALM)
-
-export IMAGE=registry:2
-
-## All secrets are input at *render* time, and made into sealed secret(s).
+## ALL_SECRETS is the names of the variables to store in sealed secret:
+export ALL_VARS=(IMAGE DOMAIN HTPASSWD_REALM)
+export ALL_SECRETS=(ADMIN_USER ADMIN_PASSWORD HTPASSWD HA_SHARED_SECRET \
+                    S3_ACCESS_KEY S3_SECRET_KEY S3_REGION S3_ENDPOINT S3_BUCKET)
+## The object name for the secret:
 export SECRET="registry"
-## List of the *names* of all of the secret variables to ask for:
-## Variables not defined are interactively asked for.
-## Variables that are defined, are used as-is.
-export ALL_SECRETS=(HTPASSWD HA_SHARED_SECRET S3_ACCESS_KEY S3_SECRET_KEY \
-                    S3_REGION S3_ENDPOINT S3_BUCKET)
+
+
+## set vars, any vars commented out are interactivly input during render script.
+export IMAGE=registry:2
+#export DOMAIN=registry.k3s.example.com
+export ADMIN_USER=admin
 
 ## Basic Auth Realm:
 export HTPASSWD_REALM="Registry Realm"
 
 ## Generate passwords:
 if [[ ! -f registry.sealed_secret.yaml ]]; then
-    SHA=$(head -c 16 /dev/urandom | shasum | cut -d " " -f 1)
-    echo "Generated password (save this): ${SHA}"
-    export HTPASSWD=$(kubectl run --quiet -i --rm --tty htpasswd-gen-$RANDOM --image=alpine --restart=Never -- /bin/sh -c "apk add --no-cache apache2-utils &> /dev/null && htpasswd -Bbn admin ${SHA} | head -n 1 2> /dev/null")
-    if [[ $(echo $HTPASSWD | wc -c) -lt 50 ]]; then
-        echo "Error generating HTPASSWD"
-        exit 1
-    fi
+    ADMIN_PASSWORD=$(gen_password)
+    echo "OK: Generated password for ${ADMIN_USER}: ${ADMIN_PASSWORD}"
+    export HTPASSWD=$(htpasswd ${ADMIN_USER} ${ADMIN_PASSWORD})
+    check_length 50 HTPASSWD
 
-    export HA_SHARED_SECRET=$(head -c 16 /dev/urandom | shasum | cut -d " " -f 1)
-
+    export HA_SHARED_SECRET=$(gen_password)
+    check_length 50 HA_SHARED_SECRET
 fi
 
 ## Default template source directory, or http path:
@@ -37,6 +39,7 @@ TEMPLATE_SRC=$(pwd)
 export TEMPLATES=(
     $TEMPLATE_SRC/registry/registry.configmap.template.yaml
     $TEMPLATE_SRC/registry/registry.template.yaml
+    $TEMPLATE_SRC/registry/registry.ingress.template.yaml
 )
 ## Secret Templates
 export SECRET_TEMPLATES=()
