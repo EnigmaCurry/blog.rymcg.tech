@@ -36,7 +36,7 @@ export POSTGRES_PVC_SIZE=5Gi
 export POSTGRES_USER=gitea
 
 ## Generate tokens/keys:
-if [[ ! -f gitea.sealed_secret.yaml ]]; then
+if [[ ! -f ${SECRET}.sealed_secret.yaml ]]; then
     export POSTGRES_PASSWORD=$(tr -dc '[:alnum:]' < /dev/urandom | dd bs=4 count=8 2>/dev/null)
     echo "Generating gitea tokens/keys ... "
     ## INTERNAL_TOKEN is a "Secret used to validate communication within Gitea binary"

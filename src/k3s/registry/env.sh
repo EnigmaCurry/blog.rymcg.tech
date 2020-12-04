@@ -21,7 +21,7 @@ export ADMIN_USER=admin
 export HTPASSWD_REALM="Registry Realm"
 
 ## Generate passwords:
-if [[ ! -f registry.sealed_secret.yaml ]]; then
+if [[ ! -f ${SECRET}.sealed_secret.yaml ]]; then
     ADMIN_PASSWORD=$(gen_password)
     echo "OK: Generated password for ${ADMIN_USER}: ${ADMIN_PASSWORD}"
     export HTPASSWD=$(htpasswd ${ADMIN_USER} ${ADMIN_PASSWORD})
