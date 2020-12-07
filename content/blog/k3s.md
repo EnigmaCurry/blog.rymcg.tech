@@ -124,6 +124,11 @@ as your workstation. `kubectl` is our local tool to access the cluster.
    k3sup install --ip ${IP_ADDRESS} --local-path ${HOME}/.kube/config \
      --k3s-extra-args '--no-deploy traefik'
  ```
+ 
+   k3s is now installed without the default traefik (v1) instance
+   (`--no-deploy-traefik`) that normally comes preinstalled on k3s. In the
+   following steps, the latest v2 version of Traefik will be installed instead.
+ 
  * Test kubectl :
  
  ```bash
