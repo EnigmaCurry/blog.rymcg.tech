@@ -27,6 +27,8 @@ params:
   progressively: true
   #flattr: '?'
   github: 'enigmacurry'
+  matrix: '@enigmacurry:enigmacurry.com'
+  matrix_room: '#blog-rymcg-tech:enigmacurry.com'
   #gitlab: '?'
   #linkedin: '?'
   #telegram: '?'

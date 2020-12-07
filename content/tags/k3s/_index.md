@@ -22,3 +22,7 @@ will precede it, allowing you to customize the variable before its used in the
 following command(s).
 
 Each post builds upon the next, so you should start with part 1.
+
+You can discuss this blog on matrix:
+[#blog-rymcg-tech:enigmacurry.com](https://matrix.to/#/%23blog-rymcg-tech%3aenigmacurry.com).
+Or you can [email me](mailto:ryan@rymcg.tech).
