@@ -3,20 +3,25 @@ title: "k3s part 4: Drone - Continuous Integration (CI)"
 url: "blog/drone"
 date: 2020-12-04T13:32:03-07:00
 tags: ['k3s', 'kubernetes']
-draft: true
 ---
 
 ## Abstract
 
  * This is part 4 of the [k3s](/tags/k3s/) series. 
- * You will install [drone](https://www.drone.io/), a self-hosted Continuous
-   Integration platform.
+ * You will install [Drone](https://www.drone.io/), a self-hosted Continuous
+   Integration platform. Drone is the self-hosted equivalent of GitHub Actions,
+   or Travis CI, or similar.
  * Drone will connect to gitea to run jobs in response to changes made to git
    repositories.
- * You will setup a job runner in order to build a container image, from a
-   Dockerfile, whenever the file changes in git, and push the image to your
-   container registry.
+ * You will create a simple job runner that executes job pipelines directly
+   inside k3s pods.
+ * You will configure Drone to also create on-demand DigitalOcean droplets, in
+   order to run build pipelines for things not compatible with containers (like
+   making container images).
+ * You will make a pipeline to build a container image, from a Dockerfile, on
+   `git push`, and upload the image to your private container registry.
 
+   
 ## Prerequisites
 
 Make sure you have followed [part 1](/blog/k3s) and have your terminal open to
@@ -122,7 +127,11 @@ Render the templates:
 Enter all the requested information, including the Client ID and Client Secret
 from the OAuth2 app inside gitea.
 
-This creates new yaml and the sealed_secret.
+This creates new yaml and the sealed_secret. In the output copy the value for
+`SSH_PUBLIC_KEY`. In the DigitalOcean console, go to
+[Settings->Security](https://cloud.digitalocean.com/account/security) and click
+`Add SSH Key`. Paste the value from the generated `SSH_PUBLIC_KEY` from the
+render.sh output. Give the SSH key a name, ie. the full drone instance URL.
 
 ## Apply the YAML
 
@@ -155,10 +164,11 @@ List all of the pods, and check they have started
 kubectl -n drone get pods
 ```
 
-If there are any not starting describe them to see the error message:
+If there are any that are not starting, use `kubectl describe` to see the error
+message:
 
 ```bash
-kubectl -n drone describe pod NAME
+kubectl -n drone describe pod POD_NAME
 ```
 
 If everything started, go to the URL for drone, `https://drone.k3s.example.com`
@@ -168,7 +178,7 @@ redirected back to drone and you are now logged in as your gitea user.
 
 ## Create a simple Job Pipeline
 
-Create a new repository
+Create a new repository, using gitea.
  
  * Go to your gitea instance, and click the `+` icon, and `New Repository`, type
    a name `test-drone` and click `Create Repository`. Make a note of the SSH
@@ -184,7 +194,8 @@ git clone ssh://git@git.k3s.example.com:2222/user/test-drone.git ${DIR}
 cd ${DIR}
 ```
 
-Create new file `.drone.yml`, put this yaml inside:
+Create a new file called `.drone.yml` (Note that the preceding `.` means it is a
+hidden file, listable via `ls -la`.). Put this yaml inside:
 
 ```yaml
 kind: pipeline
@@ -198,6 +209,9 @@ steps:
   - echo hello world
   - echo bye
 ```
+
+Note the `type: kubernetes`, this means that the pipeline will run directly on
+the cluster, as a pod.
 
 Add, Commit, and Push the change to the gitea repository:
 
@@ -232,18 +246,12 @@ Edit the `.drone.yml` and add the following to the end:
 
 ```yaml
 ---
-kind: secret
-name: digitalocean_api_key
-get:
-  path: drone
-  name: DIGITALOCEAN_API_TOKEN
----
 kind: pipeline
 type: digitalocean
 name: digitalocean-docker-builder
 
 token:
-  from_secret: digitalocean_api_key
+  from_secret: digitalocean_api_token
 
 server:
   image: docker-18-04
@@ -253,8 +261,53 @@ server:
 steps:
 - name: build
   commands:
-  - docker build -t ${REGISTRY_DOMAIN}/enigmacurry/hello-world .
-  - docker run ${REGISTRY_DOMAIN}/enigmacurry/hello-world
+  - docker build -t $REGISTRY_DOMAIN/enigmacurry/hello-world .
+  - docker run $REGISTRY_DOMAIN/enigmacurry/hello-world
+  - docker login --username $REGISTRY_USER --password $REGISTRY_PASSWORD $REGISTRY_DOMAIN
+  - docker push $REGISTRY_DOMAIN/enigmacurry/hello-world
+  environment:
+    REGISTRY_DOMAIN:
+      from_secret: registry_domain
+    REGISTRY_USER:
+      from_secret: registry_user
+    REGISTRY_PASSWORD:
+      from_secret: registry_password
+---
+kind: secret
+name: digitalocean_api_token
+get:
+  path: drone
+  name: DIGITALOCEAN_API_TOKEN
+---
+kind: secret
+name: registry_domain
+get:
+  path: drone
+  name: REGISTRY_DOMAIN
+---
+kind: secret
+name: registry_user
+get:
+  path: drone
+  name: REGISTRY_USER
+---
+kind: secret
+name: registry_password
+get:
+  path: drone
+  name: REGISTRY_PASSWORD
 ```
 
+Note the `type: digitalocean`, this pipeline will spawn a new DigitalOcean
+droplet and run the entire pipeline on the droplet, and then destroy the
+droplet.
+
 Commit both files to git and push the changes to the gitea remote.
+
+Check the output of the job for any errors. Your image should now be pushed to
+the registry, test it by running:
+
+```bash
+podman run --rm -it registry.k3s.example.com/enigmacurry/hello-world
+```
+
