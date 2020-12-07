@@ -86,7 +86,10 @@ to regenerate it.
 
 ## Create Gitea OAuth2 app
 
- * Go to your personal settings page in gitea.
+Drone needs to authenticate with Gitea, using OAuth2. Create the OAuth2 app in
+the Gitea settings:
+
+ * Go to your personal settings page in Gitea.
  * Click `Applications`
  * Find `Create a new OAuth2 Application`
  * Enter the `Application Name` (`drone`)
