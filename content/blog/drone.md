@@ -107,7 +107,7 @@ you don't need to edit anything if you just want to be asked by render.sh.
  * `PVC_SIZE` - the size of the data volume for drone. I don't really know what
    the appropriate size is for this yet, I have defaulted it to `10Gi`.
  * `DRONE_GITEA_SERVER` - this should be the full gitea service URL (starting
-   with `https://`) (eg. `https://gitea.k3s.example.com`)
+   with `https://`) (eg. `https://git.k3s.example.com`)
  * `DRONE_SERVER_HOST` - the domain name of the drone service (eg
    `drone.k3s.example.com`)
  * `REGISTRY_DOMAIN` the domain name of the registry (eg `registry.k8s.example.com`)
