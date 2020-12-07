@@ -30,7 +30,7 @@ the configuration directory we previously created (and already contains
 
 ```bash
 # The directory we used in part 1:
-cd ${HOME}/git/vendor/enigmacurry/blog.rymcg.tech/src/k3s
+cd ${HOME}/git/blog.rymcg.tech
 # pull the latest changes:
 git pull
 ```

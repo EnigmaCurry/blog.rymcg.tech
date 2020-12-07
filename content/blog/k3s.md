@@ -6,9 +6,6 @@ tags: ['k3s', 'kubernetes']
 ---
 ## Abstract
 
- * [The scripts and templates for this project are available in the same git
-   repository as this
-   blog.](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s)
  * You will create a single node [k3s](https://k3s.io) droplet on
    [DigitalOcean](https://m.do.co/c/d827a13964d7) (this link includes my
    referral code, which will help support this blog if you sign up for a new
@@ -25,6 +22,9 @@ tags: ['k3s', 'kubernetes']
    for how to deploy other kinds of apps.
  * These same instructions can easily be adapted to Raspberry Pi or other raw
    metal as supported by k3s.
+ * [The scripts and templates for this project are available in the same git
+   repository as this
+   blog.](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s)
  
 Self-hosting k3s as a droplet is considerably less expensive than
 managed/enterprise kubernetes solutions, like the one DigitalOcean and other
@@ -161,14 +161,33 @@ The necessary YAML templates are contained in a git mono-repo, which holds all
 of the files for this entire blog. The k3s related files are all in a
 sub-directory called
 [src/k3s](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s).
-Clone this repository to your workstation:
+
+You should fork the git repository, (Click `Fork` in the upper right hand of the
+github page) as you may want to edit these files yourself. Your fork can be
+public or private, its up to you. Any changes you make should be committed and
+pushed to your forked repository, so that you never lose your config.
+
+Clone your forked repository and also add the upstream remote:
 
 ```bash
-UPSTREAM=${HOME}/git/vendor/enigmacurry/blog.rymcg.tech
+GITHUB_USER=your_username
 ```
 ```bash
-git clone https://github.com/EnigmaCurry/blog.rymcg.tech.git ${UPSTREAM}
-cd ${UPSTREAM}/src/k3s
+REPO=git@github.com:${GITHUB_USER}/blog.rymcg.tech.git
+UPSTREAM=https://github.com/EnigmaCurry/blog.rymcg.tech.git
+DIR=${HOME}/git/blog.rymcg.tech
+```
+```bash
+git clone ${REPO} ${DIR}
+cd ${DIR}/src/k3s
+git remote add upstream ${UPSTREAM}
+```
+
+From time to time, as new blog posts are written, these files will need to be
+updated from the upstream remote:
+
+```bash
+git pull upstream master
 ```
 
 As you make changes to these files, make sure to commit and then push them to
