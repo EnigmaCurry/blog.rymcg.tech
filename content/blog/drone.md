@@ -97,11 +97,15 @@ to regenerate it.
    
 ## Edit Template Variables
 
-Edit the environment file for drone, contained in `drone/env.sh`.
+Examine the environment file for drone, contained in `drone/env.sh`. The env.sh
+file is already setup with appropriate default values. The variables that are
+commented out are designed to be asked for at render time. So you don't need to
+enter any specific values into env.sh unless you wish to change the defaults!
+render.sh asks for all of the variables listed in `ALL_VARS` and `ALL_SECRETS`.
+Secret values are stored encrypted in a sealed secret.
 
-Here is a list of the variables that you may configure. Any variables that you
-do not specify in the env.sh file are asked for interactively at render time. So
-you don't need to edit anything if you just want to be asked by render.sh.
+Here is a description of the variables that you **may** configure in env.sh, or
+you will be asked for interactively if you don't specify:
 
  * `DOMAIN` - the domain name for drone (eg. `drone.k3s.example.com`)
  * `PVC_SIZE` - the size of the data volume for drone. I don't really know what
@@ -115,6 +119,7 @@ you don't need to edit anything if you just want to be asked by render.sh.
  * `REGISTRY_PASSWORD` the password to authenticate with the registry.
  * `DRONE_GITEA_CLIENT_ID` - the OAuth2 client ID generated in the last step.
  * `DRONE_GITEA_CLIENT_SECRET` - the OAuth2 client ID generated in the last step.
+ * `DIGITALOCEAN_API_TOKEN` - your DigitalOcean API token
  
 ## Render templates
 
