@@ -1,3 +1,5 @@
+kube_apply() { find $* -print0 | xargs -0 -L1 kubectl apply -f ;}
+kube_delete() { find $* -print0 | xargs -0 -L1 kubectl delete -f ;}
 gen_password() { head -c 16 /dev/urandom | sha256sum | cut -d " " -f 1; }
 
 ## kube_run IMAGE CMD_ARGS
@@ -21,3 +23,4 @@ check_length() {
 htpasswd() {
     kube_run alpine /bin/sh -c \""apk add --no-cache apache2-utils &> /dev/null && htpasswd -Bbn ${1} ${2} | head -n 1 2> /dev/null\""
 }
+

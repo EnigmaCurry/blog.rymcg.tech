@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: drone
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: web
@@ -16,7 +17,7 @@ metadata:
   labels:
     app: drone
   name: drone
-  namespace: default
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -28,7 +29,7 @@ spec:
         app: drone
     spec:
       containers:
-      - image: ${IMAGE}
+      - image: ${DRONE_IMAGE}
         name: drone
         volumeMounts:
           - name: data

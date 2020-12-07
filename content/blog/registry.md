@@ -23,7 +23,9 @@ the configuration directory we previously created (and already contains
 
 ```bash
 # The directory we used in part 1:
-cd $HOME/git/k3s
+cd ${HOME}/git/vendor/enigmacurry/blog.rymcg.tech/src/k3s
+# pull the latest changes:
+git pull
 ```
 
 Edit the environment file for the registry, contained in `registry/env.sh`.
@@ -157,21 +159,30 @@ image layers.
 
 ## Configure k3s to utilize your private registry
 
-By default, k3s is setup to use the global docker.io registry (Docker Hub). A
-better, more secure option, is to override the global registry with your own
-private registry. This means that your cluster will only be able to run images
-that are contained in your private registry. Any public images that you need
-must be manually pulled from the global registry and pushed to your private
-registry (`podman push`).
+By default, k3s is setup to use only the global docker.io registry (Docker Hub).
+A better, more secure option, is to override the global registry (`docker.io`)
+with your own private registry. This means that your cluster will only be able
+to run images that are contained in your private registry. Any public images
+that you need must be manually pulled from the global registry and pushed to
+your private registry (`podman push`).
 
 See the [k3s
 docs](https://rancher.com/docs/k3s/latest/en/installation/private-registry/) for
-full details. You will create a new file on the host k3s server called
+full details on how to do this.
+
+This is inconvenient when you want to run images that are not contained in your
+private registry. So Instead of doing that, we will add our own private registry
+**in addition to** the global registry. This will allow us to pull images that
+are public or private depending on the image prefix specified. Images with no
+registry prefix will be pulled from `docker.io` and images prefixed with our
+registry name will be pulled from our registry.
+
+You will create a new file on the host k3s server called
 `/etc/rancher/k3s/registries.yaml`:
 
 ```
 mirrors:
-  docker.io:
+  example.com:
     endpoint:
       - "https://registry.k3s.example.com"
 configs:
@@ -181,7 +192,7 @@ configs:
       password: xxxxx
 ```
 
-You will need to replace the example domain names with your own (both places).
+You will need to replace the example domain names with your own (three places).
 Enter the admin password you generated above.
 
 Set appropriate permissions for this file:
@@ -197,10 +208,17 @@ of your cluster. Run this on each node:
 systemctl restart k3s
 ```
 
+Now when you specify an image like `containous/whoami` it will pull from the
+regular docker hub. Likewise, if you specify and image like
+`docker.io/containous/whoami` it will pull from the regular docker hub. If you
+put your own domain name as the prefix, like `example.com/containous/whoami` it
+will attempt to pull the image from your private registry, and if you have not
+previously pushed that image, it will fail to pull it.
+
 Try running an image that is not contained in your registry:
 
 ```bash
-kubectl run --image=containous/whoami test-whoami
+kubectl run --image=example.com/containous/whoami test-whoami
 ```
 
 Use `kubectl describe` to show the expected error message:
@@ -209,19 +227,19 @@ Use `kubectl describe` to show the expected error message:
 kubectl describe pod test-whoami
 ```
 
-You should see a `401 Unauthroized` error as well as `Error: ErrImagePull`
-message. These are the expected errors when the image does not exist (even if
-your credentials are valid).
+You should see an error `Error: ErrImagePull`. This is the expected error when
+the image does not exist.
 
 Delete the `test-whoami` pod:
 ```bash
 kubectl delete pod test-whoami
 ```
 
-Now try running an image that does exist in your private registry:
+Now try running the same image, but directly from docker.io (default with no
+`docker.io` prefix required)
 
 ```bash
-kubectl run --image=functions/figlet test-figlet
+kubectl run --image=containous/whoami test-whoami
 ```
 
 See that it pulled the image and started correctly:
@@ -230,12 +248,12 @@ See that it pulled the image and started correctly:
 kubectl describe pod test-figlet
 ```
 
-You should see messages like `Successfully pulled image "functions/figlet"` and
-`Started container test-figlet`.
+You should see messages like `Successfully pulled image "containous/whoami"` and
+`Started container test-whoami`.
 
-Delete the `test-figlet` pod:
+Delete the `test-whoami` pod:
 ```bash
-kubectl delete pod test-figlet
+kubectl delete pod test-whoami
 ```
 
 

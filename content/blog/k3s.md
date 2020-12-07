@@ -161,18 +161,6 @@ git clone https://github.com/EnigmaCurry/blog.rymcg.tech.git ${UPSTREAM}
 cd ${UPSTREAM}/src/k3s
 ```
 
-You should copy these files to your own repository, here's how to create the new
-repository:
-
-```bash
-NEW_K3S=${HOME}/git/k3s
-mkdir -p ${NEW_K3S}
-cp -a ${UPSTREAM}/src/k3s/* ${NEW_K3S}
-cd ${NEW_K3S}
-git init
-echo "Git repo initialized in ${NEW_K3S}"
-```
-
 As you make changes to these files, make sure to commit and then push them to
 your own private git host. This is *your* cluster config now.
 

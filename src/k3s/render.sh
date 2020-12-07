@@ -83,7 +83,7 @@ render() {
 
 render_secrets() {
     SEALED_SECRET=$SECRET.sealed_secret.yaml
-    CREATE_SECRET_CMD="kubectl create secret generic $SECRET --dry-run=client -o json"
+    CREATE_SECRET_CMD="kubectl create secret generic $SECRET --namespace ${NAMESPACE:-default} --dry-run=client -o json"
     ### Add arguments for each of ALL_SECRETS
     for var in "${ALL_SECRETS[@]}"; do
         secret_value=${!var}
