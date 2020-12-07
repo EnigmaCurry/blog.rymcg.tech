@@ -11,8 +11,8 @@ tags: ['k3s', 'kubernetes']
  * You will install [Drone](https://www.drone.io/), a self-hosted Continuous
    Integration platform. Drone is the self-hosted equivalent of GitHub Actions,
    or Travis CI, or similar.
- * Drone will connect to gitea to run jobs in response to changes made to git
-   repositories.
+ * Drone will connect to gitea, to find jobs to run, in response to changes made
+   to git repositories.
  * You will create a simple job runner that executes job pipelines directly
    inside k3s pods.
  * You will configure Drone to also create on-demand DigitalOcean droplets, in
