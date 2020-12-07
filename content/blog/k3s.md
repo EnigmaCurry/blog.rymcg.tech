@@ -1,5 +1,5 @@
 ---
-title: "How to create a single node K3s (kubernetes) cluster for development or small apps"
+title: "k3s part 1: Create a single node K3s (kubernetes) cluster"
 url: "blog/k3s"
 date: 2020-10-30T11:45:03-07:00
 tags: ['k3s', 'kubernetes']
