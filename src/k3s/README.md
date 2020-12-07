@@ -5,8 +5,8 @@ k3s](https://blog.rymcg.tech/tags/k3s/)
 
 ## Features
 
- * Single node deployment - Easy! No concern for high-availability. (but you
-   could still do that, if you build this up.)
+ * Single node [k3s](https://k3s.io/) deployment - Easy! No concern for
+   high-availability. (but you could still do that, if you build this up.)
  * Simple [bash script](render.sh) runs
    [envsubst](https://linux.die.net/man/1/envsubst) rather than helm charts.
    Simple environment variable substituion rather than a full templating
