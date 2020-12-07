@@ -6,6 +6,9 @@ tags: ['k3s', 'kubernetes']
 ---
 ## Abstract
 
+ * [The scripts and templates for this project are available in the same git
+   repository as this
+   blog.](https://github.com/EnigmaCurry/blog.rymcg.tech/tree/master/src/k3s)
  * You will create a single node [k3s](https://k3s.io) droplet on
    [DigitalOcean](https://m.do.co/c/d827a13964d7) (this link includes my
    referral code, which will help support this blog if you sign up for a new
