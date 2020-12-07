@@ -312,6 +312,10 @@ droplet.
 
 Commit both files to git and push the changes to the gitea remote.
 
+Watch the [DigitalOcean droplet
+console](https://cloud.digitalocean.com/droplets), you should see the temporary
+droplet startup and then shutdown a bit later after the job completes.
+
 Check the output of the job for any errors. Your image should now be pushed to
 the registry, test it by running:
 
