@@ -25,7 +25,7 @@ the configuration directory we previously created (and already contains
 # The directory we used in part 1:
 cd ${HOME}/git/blog.rymcg.tech
 # pull the latest changes:
-git pull
+git pull upstream master
 ```
 
 Edit the environment file for the registry, contained in `registry/env.sh`.
