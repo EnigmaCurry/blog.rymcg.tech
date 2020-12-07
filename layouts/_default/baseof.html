@@ -90,6 +90,20 @@
     {{ template "_internal/google_analytics_async.html" . }}
     {{ partial "footer_extra"  . }}
     {{ block "js-extra" . }}{{ end }}
+
+    {{ if (findRE "<pre" .Content 1) }}
+        <script src="/js/copy-code-button.js"></script>
+        <script>
+         var content = document.getElementById("content");
+         var links = content.getElementsByTagName("a");
+          for (var i = 0, linksLength = links.length; i < linksLength; i++) {
+             if (links[i].hostname != window.location.hostname) {
+                 links[i].target = '_blank';
+             }
+         }
+        </script>
+    {{ end  }}
+
 </body>
 
 </html>

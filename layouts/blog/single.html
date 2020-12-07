@@ -71,6 +71,8 @@
                     <div class="markdown">
                         {{ partial "content" . }}
                     </div>
+                    You can discuss this blog on Matrix:
+                    <a href="https://matrix.to/#/%23blog-rymcg-tech%3aenigmacurry.com">#blog-rymcg-tech:enigmacurry.com</a>
                 </div>
 
                 {{ if $isTocEnabled }}
@@ -128,17 +130,4 @@
     {{ partial "footer" . }}
     {{ end }}
     {{ define "js-extra" }}
-    {{ if (findRE "<pre" .Content 1) }}
-        <script src="/js/copy-code-button.js"></script>
-        <script>
-         var content = document.getElementById("content");
-         var links = content.getElementsByTagName("a");
-
-         for (var i = 0, linksLength = links.length; i < linksLength; i++) {
-             if (links[i].hostname != window.location.hostname) {
-                 links[i].target = '_blank';
-             }
-         }
-        </script>
-    {{ end  }}
 {{ end  }}
