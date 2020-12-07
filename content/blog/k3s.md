@@ -165,6 +165,8 @@ Clone this repository to your workstation:
 
 ```bash
 UPSTREAM=${HOME}/git/vendor/enigmacurry/blog.rymcg.tech
+```
+```bash
 git clone https://github.com/EnigmaCurry/blog.rymcg.tech.git ${UPSTREAM}
 cd ${UPSTREAM}/src/k3s
 ```
