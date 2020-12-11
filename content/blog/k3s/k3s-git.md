@@ -92,24 +92,38 @@ the cluster key into a new file.
 Generate the secrets:
 
 ```bash
-gen_password() { head -c 16 /dev/urandom | sha256sum | cut -d " " -f 1; }
 POSTGRES_USER=gitea
-POSTGRES_PASSWORD=$(gen_password)
-INTERNAL_TOKEN=$(gen_password)
-JWT_SECRET=$(gen_password)
-SECRET_KEY=$(gen_password)
+POSTGRES_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
+INTERNAL_TOKEN=$(eval "kubectl run --quiet -i --rm gen-passwd-${RANDOM} \
+   --image=gitea/gitea:latest --restart=Never -- \
+   gitea generate secret INTERNAL_TOKEN")
+SECRET_KEY=$(eval "kubectl run --quiet -i --rm gen-passwd-${RANDOM} \
+   --image=gitea/gitea:latest --restart=Never -- \
+   gitea generate secret SECRET_KEY")
+JWT_SECRET=$(eval "kubectl run --quiet -i --rm gen-passwd-${RANDOM} \
+   --image=gitea/gitea:latest --restart=Never -- \
+   gitea generate secret JWT_SECRET")
+echo Generated POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+echo Generated INTERNAL_TOKEN=${INTERNAL_TOKEN}
+echo Generated SECRET_KEY=${SECRET_KEY}
+echo Generated JWT_SECRET=${JWT_SECRET}
 ```
+
+(You may see a warning message : `Error attaching, falling back to logs`. Its
+harmless, just check to see if each variable has set a random string value as
+echoed in the output.)
+
 
 Create the plain text config file:
 ```bash
 CONFIG_TMP=$(mktemp)
 cat <<EOF > $CONFIG_TMP
-APP_NAME = ${CLUSTER} git-system
+APP_NAME = git.${CLUSTER}
 
 [server]
-DOMAIN = ${CLUSTER}
-ROOT_URL = https://${CLUSTER}/
-SSH_DOMAIN = ${CLUSTER}
+DOMAIN = git.${CLUSTER}
+ROOT_URL = https://git.${CLUSTER}/
+SSH_DOMAIN = git.${CLUSTER}
 SSH_PORT = 2222
 START_SSH_SERVER = true
 
@@ -314,6 +328,8 @@ spec:
       containers:
       - image: gitea/gitea:latest
         name: gitea
+        ## debug:
+        ## command: ["/bin/sh", "-c", "sleep 99999999999"]
         volumeMounts:
           - name: data
             mountPath: /data
@@ -357,3 +373,4 @@ Apply the maniest to the cluster:
 ```bash
 kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/git-system | kubectl apply -f - 
 ```
+
