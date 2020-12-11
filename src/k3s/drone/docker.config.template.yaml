@@ -1,7 +1,0 @@
-{
-  auths": {
-    "https://${REGISTRY_DOMAIN}/v1/": {
-      "${REGISTRY_USER}": "${REGISTRY_PASSWORD}"
-      }
-  }
-}
