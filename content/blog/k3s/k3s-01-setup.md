@@ -2,6 +2,7 @@
 title: "K3s part 1: Setup your workstation"
 date: 2020-12-11T00:01:00-06:00
 tags: ['k3s']
+draft: true
 ---
 
 ## Prepare your workstation

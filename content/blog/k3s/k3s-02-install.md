@@ -2,6 +2,7 @@
 title: "K3s part 2: Creating a cluster"
 date: 2020-12-11T00:02:00-06:00
 tags: ['k3s']
+draft: true
 ---
 
 ## Create Droplet

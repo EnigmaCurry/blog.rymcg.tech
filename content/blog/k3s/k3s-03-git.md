@@ -2,6 +2,7 @@
 title: "K3s part 3: Git host"
 date: 2020-12-11T00:03:00-06:00
 tags: ['k3s']
+draft: true
 ---
 
 ## Create local git repository
