@@ -1,6 +1,6 @@
 ---
-title: "K3s part 2: Git host"
-date: 2020-12-09T14:04:24-07:00
+title: "K3s part 3: Git host"
+date: 2020-12-11T00:03:00-06:00
 tags: ['k3s']
 ---
 

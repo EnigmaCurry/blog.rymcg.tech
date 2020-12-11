@@ -1,6 +1,6 @@
 ---
-title: "K3s part 3: Install Flux"
-date: 2020-12-09T14:04:24-08:00
+title: "K3s part 4: Install Flux"
+date: 2020-12-11T00:04:00-06:00
 tags: ['k3s']
 ---
 

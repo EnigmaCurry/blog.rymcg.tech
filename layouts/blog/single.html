@@ -71,8 +71,9 @@
                     <div class="markdown">
                         {{ partial "content" . }}
                     </div>
-                    You can discuss this blog on Matrix:
-                    <a href="https://matrix.to/#/%23blog-rymcg-tech%3aenigmacurry.com">#blog-rymcg-tech:enigmacurry.com</a>
+                    <br/>
+                    <hr/>
+                    <p>You can discuss this blog on Matrix:<a href="https://matrix.to/#/{{ .Site.Params.matrix_room | safeURL }}" > {{ .Site.Params.matrix_room }}</a></p>
                 </div>
 
                 {{ if $isTocEnabled }}

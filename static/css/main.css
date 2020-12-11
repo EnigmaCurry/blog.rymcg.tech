@@ -222,15 +222,20 @@ h6 {
     background: var(--main-bg-color);
 }
 
-.content .markdown code,
-.content .markdown pre {
+.content .markdown code {
+    padding: 0;
     font-family: var(--font-code);
     font-size: 0.98rem;
 }
 
+pre {
+    padding-top: 1rem;
+    padding-left: 1rem;
+    padding-bottom: 1rem;
+}
+
 .content .markdown pre .hljs {
     /* enclosed by single backtick (`) */
-    padding: 1rem;
     border-radius: 2px;
 }
 
@@ -243,10 +248,6 @@ h6 {
     white-space: pre;
     word-break: break-all;
     word-wrap: break-word;
-}
-
-.content .markdown pre code {
-    padding: 0;
 }
 
 .content .markdown blockquote {
@@ -360,9 +361,9 @@ h6 {
 
 
 .copy-code-button {
-    color: #272822;
+    /* color: #272822; */
     background-color: #FFF;
-    border-color: #272822;
+    /* border-color: #272822; */
     border: 2px solid;
     border-radius: 3px 3px 0px 0px;
 
@@ -393,8 +394,19 @@ h6 {
     background-color: #D9D9D9;
 }
 
-.highlight pre {
+pre {
     /* Avoid pushing up the copy buttons. */
     margin: 0;
 }
 
+.code-header .title {
+    float: left;
+}
+
+.code-header.lang-env {
+    background-color: #212182;
+}
+
+.code-header.lang-bash {
+    background-color: #752e2e;
+}

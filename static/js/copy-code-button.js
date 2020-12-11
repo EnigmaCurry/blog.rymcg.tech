@@ -3,41 +3,57 @@
 /* Copyright (c) 2019 Danny Guo */
 /* https://www.dannyguo.com/blog/how-to-add-copy-to-clipboard-buttons-to-code-blocks-in-hugo/ */
 
-console.log("here")
 function addCopyButtons(clipboard) {
-    document.querySelectorAll('pre > code').forEach(function(codeBlock) {
-        var button = document.createElement('button');
-        button.className = 'copy-code-button';
-        button.type = 'button';
-        button.innerText = 'Copy';
+  document.querySelectorAll('pre > code').forEach(function(codeBlock) {
+    var lang = codeBlock.getAttribute('data-lang');
+    var header = document.createElement('div');
+    header.classList.add("code-header");
+    var button = document.createElement('button');
+    button.className = 'copy-code-button';
+    button.type = 'button';
+    button.innerText = 'Copy';
+    var title = document.createElement('div');
+    title.classList.add('title');
+    if (lang === 'env') {
+      header.classList.add('lang-env');
+      title.innerText=" $> Customize variables";
+    } else if (lang === 'env-static') {
+      header.classList.eadd('lang-env-static');
+      title.innerText=" Set permanent variables in ~/.bashrc or ~/.bash_profile";
+    }else if (lang === 'bash') {
+      header.classList.add('lang-bash');
+      title.innerText=" $> Run in BASH shell";
+    }
+    header.appendChild(title);
+    header.appendChild(button);
 
-        button.addEventListener('click', function() {
-            clipboard.writeText(codeBlock.textContent).then(
-                function() {
-                    /* Chrome doesn't seem to blur automatically, leaving the button
-                       in a focused state */
-                    button.blur();
-
-                    button.innerText = 'Copied!';
-                    setTimeout(function() {
-                        button.innerText = 'Copy';
-                    }, 2000);
-                },
-                function(error) {
-                    button.innerText = 'Error';
-                    console.error(error);
-                }
-            );
-        });
-
-        var pre = codeBlock.parentNode;
-        if (pre.parentNode.classList.contains('highlight')) {
-            var highlight = pre.parentNode;
-            highlight.parentNode.insertBefore(button, highlight);
-        } else {
-            pre.parentNode.insertBefore(button, pre);
+    button.addEventListener('click', function() {
+      clipboard.writeText(codeBlock.textContent).then(
+        function() {
+          /* Chrome doesn't seem to blur automatically, leaving the button
+             in a focused state */
+          button.blur();
+          button.innerText = 'Copied!';
+          setTimeout(function() {
+            button.innerText = 'Copy';
+          }, 2000);
+        },
+        function(error) {
+          button.innerText = 'Error';
+          console.error(error);
         }
+      );
     });
+
+    var pre = codeBlock.parentNode;
+    if (pre.parentNode.classList.contains('highlight')) {
+      var highlight = pre.parentNode;
+      highlight.parentNode.insertBefore(header, highlight);
+    } else {
+      pre.parentNode.insertBefore(header, pre);
+    }
+    pre.style.backgroundColor = "#000";
+  });
 }
 
 if (navigator && navigator.clipboard) {
