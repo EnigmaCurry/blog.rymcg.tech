@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: archlinux
+  name: archlinux
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: archlinux
+  template:
+    metadata:
+      labels:
+        app: archlinux
+    spec:
+      containers:
+      - image: ${IMAGE}
+        name: archlinux
+        volumeMounts:
+          - name: data
+            mountPath: /data
+        command: ["/bin/sh", "-c", "sleep 99999999999"]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: archlinux-data
