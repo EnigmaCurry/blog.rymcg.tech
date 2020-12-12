@@ -17,6 +17,8 @@ Configure the git repository directory you created in [part
 ```env
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
 CLUSTER=k3s.example.com
+GITEA_USER=root
+GIT_REMOTE=ssh://git@git.${CLUSTER}:2222/${GITEA_USER}/flux-infra.git
 ```
 
 Create the YAML manifests for flux:
@@ -68,7 +70,7 @@ pull and watch for changes. Create this for the flux-infra repo:
 
 ```bash
 flux create source git flux-system \
-  --url=${FLUX_INFRA_REPO} \
+  --url=${GIT_REMOTE} \
   --ssh-key-algorithm=rsa \
   --ssh-rsa-bits=4096 \
   --branch=master \
@@ -77,9 +79,9 @@ flux create source git flux-system \
 
 **This will output a public SSH key, which will be used to login to your remote
 git repository. You must copy the key and install it as a Deploy Key in the
-remote git repository settings. In github/gitea add the deploy key under
-repository `Settings->Deploy Keys`. The deploy key does not require write
-privileges. Once installed, press `Y` and Enter to continue.**
+remote git repository settings. In Gitea add the deploy key under the repository
+`Settings->Deploy Keys`. The deploy key does not require write privileges. Once
+installed, press `Y` and Enter to continue.**
 
 The `Kustomization` object defines a job to apply the source code downloaded
 from a `GitRepository`, and apply it to the cluster. Create this for the
