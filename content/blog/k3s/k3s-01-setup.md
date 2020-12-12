@@ -6,11 +6,11 @@ tags: ['k3s']
 
 ## Prepare your workstation
 
-When working with kubernetes, you should eschew directly logging into the host
-server via SSH, unless you have to. Instead, we will create all files and do all
-of the setup, indirectly, from your local laptop, which will be referred to as
-your workstation. `kubectl` is your local workstation tool to access the remote
-cluster API.
+When working with kubernetes, you should resist the urge to directly login into
+the host server via SSH, unless you have to. Instead, we will create all files
+and do all of the setup, indirectly, from your local laptop, which will be
+referred to as your workstation. `kubectl` is your local workstation tool to
+access the remote cluster API.
 
 You will need:
 
@@ -55,11 +55,11 @@ your terminal *without editing them*. Commands that need configuration, will
 reference environment variables, which you create before you run the command, so
 that you may customize the variables first, and then run the command as-is.
 
-You should configure your BASH so that your pasted commands are never run
-without your confirmation, after pasting, by pressing Enter. This also allows
-you the opportunity to edit the commands on the terminal prompt line, (which you
-will only need to do in the case of customizing variables, not for editing
-commands). Run this to enable this feature in BASH:
+You should configure your BASH so that your pasted commands are never run unless
+you give your confirmation, after pasting, by pressing the Enter key. This also
+allows you the opportunity to edit the commands on the terminal prompt line,
+(which you will only need to do in the case of customizing variables, not for
+editing commands). Run this to enable this feature in BASH:
 
 ```bash
 # Enable for the current shell:
@@ -70,8 +70,8 @@ echo "set enable-bracketed-paste on" >> ${HOME}/.inputrc
 
 For example, here is a command block that is asking you to customize two
 environment variables (`SOME_VARIABLE` and `SOME_OTHER_VARIABLE`). You should
-copy and paste this into your shell, and edit the values in the command (`foo`
-and `bar`) to something else, then Press Enter.
+copy and paste this into your shell, and edit the values on the command line
+(`foo` and `bar`; change them to something else), then press Enter.
 
 ```env
 SOME_VARIABLE=foo
@@ -101,22 +101,24 @@ echo "-------------------------------------------"
 echo The random temporary file is ${TMP_FILE}
 echo The contents written were: $(cat ${TMP_FILE})
 ```
-The contents of the file is the lines between `cat <<EOF` and the last
-`EOF` (highlighted in yellow on this blog). Any command that comes after the
-`EOF` is just a regular command, not part of the content of the file created.
-(Technically, HEREDOC format allows any marker instead of `EOF` but this blog
-will always use `EOF` by convention, which is mnemonic for `End Of File`.)
 
-Note that previous example rendered environment variables *before* writing the
-file. The file contains the *value* of the variable at the time of creation, not
-the variable name reference itself. In order to write a shell script via
-HEREDOC, that contains variable name references, you need to disable this
-behaviour. To do this, you put single quotes around the `EOF` marker:
+The contents of the file is the lines between `cat <<EOF` and the second `EOF`
+on its own line (the whole section is highlighted in yellow on this blog). Any
+command that comes after the second `EOF` is just a regular command, not part of
+the content of the file created. (Technically, HEREDOC format allows any marker
+instead of `EOF` but this blog will always use `EOF` by convention, which is
+mnemonic for `End Of File`.)
+
+Note that the previous example rendered environment variables *before* writing
+the file. The file contains the *value* of the variable at the time of creation,
+and discards the variable name. In order to write a shell script via HEREDOC,
+that contains variable name references, you need to disable this behaviour. To
+do this, you put quotes around the `EOF` marker:
 
 ```bash
 TMP_FILE=$(mktemp --suffix .sh)
 cat <<'EOF' > ${TMP_FILE}
-## I'm a shell script that needs raw variable names to be preserved
+## I'm a shell script that needs raw variable names to be preserved.
 ## To do this, the HEREDOC used <<'EOF' instead of <<EOF
 echo Hello I am $(whoami) on $(hostname)
 EOF

@@ -246,7 +246,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: gitea
-                  key: POSTGRES_PASSWORD
+                key: POSTGRES_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
       volumes:
@@ -408,4 +408,27 @@ Apply the maniest to the cluster:
 ```bash
 kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/git-system | kubectl apply -f - 
 ```
+
+## Admin account creation
+
+You need to manually create the initial admin user (Note that you *cannot* use
+the username `admin`, which is reserved), this example uses the name `root` and
+the email address `root@example.com`:
+
+```env
+USERNAME=root
+EMAIL=root@example.com
+```
+
+```bash
+kubectl -n git-system exec deploy/gitea -it -- gitea admin user create \
+    --username ${USERNAME} --random-password --admin --email ${EMAIL}
+```
+
+The password is randomly generated and printed, but its at the top of the
+output, so you may need to scroll up to see it. Once you sign in using this
+account, you can create additional accounts through the web interface.
+
+You can now login to the git service with your web browser, open
+ps://git.subdomain.example.com and login in with the user just created.
 
