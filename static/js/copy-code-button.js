@@ -16,13 +16,13 @@ function addCopyButtons(clipboard) {
     title.classList.add('title');
     if (lang === 'env') {
       header.classList.add('lang-env');
-      title.innerText=" $> Customize variables";
+      title.innerText=" $> # Customize temporary variables";
     } else if (lang === 'env-static') {
-      header.classList.eadd('lang-env-static');
-      title.innerText=" Set permanent variables in ~/.bashrc or ~/.bash_profile";
+      header.classList.add('lang-env-static');
+      title.innerText=" # Set permanent variables in ~/.bashrc or ~/.bash_profile";
     }else if (lang === 'bash') {
       header.classList.add('lang-bash');
-      title.innerText=" $> Run in BASH shell";
+      title.innerText=" $> # Run in BASH shell";
     }
     header.appendChild(title);
     header.appendChild(button);

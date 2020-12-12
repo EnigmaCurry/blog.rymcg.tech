@@ -1,34 +1,17 @@
 ---
-title: "K3s part 3: Git host"
+title: "K3s part 4: Git host"
 date: 2020-12-11T00:03:00-06:00
 tags: ['k3s']
-draft: true
 ---
 
-## Create local git repository
+Configure the git repository directory you created in [part
+1](/blog/k3s/k3s-01-setup) along with other config variables:
 
-You now have a fresh k3s cluster installed. Now you need a place to store your
-configuration, so create a git repository someplace on your workstation called
-`flux-infra` (or whatever you want to call it). The `flux-infra` repository will
-manage one or more of your clusters. Each cluster storing its manifests in its
-own sub-directory, listed by domain name. Each kubernetes namespace gets a
-sub-sub-directory :
- * `~/git/flux-infra/${CLUSTER}/${NAMESPACE}` 
- 
-Choose the directory where to create the git repo and the domain name for your
-new cluster:
-
-```bash
+```env
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
 CLUSTER=flux.example.com
 ```
 
-```bash
-mkdir -p ${FLUX_INFRA_DIR}/${CLUSTER} && \
-git -C ${FLUX_INFRA_DIR} init && \
-cd ${FLUX_INFRA_DIR}/${CLUSTER} && \
-echo Cluster working directory: $(pwd)
-```
 
 ## Install Sealed Secrets
 
@@ -46,21 +29,16 @@ installing the `Client side` only.
 
 Find the latest version via curl:
 
-```bash
+```env
 SEALED_SECRET_VERSION=$(curl --silent \
   "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | \
   grep -Po '"tag_name": "\K.*?(?=")')
 echo Latest version: ${SEALED_SECRET_VERSION}
 ```
-Now create the controller manifest, by making a `Kustomization` object in your
-`kube-system` namespace:
+Append the sealed secret manifest to the existing `kustomization.yaml` file:
 
 ```bash
-mkdir -p ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system && \
-cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
+cat <<EOF >> ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
 - https://github.com/bitnami-labs/sealed-secrets/releases/download/${SEALED_SECRET_VERSION}/controller.yaml
 EOF
 ```
@@ -92,7 +70,7 @@ the cluster key into a new file.
 
 Generate the secrets:
 
-```bash
+```env
 POSTGRES_USER=gitea
 POSTGRES_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
 INTERNAL_TOKEN=$(eval "kubectl run --quiet -i --rm gen-passwd-${RANDOM} \
@@ -354,6 +332,61 @@ spec:
 EOF
 ```
 
+To create `ingress.yaml`, which creates the IngressRoute to route gitea through
+the Traefik proxy to the public internet:
+
+```bash
+cat <<EOF | sed 's/@@@/`/g' > ${FLUX_INFRA_DIR}/${CLUSTER}/git-system/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: TraefikService
+metadata:
+  name: gitea-ssh
+  namespace: git-system
+
+spec:
+  weighted:
+    services:
+      - name: gitea-ssh
+        weight: 1
+        port: 2222
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea-web
+  namespace: git-system
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(@@@git.${CLUSTER}@@@)
+    services:
+    - name: gitea-web
+      port: 80
+  tls:
+    certResolver: default
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: gitea-ssh
+  namespace: git-system
+spec:
+  entryPoints:
+  - ssh
+  routes:
+  - kind: Rule
+    ## Domain matching is not possible with SSH, so match all domains:
+    match: HostSNI(@@@*@@@)
+    services:
+    - name: gitea-ssh
+      port: 2222
+EOF
+```
+
+
 To create `kustomization.yaml`:
 
 ```bash
@@ -366,6 +399,7 @@ resources:
 - pvc.yaml
 - database.yaml
 - gitea.yaml
+- ingress.yaml
 EOF
 ```
 

@@ -397,6 +397,7 @@ pre {
 pre {
     /* Avoid pushing up the copy buttons. */
     margin: 0;
+    color: #fff;
 }
 
 .code-header .title {
@@ -405,6 +406,10 @@ pre {
 
 .code-header.lang-env {
     background-color: #212182;
+}
+
+.code-header.lang-env-static {
+    background-color: #177b48;
 }
 
 .code-header.lang-bash {

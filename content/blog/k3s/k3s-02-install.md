@@ -1,11 +1,34 @@
 ---
-title: "K3s part 2: Creating a cluster"
+title: "K3s part 2: Creating a single node cluster"
 date: 2020-12-11T00:02:00-06:00
 tags: ['k3s']
-draft: true
 ---
 
-## Create Droplet
+To start testing with k3s, keep it simple, only create one node. You can add
+more nodes later. You can deploy it anywhere you like, [just follow the
+documentation](https://rancher.com/docs/k3s/latest/en/quick-start/). Abbreviated
+notes are below for generic hosts, and detailed instructions for DigitalOcean
+droplets.
+
+## Install k3s on a generic host
+
+If you already have a Linux server provisioned, you can install k3s on it.
+
+Before installing, you should know that pods store volumes into the directory
+`/var/lib/rancher/k3s/storage`. You should create this directory ahead of time,
+and optionally mount whatever storage volume you have available at that path.
+Otherwise, pods will store volumes on your root filesystem.
+
+You need to customize the k3s installer command, so as to not start Traefik.
+Traefik will be installed later by yourself, using an updated version, rather
+than the one that is bundled with k3s. The k3s installer command is:
+
+```
+## Example k3s install command to run on any server:
+curl -sfL https://get.k3s.io | sh -s - server --disable traefik
+```
+
+## Create Droplet on DigitalOcean
 
  * Create a Debian (`10 x64`) droplet on DigitalOcean
    * $10/mo 2GB RAM (tested configuration).
@@ -16,7 +39,7 @@ draft: true
    * Enter the following script into the `User data` section of the droplet
      creation screen:
    
-   ```bash
+   ```
    #!/bin/bash
    VOLUME=/dev/sda
    mkdir -p /var/lib/rancher/k3s/storage
@@ -48,25 +71,33 @@ draft: true
    ```
 
  * Assign your workstation's ssh client key to the droplet, to allow remote
-   management.
+   management. Click `New SSH Key` if you haven't uploaded one yet.
    
- * Configure a hostname, like `k3s-flux`.
+ * Choose a hostname, like `k3s-flux`.
    
- * Confirm the details and finalize the droplet creation.
+ * Confirm the details and click `Create Droplet`.
+ 
+ * Note that the script has already installed k3s for you, and mounted the
+   storage volume, so you *don't need to do anything else on the server*, it's
+   ready to go.
    
  * Assign a [floating IP
-   address](https://cloud.digitalocean.com/networking/floating_ips)
+   address](https://cloud.digitalocean.com/networking/floating_ips) to your new
+   droplet.
    
  * [Create wildcard DNS](https://cloud.digitalocean.com/networking/domains)
-   names pointing to floating IP address (`*.subdomain.example.com`)
+   names pointing to your droplet's floating IP address
+   (`*.subdomain.example.com`) This link requires that your domain's DNS use
+   DigitalOcean nameservers, tied to your account, but you may set this up with
+   any DNS provider that you use instead.
    
-## Download cluster API key
+## Download Cluster API Key
 
 To access the cluster from your workstation, you must download the API key from
 the k3s server. Set a temporary variable for the the floating IP address of the
 server, and the desired path to store the cluster key.
 
-```bash
+```env
 FLOATING_IP=X.X.X.X
 export KUBECONFIG=${HOME}/.kube/config
 ```
@@ -87,6 +118,8 @@ ssh ${FLOATING_IP} -l root -o StrictHostKeyChecking=no \
 (It should print the node status as `Ready` once k3s finishes initialization. The name of the node displayed, should be the same hostname you created on the droplet page.)
 
 If you set `KUBECONFIG` to anything other than the default
-(`$HOME/.kube/config`) you should add `export KUBECONFIG=...` into your
-`~/.bashrc` file, so that kubectl remembers which cluster config to use.
+(`$HOME/.kube/config`) you should add it to your `~/.bashrc`.
 
+```env-static
+export KUBECONFIG=${HOME}/.kube/config
+```
