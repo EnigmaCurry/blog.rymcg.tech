@@ -7,43 +7,52 @@ tags: ['k3s']
 ## Prepare your workstation
 
 When working with kubernetes, you should resist the urge to directly login into
-the host server via SSH, unless you have to. Instead, we will create all files
-and do all of the setup, indirectly, from your local laptop, which will be
-referred to as your workstation. `kubectl` is your local workstation tool to
-access the remote cluster API.
+the host server via SSH, unless you have to. Instead, you will create all the
+config files on your local laptop, which will be referred to as your
+workstation, and use `kubectl` to access the remote cluster API.
 
 You will need:
 
- * A modern BASH shell, being the default Linux terminal shell.
- * `kubectl` on your workstation:
- 
-   * Prefer your os packages:
-   
-     * Arch Linux: `sudo pacman -S kubectl`
-     * Other OS: [See docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-using-native-package-management)
-     
-     * You can take a small detour now and setup bash shell completion for
-       kubectl, this is quite useful. Run `kubectl completion -h` and follow the
-       directions for setting up your shell. However, you can skip this, it's
-       not required.
+ * A modern BASH shell, being the default Linux terminal shell, but also
+   available on various platforms.
+ * `kubectl` installed on your workstation:
+   * Arch Linux: `sudo pacman -S kubectl`
+   * Other OS: [See docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-using-native-package-management)
+   * You can take a small detour now and setup bash shell completion for
+     kubectl, this is quite useful. Run `kubectl completion -h` and follow the
+     directions for setting up your shell. However, you can skip this, it's
+     not required.
        
- * `kustomize` on your workstation:
- 
-   * Prefer your os packages:
-   
-     * Arch Linux: `sudo pacman -S kustomize`
-     * Other OS: [see releases](https://github.com/kubernetes-sigs/kustomize/releases)
-   * You may know about kubectl having kustomize builtin (`kubectl apply -k`).
-     However, the version of kustomize that is bundled with kubectl is old, and
-     has bugs. You should use the latest version of `kustomize` directly instead
-     of the bundled kubectl version (`kustomize build | kubectl apply -f - `).
+ * `kustomize` installed on your workstation:
+   * Arch Linux: `sudo pacman -S kustomize`
+   * Other OS: [see releases](https://github.com/kubernetes-sigs/kustomize/releases)
+   * You may have heard about kubectl having kustomize as a built-in (`kubectl
+     apply -k`). However, the version of kustomize that is bundled with kubectl
+     is old, and has bugs. You should use the latest version of `kustomize`
+     directly instead of the bundled kubectl version (`kustomize build | kubectl
+     apply -f - `).
 
- * `git` on your workstation:
+ * `kubeseal` installed on your workstation:
  
-   * Prefer your os packages:
+   * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/kubeseal/)
+   * Other OS: [see releases](https://github.com/bitnami-labs/sealed-secrets/releases)
+   * Note: only install the client side at this point, you will install the
+     cluster side later in a different way.
+
+ * `flux` installed on your workstation:
+ 
+   * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/flux-go/)
+   * Other OS: [see docs](https://github.com/fluxcd/flux2/tree/main/install)
+   * Add shell completion support to your `~/.bashrc`
    
-     * Arch Linux: `sudo pacman -S git`
-     * Ubuntu: `sudo apt install git`
+```env-static
+. <(flux completion bash)
+```
+
+ * `git` installed on your workstation:
+   * Arch Linux: `sudo pacman -S git`
+   * Ubuntu: `sudo apt install git`
+   * [Other OS](https://git-scm.com/downloads)
      
 ## Running Commands
 
@@ -104,23 +113,23 @@ echo The contents written were: $(cat ${TMP_FILE})
 
 The contents of the file is the lines between `cat <<EOF` and the second `EOF`
 on its own line (the whole section is highlighted in yellow on this blog). Any
-command that comes after the second `EOF` is just a regular command, not part of
-the content of the file created. (Technically, HEREDOC format allows any marker
-instead of `EOF` but this blog will always use `EOF` by convention, which is
-mnemonic for `End Of File`.)
+lines that comes after the second `EOF` (the `echo` lines) are just a regular
+commands, not part of the content of the file created. (Technically, HEREDOC
+format allows any marker instead of `EOF` but this blog will always use `EOF` by
+convention, which is mnemonic for `End Of File`.)
 
 Note that the previous example rendered environment variables *before* writing
 the file. The file contains the *value* of the variable at the time of creation,
 and discards the variable name. In order to write a shell script via HEREDOC,
-that contains variable name references, you need to disable this behaviour. To
-do this, you put quotes around the `EOF` marker:
+that contains variable *names* (not values), you need to disable this behaviour.
+To do this, you put quotes around the first `EOF` marker:
 
 ```bash
 TMP_FILE=$(mktemp --suffix .sh)
 cat <<'EOF' > ${TMP_FILE}
 ## I'm a shell script that needs raw variable names to be preserved.
 ## To do this, the HEREDOC used <<'EOF' instead of <<EOF
-echo Hello I am $(whoami) on $(hostname)
+echo Hello I am ${USER} on ${HOSTNAME} at $(date)
 EOF
 
 echo "-------------------------------------------"
@@ -143,7 +152,7 @@ new cluster:
 
 ```env
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
-CLUSTER=flux.example.com
+CLUSTER=k3s.example.com
 ```
 
 ```bash
@@ -152,3 +161,5 @@ git -C ${FLUX_INFRA_DIR} init && \
 cd ${FLUX_INFRA_DIR}/${CLUSTER} && \
 echo Cluster working directory: $(pwd)
 ```
+
+In an upcoming post, you will create a git remote to push this repository to.

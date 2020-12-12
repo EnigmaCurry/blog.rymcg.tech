@@ -1,50 +1,23 @@
 ---
-title: "K3s part 4: Install Flux"
-date: 2020-12-11T00:04:00-06:00
+title: "K3s part 5: Install Flux"
+date: 2020-12-11T00:05:00-06:00
 tags: ['k3s']
-draft: true
 ---
 
-## Install flux command line tool
-
-Follow the docs to [Install
-flux2](https://github.com/fluxcd/flux2/tree/main/install) (On Arch Linux, you
-may install `flux-go` from the AUR.)
-
-Add shell completion support to your `~/.bashrc`
-
-```bash
-## ~/.bashrc
-. <(flux completion bash)
-```
-
-## Create infrastructure repository
-
-Create a new git repository on your git host called `flux-infra` (or whatever
-you want). Create temporary variables to set the SSH clone URL, and the local
-git directory.
-
-```bash
-FLUX_INFRA_REPO=ssh://git@git.example.com:22/username/flux-infra.git
-FLUX_INFRA_DIR=${HOME}/git/flux-infra
-```
-
-The `flux-infra` repository is used to manage several clusters, with each having
-its own subdirectory. Define the name of the initial cluster to setup:
-
-```bash
-CLUSTER=flux.example.com
-```
-
-Clone the repository to your workstation:
-
-```bash
-git clone ${FLUX_INFRA_REPO} ${FLUX_INFRA_DIR}
-mkdir ${FLUX_INFRA_DIR}/${CLUSTER}
-cd ${FLUX_INFRA_DIR}/${CLUSTER}
-```
+[Flux](https://fluxcd.io/) is a Continuous Delivery platform for Kubernetes
+infrastructure. Flux will syncrhonize your git repository containing your YAML
+manifests, and automatically apply changes to your cluster. Manage your cluster
+via GitOps!
 
 ## Install flux operators
+
+Configure the git repository directory you created in [part
+1](/blog/k3s/k3s-01-setup) along with other config variables:
+
+```env
+FLUX_INFRA_DIR=${HOME}/git/flux-infra
+CLUSTER=k3s.example.com
+```
 
 Create the YAML manifests for flux:
 

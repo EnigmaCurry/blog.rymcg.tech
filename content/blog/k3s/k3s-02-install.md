@@ -12,16 +12,18 @@ droplets.
 
 ## Install k3s on a generic host
 
-If you already have a Linux server provisioned, you can install k3s on it.
+If you already have a provisioned Linux server, or Virtual Machine, you can
+install k3s on it, with a single command.
 
-Before installing, you should know that pods store volumes into the directory
-`/var/lib/rancher/k3s/storage`. You should create this directory ahead of time,
-and optionally mount whatever storage volume you have available at that path.
-Otherwise, pods will store volumes on your root filesystem.
+Before installing, you should know that pods will store volumes into the
+directory `/var/lib/rancher/k3s/storage`. You should create this directory prior
+to install, and optionally mount whatever storage volume you want to have
+available, on that path. Otherwise, pods will store volumes on your root
+filesystem, which might be too small.
 
-You need to customize the k3s installer command, so as to not start Traefik.
-Traefik will be installed later by yourself, using an updated version, rather
-than the one that is bundled with k3s. The k3s installer command is:
+You need to add options to the k3s installer command, so as to not start
+Traefik. Traefik will be installed later by yourself, using an updated version,
+rather than the one that is bundled with k3s. The k3s installer command is:
 
 ```
 ## Example k3s install command to run on any server:
@@ -87,9 +89,9 @@ curl -sfL https://get.k3s.io | sh -s - server --disable traefik
    
  * [Create wildcard DNS](https://cloud.digitalocean.com/networking/domains)
    names pointing to your droplet's floating IP address
-   (`*.subdomain.example.com`) This link requires that your domain's DNS use
-   DigitalOcean nameservers, tied to your account, but you may set this up with
-   any DNS provider that you use instead.
+   (`*.k3s.example.com`). To use that link, requires that your domain uses
+   DigitalOcean nameservers, tied to your account. Alternatively, you may set
+   this up with any DNS provider that you use instead.
    
 ## Download Cluster API Key
 
@@ -103,12 +105,17 @@ export KUBECONFIG=${HOME}/.kube/config
 ```
 
 Download the key from the cluster, while replacing the correct IP address for
-remote access:
+remote access. If you installed on DigitalOcean this will work for you:
 
 ```bash
 ssh ${FLOATING_IP} -l root -o StrictHostKeyChecking=no \
   cat /etc/rancher/k3s/k3s.external.yaml > ${KUBECONFIG}
 ```
+
+(If you installed to a generic host, you must copy `/etc/rancher/k3s/k3s.yaml`
+from the server, to your client, and edit the `127.0.0.1` IP address replacing
+it to be the public IP address of the server node, NOT the floating IP, which
+the cluster key is not signed for.)
 
  * Test kubectl access with the key:
  
@@ -118,7 +125,7 @@ ssh ${FLOATING_IP} -l root -o StrictHostKeyChecking=no \
 (It should print the node status as `Ready` once k3s finishes initialization. The name of the node displayed, should be the same hostname you created on the droplet page.)
 
 If you set `KUBECONFIG` to anything other than the default
-(`$HOME/.kube/config`) you should add it to your `~/.bashrc`.
+(`$HOME/.kube/config`) you should add it to your `~/.bashrc` file.
 
 ```env-static
 export KUBECONFIG=${HOME}/.kube/config

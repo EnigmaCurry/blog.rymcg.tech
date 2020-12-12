@@ -19,7 +19,7 @@ function addCopyButtons(clipboard) {
       title.innerText=" $> # Customize temporary variables";
     } else if (lang === 'env-static') {
       header.classList.add('lang-env-static');
-      title.innerText=" # Set permanent variables in ~/.bashrc or ~/.bash_profile";
+      title.innerText=" # Set permanent environment in ~/.bashrc or ~/.bash_profile";
     }else if (lang === 'bash') {
       header.classList.add('lang-bash');
       title.innerText=" $> # Run in BASH shell";

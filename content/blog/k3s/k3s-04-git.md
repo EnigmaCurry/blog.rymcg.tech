@@ -1,31 +1,34 @@
 ---
 title: "K3s part 4: Git host"
-date: 2020-12-11T00:03:00-06:00
+date: 2020-12-11T00:04:00-06:00
 tags: ['k3s']
 ---
+
+[Gitea](https://gitea.io/) is a self-hosted git platform, much like GitHub. You
+will push your local `flux-infra` git repository to gitea, for backup, and for
+continuous delivery (CD) via Flux (Flux to be installed in [part
+5](/blog/k3s/k3s-05-flux).
 
 Configure the git repository directory you created in [part
 1](/blog/k3s/k3s-01-setup) along with other config variables:
 
 ```env
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
-CLUSTER=flux.example.com
+CLUSTER=k3s.example.com
 ```
 
 
 ## Install Sealed Secrets
 
 [bitnami-labs/sealed-secrets](https://github.com/bitnami-labs/sealed-secrets)
-allows you to encrypt kubernetes secrets with a key secured by your cluster. You
-can safely store sealed secrets in public (or private) git repositories.
+allows you to encrypt and decrypt kubernetes secrets, with a key secured by your
+cluster. You can safely store the sealed secrets in public (or private) git
+repositories.
 
-You need to install the client `kubeseal` on your workstation, and you must
-install the `sealed-secrets-controller` on your cluster.
-
-If you are on Arch Linux, you can install `kubeseal` from the AUR. If you are on
-a different platform, [follow the
-directions](https://github.com/bitnami-labs/sealed-secrets/releases) for
-installing the `Client side` only.
+Sealed Secrets require a client tool (`kubeseal`) on your workstation, and a
+kubernetes controller installed on the server. You already installed `kubeseal`
+in [part1](/blog/k3s/k3s-01-setup), and now you will install the kubernetes
+controller:
 
 Find the latest version via curl:
 
@@ -46,7 +49,7 @@ EOF
 The Kustomization links the resource from the upstream project tagged to the
 version.
 
-Finally, install the controller:
+Apply to the cluster:
 
 ```bash
 kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system | kubectl apply -f - 
@@ -62,7 +65,7 @@ entire files. For gitea, you need to store the following:
  * `INTERNAL_TOKEN` - gitea internal token
  * `JWT_SECRET` - gitea JWT secret
  * `SECRET_KEY` - gitea Secret key
- * gitea app.ini - the config file for gitea.
+ * gitea's `app.ini` - the config file for gitea.
 
 You will create new random generated passwords, store them as temporary
 environment variables, then create the Sealed Secret, encrypting the values with
@@ -150,7 +153,7 @@ rm ${CONFIG_TMP}
 unset POSTGRES_USER POSTGRES_PASSWORD INTERNAL_TOKEN JWT_SECRET SECRET_KEY
 ```
 
-## Create namespace and manifest for gitea
+## Install Gitea
 
 Create two PhysicalVolumeClaims (`pvc`) to provision data volumes to store gitea
 repository and postgresql data.
@@ -411,18 +414,19 @@ kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/git-system | kubectl apply -f -
 
 ## Admin account creation
 
-You need to manually create the initial admin user (Note that you *cannot* use
-the username `admin`, which is reserved), this example uses the name `root` and
-the email address `root@example.com`:
+You need to manually create the initial admin user for gitea (Note that you
+*cannot* use the username `admin`, which is reserved), this example uses the
+name `root` and the email address `root@example.com`, but you can use whatever
+you want:
 
 ```env
-USERNAME=root
-EMAIL=root@example.com
+GITEA_USER=root
+GITEA_EMAIL=root@example.com
 ```
 
 ```bash
 kubectl -n git-system exec deploy/gitea -it -- gitea admin user create \
-    --username ${USERNAME} --random-password --admin --email ${EMAIL}
+    --username ${GITEA_USER} --random-password --admin --email ${GITEA_EMAIL}
 ```
 
 The password is randomly generated and printed, but its at the top of the
@@ -430,5 +434,32 @@ output, so you may need to scroll up to see it. Once you sign in using this
 account, you can create additional accounts through the web interface.
 
 You can now login to the git service with your web browser, open
-ps://git.subdomain.example.com and login in with the user just created.
+https://git.k3s.example.com and login in with the user just created.
 
+## Create flux-infra repository on gitea
+
+Up to now your `flux-infra` repository has only existed on your workstation. Now
+you will push it to gitea as a git remote.
+
+ * Login to gitea, and add your workstation SSH key. Go to Settings / SSH Keys
+   and click `Add Key` and paste your key (`${HOME}/.ssh/id_rsa.pub`)
+ * Create a new repository, using the `+` icon in the upper right of the page.
+   Find the SSH clone URL of the blank repository.
+
+```env
+GIT_REMOTE=ssh://git@git.${CLUSTER}:2222/${GITEA_USER}/flux-infra.git
+```
+
+Commit all the changes so far:
+
+```bash
+git -C ${FLUX_INFRA_DIR} add .
+git -C ${FLUX_INFRA_DIR} commit -m "initial"
+```
+
+Push your local repository:
+
+```bash
+git -C ${FLUX_INFRA_DIR} remote add origin ${GIT_REMOTE}
+git -C ${FLUX_INFRA_DIR} push -u origin master
+```
