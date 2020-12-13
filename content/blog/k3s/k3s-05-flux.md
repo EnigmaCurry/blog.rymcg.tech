@@ -69,7 +69,7 @@ The flux `GitRepository` object defines the remote repository to peridoically
 pull and watch for changes. Create this for the flux-infra repo:
 
 ```bash
-flux create source git flux-system \
+flux create source git flux-infra \
   --url=${GIT_REMOTE} \
   --ssh-key-algorithm=rsa \
   --ssh-rsa-bits=4096 \
@@ -88,8 +88,8 @@ from a `GitRepository`, and apply it to the cluster. Create this for the
 flux-infra repo:
 
 ```bash
-flux create kustomization flux-system \
-  --source=flux-system \
+flux create kustomization ${CLUSTER} \
+  --source=flux-infra \
   --path="./${CLUSTER}" \
   --prune=true \
   --interval=10m
@@ -98,9 +98,9 @@ flux create kustomization flux-system \
 Export configuration manifests:
 
 ```bash
-flux export source git flux-system > \
+flux export source git flux-infra > \
   ${FLUX_INFRA_DIR}/${CLUSTER}/flux-system/gotk-sync.yaml
-flux export kustomization flux-system >> \
+flux export kustomization ${CLUSTER} >> \
   ${FLUX_INFRA_DIR}/${CLUSTER}/flux-system/gotk-sync.yaml
 ```
 
@@ -120,7 +120,7 @@ Commit and push the changes to the remote git repository:
 
 ```bash
 git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
-git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} flux-system"
+git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER}"
 git -C ${FLUX_INFRA_DIR} push
 ```
 

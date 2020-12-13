@@ -11,45 +11,47 @@ the host server via SSH, unless you have to. Instead, you will create all the
 config files on your local laptop, which will be referred to as your
 workstation, and use `kubectl` to access the remote cluster API.
 
-You will need:
+You will need to install several command line tools on your workstation:
 
  * A modern BASH shell, being the default Linux terminal shell, but also
    available on various platforms.
- * `kubectl` installed on your workstation:
+ * `kubectl`:
    * Arch Linux: `sudo pacman -S kubectl`
    * Other OS: [See docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-using-native-package-management)
-   * You can take a small detour now and setup bash shell completion for
-     kubectl, this is quite useful. Run `kubectl completion -h` and follow the
-     directions for setting up your shell. However, you can skip this, it's
-     not required.
+   * You can take a small detour now and setup bash shell tab-key completion for
+     kubectl, this is quite useful for interactive use. Run `kubectl completion
+     -h` and follow the directions for setting up your shell. However, you can
+     skip this, since all of the commands you will run are already prepared for
+     you in this blog.
        
- * `kustomize` installed on your workstation:
+ * `kustomize`:
    * Arch Linux: `sudo pacman -S kustomize`
    * Other OS: [see releases](https://github.com/kubernetes-sigs/kustomize/releases)
-   * You may have heard about kubectl having kustomize as a built-in (`kubectl
-     apply -k`). However, the version of kustomize that is bundled with kubectl
-     is old, and has bugs. You should use the latest version of `kustomize`
-     directly instead of the bundled kubectl version (`kustomize build | kubectl
-     apply -f - `).
+   * You may have heard about kubectl having kustomize as a built-in feature
+     (`kubectl apply -k`). However, the version of kustomize that is bundled
+     with kubectl is old, and has bugs. You should use the latest version of
+     `kustomize` directly instead of the bundled kubectl version (`kustomize
+     build | kubectl apply -f - `).
 
- * `kubeseal` installed on your workstation:
+ * `kubeseal`:
  
    * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/kubeseal/)
    * Other OS: [see releases](https://github.com/bitnami-labs/sealed-secrets/releases)
    * Note: only install the client side at this point, you will install the
      cluster side later in a different way.
 
- * `flux` installed on your workstation:
+ * `flux`:
  
    * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/flux-go/)
    * Other OS: [see docs](https://github.com/fluxcd/flux2/tree/main/install)
-   * Add shell completion support to your `~/.bashrc`
+   * Optional: Add shell completion support to your `~/.bashrc`
    
 ```env-static
+## Optional bash shell completion for flux
 . <(flux completion bash)
 ```
 
- * `git` installed on your workstation:
+ * `git`:
    * Arch Linux: `sudo pacman -S git`
    * Ubuntu: `sudo apt install git`
    * [Other OS](https://git-scm.com/downloads)
@@ -111,18 +113,18 @@ echo The random temporary file is ${TMP_FILE}
 echo The contents written were: $(cat ${TMP_FILE})
 ```
 
-The contents of the file is the lines between `cat <<EOF` and the second `EOF`
-on its own line (the whole section is highlighted in yellow on this blog). Any
-lines that comes after the second `EOF` (the `echo` lines) are just a regular
-commands, not part of the content of the file created. (Technically, HEREDOC
-format allows any marker instead of `EOF` but this blog will always use `EOF` by
-convention, which is mnemonic for `End Of File`.)
+The contents of the file is the line(s) between `cat <<EOF` on line 2 and the
+second `EOF` on its own line, line 4 (`Hello, World!\n`). Any lines that comes
+after the second `EOF` (the `echo` lines) are just a regular commands, not part
+of the content of the file created. (Technically, HEREDOC format allows any
+marker instead of `EOF` but this blog will always use `EOF` by convention, which
+is mnemonic for `End Of File`.)
 
 Note that the previous example rendered environment variables *before* writing
-the file. The file contains the *value* of the variable at the time of creation,
-and discards the variable name. In order to write a shell script via HEREDOC,
-that contains variable *names* (not values), you need to disable this behaviour.
-To do this, you put quotes around the first `EOF` marker:
+the file. The file contains the *value* of the variable as it was at the time of
+creation, and discards the variable name. In order to write a shell script via
+HEREDOC, that contains variable *names* (not values), you need to disable this
+behaviour. To do this, you put quotes around the first `EOF` marker:
 
 ```bash
 TMP_FILE=$(mktemp --suffix .sh)
