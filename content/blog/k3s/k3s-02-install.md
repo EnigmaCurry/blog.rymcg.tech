@@ -1,5 +1,5 @@
 ---
-title: "K3s part 2: Creating a single node cluster"
+title: "K3s part 2: Create a single node cluster"
 date: 2020-12-11T00:02:00-06:00
 tags: ['k3s']
 ---

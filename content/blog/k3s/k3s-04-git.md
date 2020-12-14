@@ -73,7 +73,7 @@ the cluster key into a new file.
 
 Generate the secrets:
 
-```env
+```bash
 POSTGRES_USER=gitea
 POSTGRES_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
 INTERNAL_TOKEN=$(eval "kubectl run --quiet -i --rm gen-passwd-${RANDOM} \
@@ -249,7 +249,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: gitea
-                key: POSTGRES_PASSWORD
+                  key: POSTGRES_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
       volumes:
@@ -453,6 +453,7 @@ GIT_REMOTE=ssh://git@git.${CLUSTER}:2222/${GITEA_USER}/flux-infra.git
 Commit all the changes so far:
 
 ```bash
+git -C ${FLUX_INFRA_DIR} init
 git -C ${FLUX_INFRA_DIR} add .
 git -C ${FLUX_INFRA_DIR} commit -m "initial"
 ```

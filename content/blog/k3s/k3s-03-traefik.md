@@ -1,5 +1,5 @@
 ---
-title: "K3s part 3: Traefik"
+title: "K3s part 3: Traefik proxy"
 date: 2020-12-11T00:03:00-06:00
 tags: ['k3s']
 ---

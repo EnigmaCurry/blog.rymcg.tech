@@ -1,5 +1,5 @@
 ---
-title: "K3s part 6: Container Registry"
+title: "K3s part 6: Container registry"
 date: 2020-12-11T00:06:00-06:00
 tags: ['k3s']
 ---
@@ -34,7 +34,7 @@ EOF
 ```bash
 gen_password() { head -c 16 /dev/urandom | sha256sum | cut -d " " -f 1; }
 kube_run() {
-    eval "kubectl run --quiet -i --rm --tty kube-run-${1}-${RANDOM} \
+    eval "kubectl run --quiet -i --rm --tty kube-run-${RANDOM} \
       --image=${1} --restart=Never -- ${@:2}"
 }
 htpasswd() {
@@ -246,3 +246,79 @@ git -C ${FLUX_INFRA_DIR} commit -m "registry"
 git -C ${FLUX_INFRA_DIR} push origin master
 ```
 
+## Configure cluster to use new registry
+
+In order to configure the k3s cluster to login and use the registry, you need to
+create file on the k3s host server:
+
+```env
+## The SSH host of the k3s server:
+K3S_HOST=k3s.${CLUSTER}
+```
+
+```bash
+cat <<EOF | ssh root@${K3S_HOST} tee /etc/rancher/k3s/registries.yaml
+mirrors:
+  registry.${CLUSTER}:
+    endpoint:
+      - "https://registry.${CLUSTER}"
+configs:
+  "registry.${CLUSTER}":
+    auth:
+      username: ${REGISTRY_ADMIN}
+      password: ${REGISTRY_PASSWORD}
+EOF
+```
+
+In order for this configuration to take effect, K3s must be restarted:
+
+```bash
+ssh root@${K3S_HOST} systemctl restart k3s
+```
+
+## Test cluster registry access
+
+From your workstation, use `podman` (or `docker`) to login to the private
+registry:
+
+```bash
+podman login registry.${CLUSTER} -u ${REGISTRY_ADMIN} -p ${REGISTRY_PASSWORD}
+```
+
+Pull the public `alpine` image to your workstation:
+
+```bash
+podman pull alpine
+```
+
+Tag the image and push to the private registry:
+
+```bash
+podman tag alpine registry.${CLUSTER}/alpine
+podman push registry.${CLUSTER}/alpine
+```
+
+
+Create function to run interactive images:
+```bash
+kube_run() {
+    eval "kubectl run --quiet -i --rm --tty kube-run-${RANDOM} \
+      --image=${1} --restart=Never -- ${@:2}"
+}
+```
+
+Run a test container, using the alpine image from docker.io:
+
+```bash
+kube_run alpine uname -a
+```
+
+You should see the container Linux kernel info printed.
+
+Run the same image now from your private registry:
+
+```bash
+kube_run registry.${CLUSTER}/alpine uname -a
+```
+
+You should see the Linux kernel info printed again.

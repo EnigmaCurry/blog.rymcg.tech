@@ -1,5 +1,5 @@
 ---
-title: "K3s part 5: Install Flux"
+title: "K3s part 5: Flux GitOps"
 date: 2020-12-11T00:05:00-06:00
 tags: ['k3s']
 ---
@@ -55,6 +55,9 @@ Commit and push the manifest to the remote git repository:
 ```bash
 git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
 git -C ${FLUX_INFRA_DIR} commit -m "init ${CLUSTER} flux-system"
+```
+
+```bash
 git -C ${FLUX_INFRA_DIR} push
 ```
 
@@ -121,6 +124,8 @@ Commit and push the changes to the remote git repository:
 ```bash
 git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
 git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER}"
+```
+```bash
 git -C ${FLUX_INFRA_DIR} push
 ```
 
