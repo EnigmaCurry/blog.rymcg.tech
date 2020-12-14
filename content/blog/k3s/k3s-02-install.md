@@ -15,11 +15,11 @@ droplets.
 If you already have a provisioned Linux server, or Virtual Machine, you can
 install k3s on it, with a single command.
 
-Before installing, you should know that pods will store volumes into the
-directory `/var/lib/rancher/k3s/storage`. You should create this directory prior
-to install, and optionally mount whatever storage volume you want to have
-available, on that path. Otherwise, pods will store volumes on your root
-filesystem, which might be too small.
+Before installing, you should know that pods will store data in volumes created
+in the directory `/var/lib/rancher/k3s/storage`. You should create this
+directory prior to install, and optionally mount whatever storage volume you
+want to have available, on that path. Otherwise, this directory will live on the
+root filesystem, which might be too small.
 
 You need to add options to the k3s installer command, so as to not start
 Traefik. Traefik will be installed later by yourself, using an updated version,
