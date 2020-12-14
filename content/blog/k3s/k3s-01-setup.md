@@ -32,7 +32,12 @@ You will need to install several command line tools on your workstation:
      with kubectl is old, and has bugs. You should use the latest version of
      `kustomize` directly instead of the bundled kubectl version (`kustomize
      build | kubectl apply -f - `).
-
+   * NOTICE: [kustomize v3.9.0 does not
+     work](https://github.com/kubernetes-sigs/kustomize/issues/3340#issue-761638279)
+     (Fails to create `RoleBinding` resources) This may already be fixed in a
+     later version, but the tested WORKING version as of 2020-12-14 is kustomize
+     [v3.8.8](https://github.com/kubernetes-sigs/kustomize/releases/tag/kustomize%2Fv3.8.8)
+     
  * `kubeseal`:
  
    * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/kubeseal/)

@@ -319,6 +319,22 @@ Apply the configuration to your cluster:
 kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system | kubectl apply -f - 
 ```
 
+You may see errors like this: 
+
+ * `no matches for kind "IngressRoute" in version "traefik.containo.us/v1alpha1"`
+ * `no matches for kind "TraefikService" in version "traefik.containo.us/v1alpha1"`
+
+
+Just run the command again:
+
+```bash
+kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system | kubectl apply -f - 
+```
+
+The second time will resolve the dependency disorder.
+
+## Test it
+
 You can examine the whoami service in your web browser, open
-https://whoami.subdomain.example.com
+https://whoami.k3s.example.com
 
