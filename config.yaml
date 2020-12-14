@@ -11,7 +11,7 @@ params:
   copyrightUrl: 'https://blog.rymcg.tech'
   description: 'Self-hosted, Open Source, Freedom'
   faviconfile: 'https://blog.rymcg.tech/img/favicon.png'
-  latestpostcount: 5
+  latestpostcount: 1000
   logofile: '/img/logo.jpg'
   highlightjs: true
   highlightjslanguages:
