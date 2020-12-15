@@ -104,8 +104,8 @@ FLOATING_IP=X.X.X.X
 export KUBECONFIG=${HOME}/.kube/config
 ```
 
-Download the key from the cluster, while replacing the correct IP address for
-remote access. If you installed on DigitalOcean this will work for you:
+Download the key from the cluster. If you installed on DigitalOcean this will
+work for you:
 
 ```bash
 ssh ${FLOATING_IP} -l root -o StrictHostKeyChecking=no \

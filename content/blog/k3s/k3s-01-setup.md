@@ -120,16 +120,17 @@ echo The contents written were: $(cat ${TMP_FILE})
 
 The contents of the file is the line(s) between `cat <<EOF` on line 2 and the
 second `EOF` on its own line, line 4 (`Hello, World!\n`). Any lines that comes
-after the second `EOF` (the `echo` lines) are just a regular commands, not part
-of the content of the file created. (Technically, HEREDOC format allows any
-marker instead of `EOF` but this blog will always use `EOF` by convention, which
-is mnemonic for `End Of File`.)
+after the second `EOF` (the `echo` lines) are just regular commands, not part of
+the content of the file created. (Technically, HEREDOC format allows any marker
+instead of `EOF` but this blog will always use `EOF` by convention, which is
+mnemonic for `End Of File`.)
 
 Note that the previous example rendered environment variables *before* writing
 the file. The file contains the *value* of the variable as it was at the time of
-creation, and discards the variable name. In order to write a shell script via
-HEREDOC, that contains variable *names* (not values), you need to disable this
-behaviour. To do this, you put quotes around the first `EOF` marker:
+creation, and replaces the variable name reference. In order to write a shell
+script, via HEREDOC, that contains variable *names* (not values), you need to
+disable this behaviour. To do this, you put quotes around the first `EOF`
+marker, and then no variables will be substituted in the body:
 
 ```bash
 TMP_FILE=$(mktemp --suffix .sh)
