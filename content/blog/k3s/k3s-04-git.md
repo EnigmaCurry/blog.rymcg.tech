@@ -32,7 +32,7 @@ controller:
 
 Find the latest version via curl:
 
-```env
+```bash
 SEALED_SECRET_VERSION=$(curl --silent \
   "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | \
   grep -Po '"tag_name": "\K.*?(?=")')
