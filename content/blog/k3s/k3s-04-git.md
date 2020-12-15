@@ -171,7 +171,6 @@ EOF
 
 To create `pvc.yaml`:
 ```bash
-mkdir -p ${FLUX_INFRA_DIR}/${CLUSTER}/git-system && \
 cat <<'EOF' > ${FLUX_INFRA_DIR}/${CLUSTER}/git-system/pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
