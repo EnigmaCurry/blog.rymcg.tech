@@ -125,10 +125,11 @@ DISABLE_GIT_HOOKS = false
 
 [oauth2]
 JWT_SECRET = ${JWT_SECRET}
-EOF
 
 [repository]
 DEFAULT_PRIVATE = private
+
+EOF
 ```
 
 Create the Sealed Secret:
