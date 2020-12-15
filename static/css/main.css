@@ -225,7 +225,6 @@ h6 {
 .content .markdown code {
     padding: 0;
     font-family: var(--font-code);
-    font-size: 0.98rem;
 }
 
 pre {
@@ -398,6 +397,16 @@ pre {
     /* Avoid pushing up the copy buttons. */
     margin: 0;
     color: #fff;
+}
+
+code {
+    font-weight: 1000;
+}
+
+p code, li code {
+    font-size: 1em;
+    background-color: #6d393933;
+    margin: 5px;
 }
 
 .code-header .title {

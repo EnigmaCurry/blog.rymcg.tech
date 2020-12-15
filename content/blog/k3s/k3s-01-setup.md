@@ -64,18 +64,20 @@ You will need to install several command line tools on your workstation:
 ## Running Commands
 
 This blog is written in a Literate Programming style, containing *exact* BASH
-shell commands for you to paste into your workstation terminal.
+shell commands for you to copy and paste into your workstation terminal.
 
-These block-quoted commands are intended to be copy-and-pasted directly into
-your terminal *without editing them*. Commands that need configuration, will
-reference environment variables, which you create before you run the command, so
-that you may customize the variables first, and then run the command as-is.
+These block-quoted commands are intended to be run *without needing to edit
+them*. Commands that need configuration, will reference environment variables,
+which you create before you run the command, so that you may customize the
+variables first, and then run the command as-is.
 
 You should configure your BASH so that your pasted commands are never run unless
-you give your confirmation, after pasting, by pressing the Enter key. This also
-allows you the opportunity to edit the commands on the terminal prompt line,
-(which you will only need to do in the case of customizing variables, not for
-editing commands). Run this to enable this feature in BASH:
+you give your confirmation, after pasting, by pressing the Enter key. In
+general, this allows you the opportunity to edit commands on the terminal prompt
+line, before running them. (In this case, you will only need to do this in the
+case of customizing variables, not for editing commands, which should be run
+with editing them.) Run this to enable this feature, called `bracketed-paste`,
+in BASH:
 
 ```bash
 # Enable for the current shell:
