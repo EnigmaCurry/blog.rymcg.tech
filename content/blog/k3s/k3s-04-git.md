@@ -57,8 +57,9 @@ kustomize build ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system | kubectl apply -f -
 
 ## Create Secrets
 
-Secrets include both individual strings, like passwords, and tokens, but also
-entire files. For gitea, you need to store the following:
+Secrets include strings, like passwords, and tokens, but also entire files.
+Authorized pods can access secrets as an environment variable, and/or like a
+file mounted to a path. For gitea, you need to store the following:
 
  * `POSTGRES_USER` - the username of the postgresql database user.
  * `POSTGRES_PASSWORD` - the password of the postgresql database user.
@@ -67,11 +68,7 @@ entire files. For gitea, you need to store the following:
  * `SECRET_KEY` - gitea Secret key
  * gitea's `app.ini` - the config file for gitea.
 
-You will create new random generated passwords, store them as temporary
-environment variables, then create the Sealed Secret, encrypting the values with
-the cluster key into a new file.
-
-Generate the secrets:
+Generate passwords and tokens:
 
 ```bash
 POSTGRES_USER=gitea
@@ -129,6 +126,9 @@ DISABLE_GIT_HOOKS = false
 [oauth2]
 JWT_SECRET = ${JWT_SECRET}
 EOF
+
+[repository]
+DEFAULT_PRIVATE = private
 ```
 
 Create the Sealed Secret:
