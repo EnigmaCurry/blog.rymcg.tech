@@ -72,8 +72,7 @@
                         {{ partial "content" . }}
                     </div>
                     <br/>
-                    <hr/>
-                    <p>You can discuss this blog on Matrix:<a href="https://matrix.to/#/{{ .Site.Params.matrix_room | safeURL }}" > {{ .Site.Params.matrix_room }}</a></p>
+                    {{ partial "about_footer" . }}
                 </div>
 
                 {{ if $isTocEnabled }}

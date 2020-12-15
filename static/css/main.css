@@ -415,3 +415,7 @@ pre {
 .code-header.lang-bash {
     background-color: #752e2e;
 }
+
+hr {
+    border-top: 1px solid white;
+}

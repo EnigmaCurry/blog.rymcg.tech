@@ -28,8 +28,7 @@ Programming](https://en.wikipedia.org/wiki/Literate_programming). There are
 literal code blocks for you to copy and paste into your BASH terminal to
 reproduce all of the files and commands necessary for this setup. There is *no*
 additional git repository you need to clone or fork, what you see on this blog,
-is all you need. ([You totally can clone this blog, if you want to
-though.](https://github.com/EnigmaCurry/blog.rymcg.tech)) This will all be
-explained in detail in [Part 1](/blog/k3s/k3s-01-setup/).
+is all you need. This will all be explained in detail in [Part
+1](/blog/k3s/k3s-01-setup/).
 
-{{< matrix_room >}}
+{{< about_footer >}}

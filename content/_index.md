@@ -9,4 +9,4 @@ This is EnigmaCurry's dev blog.
 Check out the [k3s series](/tags/k3s) of posts, build your own self-hosted
 kubernetes cluster, with GitOps.
 
-{{< matrix_room >}}
+{{< about_footer >}}
