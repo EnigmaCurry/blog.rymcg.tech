@@ -10,7 +10,7 @@ certificate only authenticates the server, not the client, leaving client
 authentication as a requirement on the application layer. (For example,
 requiring to submit a username/password via HTTP, before access is granted.)
 This is enough, and normal, for secure public facing web services, where your
-clients might be connecting from anywhere.
+clients might be connecting from anywhere, especially using web-browsers.
 
 However, TLS certificates (X.509) can be used on the client too. This forms
 bi-directional authentication: client authenticates server *and* server
@@ -247,3 +247,7 @@ curl -L https://letsencrypt.org/certs/lets-encrypt-r3.pem > ${LETSENCRYPT_CA}
 curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} \
    --cacert ${LETSENCRYPT_CA} https://whoami.${CLUSTER}
 ```
+## Using client certificates in programs
+
+Here is a [big list of examples from
+smallstep](https://smallstep.com/hello-mtls), including Python, Node.js, Go etc.
