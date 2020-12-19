@@ -338,3 +338,5 @@ The second time will resolve the dependency disorder.
 You can examine the whoami service in your web browser, open
 https://whoami.k3s.example.com
 
+You now know how to expose any pod to the internet, just follow the example of
+`whoami.yaml`, for your own services.
