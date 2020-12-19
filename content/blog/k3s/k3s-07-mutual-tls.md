@@ -29,9 +29,10 @@ can enforce this on a per-route (URL or domain matching) basis.
 ## Certificate Authority
 
 In order to generate client certificates, a new Certificate Authority must be
-created. Let's Encrypt cannot be used for generating client certificates.
+created. Let's Encrypt cannot be used for generating client certificates, but
+will continue to be used for the server certificate.
 
-To generate the certificates, you will use a program called [Step
+To generate the client certificates, you will use a program called [Step
 CLI](https://github.com/smallstep/cli) using the provided docker image. Its
 advisable to keep your root CA offline, so you will create this only on your
 workstation, via podman, *not on the cluster*:
