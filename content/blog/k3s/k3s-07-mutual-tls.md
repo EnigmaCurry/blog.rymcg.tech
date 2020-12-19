@@ -257,3 +257,14 @@ curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} \
 
 Here is a [big list of examples from
 smallstep](https://smallstep.com/hello-mtls), including Python, Node.js, Go etc.
+
+## Backup podman volume
+
+You can export a tarball of the docker volume, this will include all of the
+certificates and keys for your CA and clients. Keep it safe!!
+
+```bash
+podman run --rm -v ${CA_VOLUME}:/home/step smallstep/step-ca \
+   tar cz /home/step > ${ROOT_CA}.tar.gz
+echo "Saved ROOT CA backup: $(pwd)/${ROOT_CA}.tar.gz"
+```
