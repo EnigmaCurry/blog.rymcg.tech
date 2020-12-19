@@ -101,7 +101,7 @@ echo Certificate chain exported: ${CA_CERT}
 
 ## Create the Sealed Secret containing CA certificates
 
-```
+```bash
 kubectl create secret generic whoami-certificate-authority \
    --namespace default --dry-run=client -o json \
    --from-file=tls.ca=${CA_CERT} | kubeseal -o yaml > \
