@@ -6,7 +6,7 @@ tags: ['k3s']
 
 In [part 3](/blog/k3s/k3s-03-traefik), Traefik was configured with TLS certificates
 from Let's Encrypt. This type of certificate only authenticates the server, not
-the client, leaving client authentication as a requirment on the application
+the client, leaving client authentication as a requirement on the application
 layer. (For example, requiring to submit a username/password via HTTP, before
 access is granted.) This is enough, and normal, for secure public facing web
 services, where your clients might be connecting from anywhere.
