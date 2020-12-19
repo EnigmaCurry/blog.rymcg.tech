@@ -81,8 +81,8 @@ you give your confirmation, after pasting, by pressing the Enter key. In
 general, this allows you the opportunity to edit commands on the terminal prompt
 line, before running them. (In this case, you will only need to do this in the
 case of customizing variables, not for editing commands, which should be run
-with editing them.) Run this to enable this feature, called `bracketed-paste`,
-in BASH:
+without editing them.) Run this to enable this feature, called
+`bracketed-paste`, in BASH:
 
 ```bash
 # Enable for the current shell:

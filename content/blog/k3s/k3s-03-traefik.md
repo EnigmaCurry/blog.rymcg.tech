@@ -6,8 +6,10 @@ tags: ['k3s']
 
 [Traefik](https://www.traefik.io) is a proxy service that will allow HTTP and
 TCP services running inside your cluster to be exposed to the public internet.
-It follows the standard Kubernetes Ingress API. It handles automatic and
-transparent TLS (HTTPS) with ACME certificates (Let's Encrypt).
+It follows the standard [Kubernetes Ingress
+API](https://kubernetes.io/docs/concepts/services-networking/ingress/). Traefik
+handles automatic and transparent TLS (HTTPS) with ACME certificates (Let's
+Encrypt).
 
 ## Create Traefik YAML manifests
 
