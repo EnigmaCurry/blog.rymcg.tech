@@ -12,37 +12,42 @@ requiring to submit a username/password via HTTP, before access is granted.)
 This is enough, and normal, for secure public facing web services, where your
 clients might be connecting from anywhere, especially using web-browsers.
 
-However, TLS certificates (X.509) can be used on the client too. This forms
-bi-directional authentication: client authenticates server *and* server
-authenticates client: Mutual TLS. This authentication happens at the session
-layer, meaning that you will probably still want to use usernames/passwords at
-the application layer as an extra layer of enforcement before authorization, but
-it gives you extra confidence that the only clients that will ever connect to
-your application, are already holding a signed certificate allowing them to do
-so.
+However, TLS certificates (X.509) can be used on the client too. This is rare
+for web-browsers, but is very common place for business and subscription API
+services. This forms bi-directional authentication: client authenticates server
+*and* server authenticates client: Mutual TLS. This authentication happens at
+the session layer, meaning that you will probably still want to use usernames
+and passwords at the application layer, as an extra barrier to entry before
+authorization, but you gain extra confidence to know that the only clients that
+can approach your application, are already holding a signed certificate allowing
+them to do so.
 
-If you're familiar with SSH keys, Mutual TLS is like setting
-`PasswordAuthentication no` in `sshd_config`, thus requiring a key from each
-client, except its for TLS (https) not SSH, and that in the case of Traefik, you
-can enforce this on a per-route (URL or domain matching) basis.
+If you're familiar with SSH keys, Mutual TLS is kind of like configuring sshd
+with `PubkeyAuthentication yes` and `PasswordAuthentication no`, thus requiring
+a key from each client, and denying those without keys. However, with TLS you
+don't need to list each and every key that you wish to allow (there is no
+equivalent to the SSH `authorized_keys` file), but rather TLS verifies that the
+key is signed by your (self-hosted) Certificate Authority. In the case of
+Traefik, you can enforce this on a per-route (sub-domain matching) basis, with
+separate Certificate Authorities for each route.
 
 ## Certificate Authority
 
-In order to generate client certificates, a new Certificate Authority must be
-created. Let's Encrypt cannot be used for generating client certificates, but
-will continue to be used for the server certificate.
+In order to generate and sign client certificates, a new Certificate Authority
+must be created. Let's Encrypt cannot be used for generating client
+certificates, but will continue to be used for the server certificates.
 
 To generate the client certificates, you will use a program called [Step
 CLI](https://github.com/smallstep/cli) using the provided docker image. Its
 advisable to keep your root CA offline, so you will create this only on your
-workstation, via podman, *not on the cluster*:
+workstation, via podman, *not on the cluster*.
 
 ```env
 ## Same git repo for infrastructure as in prior posts:
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
 CLUSTER=k3s.example.com
 ## Name of root CA file:
-ROOT_CA=root_ca
+ROOT_CA=my_org_root_ca
 ## Name on root CA certificate:
 ROOT_CA_NAME="Example Organization Root CA"
 ## Podman volume to store keys and certs:
@@ -71,18 +76,23 @@ step_run step certificate create \
 
 Choose a strong passphrase, when asked to encrypt the root CA.
 
-## Generate Intermediate CAs
+## Generate Intermediate CA for a single service
 
 You will create Intermediate CAs for smaller organizational grouping. You could
 create one per cluster, one per namespace, or one per service. This is the
-example for creating an Intermediate CA just for the `whoami` service:
+example for creating an Intermediate CA just for the `whoami` service running in
+a specific namespace (In [part 3](/blog/k3s/k3s-03-traefik) you created a
+different `whoami` service in the default namespace, this will be another
+`whoami` service in a new namespace for testing):
 
 ```env
-INTERMEDIATE_CA=whoami.${CLUSTER}
+SERVICE=whoami-mtls
+NAMESPACE=whoami-mtls
+INTERMEDIATE_CA=${SERVICE}.${CLUSTER}
 ```
 
 ```bash
-step_podman certificate create "${INTERMEDIATE_CA} Intermediate" \
+step_run step certificate create "${INTERMEDIATE_CA} Intermediate" \
     ${INTERMEDIATE_CA}-intermediate_ca.crt ${INTERMEDIATE_CA}-intermediate_ca.key \
     --profile intermediate-ca --ca ./${ROOT_CA}.crt --ca-key ./${ROOT_CA}.key
 ```
@@ -90,7 +100,7 @@ step_podman certificate create "${INTERMEDIATE_CA} Intermediate" \
 You must again enter the passphrase for the ROOT CA, and choose a new passphrase
 for the Intermediate CA.
 
-## Export the public certificates
+## Export the public CA certificates
 
 ```bash
 CA_CERT=$(mktemp)
@@ -100,20 +110,41 @@ echo "--------------------------"
 echo Certificate chain exported: ${CA_CERT}
 ```
 
+## Create the namespace
+
+Create a new namespace for testing Mutual TLS:
+
+```bash
+mkdir -p ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- namespace.yaml
+- ${SERVICE}.tls.sealed_secret.yaml
+- ${SERVICE}.tls.yaml
+- ${SERVICE}.yaml
+- ${SERVICE}.ingressroute.yaml
+EOF
+```
+
+```bash
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+EOF
+```
+
+
 ## Create the Sealed Secret containing CA certificates
 
 ```bash
-kubectl create secret generic whoami-certificate-authority \
-   --namespace default --dry-run=client -o json \
+kubectl create secret generic ${SERVICE}-certificate-authority \
+   --namespace ${NAMESPACE} --dry-run=client -o json \
    --from-file=tls.ca=${CA_CERT} | kubeseal -o yaml > \
-  ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami-tls.sealed_secret.yaml
-```
-
-Add the sealed secret to the list of resources in `kustomization.yaml`:
-
-```bash
-echo "- whoami-tls.sealed_secret.yaml" >> \
-  ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
+  ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/${SERVICE}.tls.sealed_secret.yaml
 ```
 
 ## Create the TLSOption
@@ -123,59 +154,120 @@ The
 that will require valid signed certificates from the whoami Intermediate CA:
 
 ```bash
-cat <<'EOF' > ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami.tls.yaml
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/${SERVICE}.tls.yaml
 apiVersion: traefik.containo.us/v1alpha1
 kind: TLSOption
 metadata:
-  name: whoami
-  namespace: default
+  name: ${SERVICE}
+  namespace: ${NAMESPACE}
 
 spec:
   clientAuth:
     # the CA certificate is extracted from key 'tls.ca' of the given secrets.
     secretNames:
-      - whoami-certificate-authority
+      - ${SERVICE}-certificate-authority
     clientAuthType: RequireAndVerifyClientCert
 EOF
 ```
 
-Add the TLS options to the list of resources in `kustomization.yaml`:
+## Create the whoami service
 
 ```bash
-echo "- whoami.tls.yaml" >> ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/${SERVICE}.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${SERVICE}
+  namespace: ${NAMESPACE}
+
+spec:
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+  selector:
+    app: ${SERVICE}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: TraefikService
+metadata:
+  name: ${SERVICE}
+  namespace: ${NAMESPACE}
+
+spec:
+  weighted:
+    services:
+      - name: ${SERVICE}
+        weight: 1
+        port: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ${SERVICE}
+  name: ${SERVICE}
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${SERVICE}
+  template:
+    metadata:
+      labels:
+        app: ${SERVICE}
+    spec:
+      containers:
+      - image: containous/whoami
+        name: whoami
+        ports:
+        - containerPort: 80
+          name: web
+EOF
 ```
 
+## Create the IngressRoute
 
-## Modify the whoami ingress
-
-Edit the whoami
-[IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-ingressroute),
-at the bottom of `whoami.yaml`
+The
+[IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-ingressroute)
+binds this route with a specific TLSOption, which requires our signed
+certificate:
 
 ```bash
-${EDITOR:-nano} ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami.yaml
-```
-
-At the bottom of the file is the `IngressRoute`, see the section that says
-`tls`, you must add the `options` beneath that:
-
-```
+cat <<EOF | sed 's/@@@/`/g' > \
+  ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/${SERVICE}.ingressroute.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ${SERVICE}
+  namespace: ${NAMESPACE}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(@@@${SERVICE}.${CLUSTER}@@@)
+    services:
+    - name: ${SERVICE}
+      port: 80
   tls:
     certResolver: default
+    ## Bind this route to a specific TLSOption object:
     options:
-      name: whoami
-      namespace: default
+      name: ${SERVICE}
+      namespace: ${NAMESPACE}
+EOF
 ```
-
-Save the file.
-
-This tells the whoami Ingress to use the whoami TLSOption.
 
 ## Commit the changes
 
 ```bash
 git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
-git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} whoami TLSOptions"
+git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} ${SERVICE} TLSOptions"
 ```
 
 ```bash
@@ -192,7 +284,7 @@ error telling you that the client certificate was not provided.
 Now test with curl:
 
 ```bash
-curl https://whoami.${CLUSTER}
+curl https://${SERVICE}.${CLUSTER}
 ```
 
 You should again expect an error, `bad certificate, errno 0`.
@@ -207,7 +299,8 @@ EXPIRATION=8760h
 ```
 
 ```bash
-step_run step certificate create whoami-client whoami-client.crt whoami-client.key \
+step_run step certificate create ${SERVICE}-client \
+    ${SERVICE}-client.crt ${SERVICE}-client.key \
     --profile leaf --not-after=${EXPIRATION} \
     --ca ${INTERMEDIATE_CA}-intermediate_ca.crt \
     --ca-key ${INTERMEDIATE_CA}-intermediate_ca.key \
@@ -221,8 +314,8 @@ Now export the client certificate and key:
 ```bash
 CLIENT_CERT=$(mktemp)
 CLIENT_KEY=$(mktemp)
-step_run cat whoami-client.crt >> ${CLIENT_CERT}
-step_run cat whoami-client.key >> ${CLIENT_KEY}
+step_run cat ${SERVICE}-client.crt >> ${CLIENT_CERT}
+step_run cat ${SERVICE}-client.key >> ${CLIENT_KEY}
 echo "--------------------------"
 echo Client cert exported: ${CLIENT_CERT}
 echo Client key exported: ${CLIENT_KEY}
@@ -233,7 +326,7 @@ echo Client key exported: ${CLIENT_KEY}
 Now you should have access to the whoami service using the certificate and key:
 
 ```bash
-curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} https://whoami.${CLUSTER}
+curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} https://${SERVICE}.${CLUSTER}
 ```
 
 This uses your client certificate and client key, to authenticate with the
@@ -251,7 +344,7 @@ curl -L https://letsencrypt.org/certs/lets-encrypt-r3.pem > ${LETSENCRYPT_CA}
 
 ```bash
 curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} \
-   --cacert ${LETSENCRYPT_CA} https://whoami.${CLUSTER}
+   --cacert ${LETSENCRYPT_CA} https://${SERVICE}.${CLUSTER}
 ```
 ## Using client certificates in programs
 
