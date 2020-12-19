@@ -238,11 +238,11 @@ instead, you wanted to verify the exact CA, you can specify the file explicitly:
 # Download the known Let's Encrypt Intermediate CA certificate:
 # NOTE: This URL might change in the future, look it up:
 # https://letsencrypt.org/certificates/
-LETSENCRYPT_CERT=$(mktemp)
-curl -L https://letsencrypt.org/certs/lets-encrypt-r3.pem > ${LETSENCRYPT_CERT}
+LETSENCRYPT_CA=$(mktemp)
+curl -L https://letsencrypt.org/certs/lets-encrypt-r3.pem > ${LETSENCRYPT_CA}
 ```
 
 ```bash
 curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} \
-   --cacert ${LETSENCRYPT_CERT} https://whoami.${CLUSTER}
+   --cacert ${LETSENCRYPT_CA} https://whoami.${CLUSTER}
 ```
