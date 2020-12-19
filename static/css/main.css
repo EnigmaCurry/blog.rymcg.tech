@@ -333,8 +333,8 @@ pre {
 
 /* Small devices (landscape phones, less than 768px) */
 @media (max-width: 767.98px) {
-    html {
-        font-size: 0.8rem;
+    body {
+        font-size: 0.8em;
     }
 
     .content .meta,
@@ -352,6 +352,7 @@ pre {
         margin-left: 0;
         margin-right: 0;
     }
+
 }
 
 #header-desc {
