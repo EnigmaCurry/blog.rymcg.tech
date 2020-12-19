@@ -111,13 +111,15 @@ kubectl create secret generic whoami-certificate-authority \
 Add the sealed secret to the list of resources in `kustomization.yaml`:
 
 ```bash
-echo "- whoami-tls.sealed_secret.yaml" >> ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
+echo "- whoami-tls.sealed_secret.yaml" >> \
+  ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
 ```
 
 ## Create the TLSOption
 
-The TLSOption that will require valid signed certificates from the whoami
-Intermediate CA:
+The
+[TLSOption](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-tlsoption)
+that will require valid signed certificates from the whoami Intermediate CA:
 
 ```bash
 cat <<'EOF' > ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami.tls.yaml
@@ -145,11 +147,12 @@ echo "- whoami.tls.yaml" >> ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomizati
 
 ## Modify the whoami ingress
 
-Edit the whoami IngressRoute, at the bottom of `whoami.yaml`
+Edit the whoami
+[IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-ingressroute),
+at the bottom of `whoami.yaml`
 
 ```bash
-WHOAMI_YAML=${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami.yaml
-${EDITOR:-nano} ${WHOAMI_YAML}
+${EDITOR:-nano} ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/whoami.yaml
 ```
 
 At the bottom of the file is the `IngressRoute`, see the section that says
@@ -211,6 +214,8 @@ step_run step certificate create whoami-client whoami-client.crt whoami-client.k
 ```
 
 You will need to enter the password for the Intermediate CA. 
+
+Now export the client certificate and key:
 
 ```bash
 CLIENT_CERT=$(mktemp)
