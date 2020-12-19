@@ -228,3 +228,21 @@ Now you should have access to the whoami service using the certificate and key:
 ```bash
 curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} https://whoami.${CLUSTER}
 ```
+
+This uses your client certificate and client key, to authenticate with the
+server. curl verifies the signature of the advertised server certificate (from
+Let's Encrypt) with the local TLS trust store (`ca-certificates` package). If
+instead, you wanted to verify the exact CA, you can specify the file explicitly:
+
+```bash
+# Download the known Let's Encrypt Intermediate CA certificate:
+# NOTE: This URL might change in the future, look it up:
+# https://letsencrypt.org/certificates/
+LETSENCRYPT_CERT=$(mktemp)
+curl -L https://letsencrypt.org/certs/lets-encrypt-r3.pem > ${LETSENCRYPT_CERT}
+```
+
+```bash
+curl --cert ${CLIENT_CERT} --key ${CLIENT_KEY} \
+   --cacert ${LETSENCRYPT_CERT} https://whoami.${CLUSTER}
+```
