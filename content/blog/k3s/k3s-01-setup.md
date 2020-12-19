@@ -60,7 +60,12 @@ You will need to install several command line tools on your workstation:
    * Arch Linux: `sudo pacman -S git`
    * Ubuntu: `sudo apt install git`
    * [Other OS](https://git-scm.com/downloads)
-     
+
+ * `podman` or `docker`:
+   * Sometimes it is useful to run a container on your local workstation.
+   * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
+   * [Install Podman](https://podman.io/getting-started/installation)
+   
 ## Running Commands
 
 This blog is written in a Literate Programming style, containing *exact* BASH

@@ -464,3 +464,69 @@ Push your local repository:
 git -C ${FLUX_INFRA_DIR} remote add origin ${GIT_REMOTE}
 git -C ${FLUX_INFRA_DIR} push -u origin master
 ```
+
+## Mirror repositories to GitHub or elsewhere
+
+You can mirror your gitea repositories to another git host, like GitHub. This
+has to be setup seperately for each repository you wish to mirror.
+
+Create a new SSH key to use as a deploy key:
+
+```bash
+SSH_KEY_TMP=$(mktemp -u)
+ssh-keygen -C gitea-mirror-$RANDOM -P '' -f ${SSH_KEY_TMP}
+echo "------ SSH Public Key printed on next line : ------"
+cat ${SSH_KEY_TMP}.pub
+```
+
+Do not enter a passphrase, it must be an unencrypted SSH key. The public key
+will be printed, which you will need to copy. Create a new repository on GitHub.
+Go to the settings, then `Deploy keys` and create a new deploy key, and paste
+the public key.
+
+Now copy the private key:
+
+```bash
+cat ${SSH_KEY_TMP}
+```
+
+Go to the gitea repository settings, go to `Git Hooks`, edit the hook called
+`post-receive` and enter this script:
+
+```
+#!/bin/bash
+MIRROR_REPO="git@github.com:GITHUB_USERNAME/GITHUB_REPO_NAME.git"
+KNOWNHOSTS=$(mktemp)
+
+## Public known ssh key for github:
+cat <<'EOF' > ${KNOWNHOSTS}
+github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+EOF
+
+## Private ssh deploy key for remote mirror:
+KEYFILE=$(mktemp)
+cat <<'EOF' > ${KEYFILE}
+-----BEGIN OPENSSH PRIVATE KEY-----
+  YOUR DEPLOY KEY GOES HERE
+-----END OPENSSH PRIVATE KEY-----
+EOF
+
+## Push changes to mirror using deploy key and known hosts file:
+GIT_SSH_COMMAND="/usr/bin/ssh -i ${KEYFILE} -o UserKnownHostsFile=${KNOWNHOSTS}" git push --mirror ${MIRROR_REPO}
+rm ${KNOWNHOSTS}
+rm ${KEYFILE}
+```
+
+You need to change `MIRROR_REPO` to be the git SSH URL for the remote github
+repository. Also change the SSH key (starting with `----BEGIN OPENSSH PRIVATE
+KEY` and ending with `----END OPENSSH PRIVATE KEY`) to the contents of the
+private key just echoed.
+
+Save the Git Hook. Now when you push to this repository, it will automatically
+be pushed to the mirror as well.
+
+Delete the temporary ssh key from your workstation:
+
+```bash
+rm ${SSH_KEY_TMP}
+```

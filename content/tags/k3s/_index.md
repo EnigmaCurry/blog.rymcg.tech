@@ -9,26 +9,27 @@ kubernetes cluster using GitOps (Git+DevOps) principles. [Flux
 (v2)](https://fluxcd.io/) is a controller that runs on top of kubernetes, that
 will synchronize your git repositories containing all of your kubernetes
 manifests (YAML), and automatically apply changes to your cluster. With Flux,
-you can manage all of your infrastructure via pull request!
+you can administer all of your kubernetes infrastructure via pull request!
 
 Self-hosted means running full-stack, open-source software, on top of commodity
-hardware or virtual machines. It doesn't mean you have to run on bare-metal
-hardware that you built from transistors and Verilog, connected to the dialup
-modem in the your basement, but it *does* mean that you should be able to do
-that if you want to! Kubernetes is an abstraction that makes the host platform
-irrelevant, giving you this freedom back. You can run the same workloads in K3s
-as you can in any other enterprise kubernetes host. K3s is easy to install, and
-runs just about anywhere, on bare-metal, on virtual machines, in docker, as well
-as several different CPU architectures. However, this blog will only focus on
-using the `amd64` architecture. **Sorry, Raspberry Pis are NOT tested to work**
-with these instructions.
+computer hardware or virtual machines. It doesn't mean you have to run on
+bare-metal hardware that you built from transistors and Verilog, connected to
+the dialup modem in the your basement, but it *does* mean that you should be
+able to do that if you want to! Kubernetes is an abstraction that makes the host
+platform irrelevant, giving you this freedom back. You can run the same
+workloads in K3s as you can in any other enterprise kubernetes host. K3s is easy
+to install, and runs just about anywhere, on bare-metal, on virtual machines, in
+docker, as well as several different CPU architectures. However, this blog will
+only focus on using the `amd64` architecture. **Sorry, Raspberry Pis are NOT
+tested to work** with these instructions.
 
 Literate means to use [Literate
 Programming](https://en.wikipedia.org/wiki/Literate_programming). There are
 literal code blocks for you to copy and paste into your BASH terminal to
 reproduce all of the files and commands necessary for this setup. There is *no*
-additional git repository you need to clone or fork, what you see on this blog,
-is all you need. This will all be explained in detail in [Part
+additional git repository you need to clone or fork. The commands you see on
+this blog are all you need, in order to create your own self-hosted git
+repository, from scratch. This will all be explained in detail in [Part
 1](/blog/k3s/k3s-01-setup/).
 
 {{< about_footer >}}
