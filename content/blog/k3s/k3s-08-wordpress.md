@@ -99,7 +99,10 @@ EOF
 
 ## Create the MySQL Database
 
-Reference the secrets stored in the mysql sealed secret:
+A
+[StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+is used to deploy MySQL since it stores its state into a volume. The
+configuration references the secrets stored in the mysql sealed secret:
 
 ```bash
 cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mysql.yaml
@@ -168,6 +171,11 @@ EOF
 
 ## Create Wordpress service
 
+A
+[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+is used to deploy wordpress, since it does not have state (and no attached
+volume)
+
 ```bash
 cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/wordpress.yaml
 apiVersion: v1
@@ -228,7 +236,9 @@ EOF
 
 ## Create Wordpress IngressRoute
 
-The IngressRoute will expose wordpress to the public network outside the cluster.
+The
+[IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-ingressroute)
+will expose wordpress to the public network outside the cluster.
 
 ```bash
 cat <<EOF | sed 's/@@@/`/g' > \
