@@ -54,7 +54,7 @@ EOF
 
 ## Create the Sealed Secret
 
-MySQL requires a datbase naem, root password, and regular username and password,
+MySQL requires a database name, root password, and regular username and password,
 which will all be stored in a Secret.
 
 ```bash
