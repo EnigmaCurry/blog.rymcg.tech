@@ -206,3 +206,10 @@ Error from server (NotFound): namespaces "tmp-namespace" not found
 ```
 
 
+## Logs
+
+To check the kustomize logs:
+
+```bash
+kubectl -n flux-system logs deployment/kustomize-controller
+```
