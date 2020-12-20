@@ -12,6 +12,8 @@ You can see from the [Wordpress docker-compose
 quickstart](https://docs.docker.com/compose/wordpress/), the installation only
 requires two containers: Mysql, and Wordpress itself.
 
+## Config
+
 ```env
 ## Same git repo for infrastructure as in prior posts:
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
