@@ -34,7 +34,7 @@ In this series, you will learn, and more:
    [Let's Encrypt](https://letsencrypt.org/) (best option for public websites)
    or from your private Certificate Authority via
    [Step-CA](https://smallstep.com/docs/step-ca) (for private APIs and Mutual
-   TLS) (Only Step CLI with an offline CA described thus far [most secure
+   TLS) (Only Step CLI with an offline CA is described thus far [most secure
    option], but you could run your own online ACME CA if you want to [but harder
    to secure].)
  * How to host your own public and private git repositories in
@@ -45,10 +45,10 @@ In this series, you will learn, and more:
    images.
  * How to host simple applications like Wordpress, and the MySQL database.
 
-Literate means to use [Literate
+This blog uses [Literate
 Programming](https://en.wikipedia.org/wiki/Literate_programming) concepts. You
-just need a web-browser and a terminal. There are literal code blocks for you to
-copy and paste into your BASH terminal to reproduce all of the files and
+just need a web-browser and a BASH terminal. There are literal code blocks for
+you to copy and paste into your terminal to reproduce all of the files and
 commands necessary for this setup. There is *no* additional git repository you
 need to clone or fork. The commands you see on this blog are all you need, in
 order to create your own self-hosted git repository, from scratch. This will all
