@@ -1,5 +1,5 @@
 ---
-title: "K3s part 8: Wordpress"
+title: "K3s part 8: Wordpress. Or: Running stateful and stateless containers "
 date: 2020-12-11T00:08:00-06:00
 tags: ['k3s']
 ---
@@ -10,7 +10,12 @@ which is useful for demonstrating a simple installation.
 
 You can see from the [Wordpress docker-compose
 quickstart](https://docs.docker.com/compose/wordpress/), the installation only
-requires two containers: Mysql, and Wordpress itself.
+requires two containers: MySQL, and Wordpress itself. MySQL is stateful, it
+requires a volume to store data. Wordpress is stateless, it only needs to talk
+to a database. In kubernetes, stateful apps can be created with
+[StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+and stateless apps can be created with
+[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/).
 
 ## Config
 
