@@ -10,7 +10,7 @@ which is useful for demonstrating a simple installation.
 
 You can see from the [Wordpress docker-compose
 quickstart](https://docs.docker.com/compose/wordpress/), the installation only
-requires two containers: MySQL, and Wordpress itself. MySQL is stateful, it
+requires two containers: MariaDB, and Wordpress itself. MariaDB is stateful, it
 requires a volume to store data. Wordpress is stateless, it only needs to talk
 to a database. In kubernetes, stateful apps can be created with
 [StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
@@ -24,8 +24,8 @@ and stateless apps can be created with
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
 CLUSTER=k3s.example.com
 NAMESPACE=wordpress
-MYSQL_VOLUME_SIZE=5Gi
-MYSQL_VERSION=5.7
+MARIADB_VOLUME_SIZE=5Gi
+MARIADB_VERSION=10.4
 ```
 
 ## Create wordpress namespace 
@@ -40,9 +40,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - namespace.yaml
-- mysql.sealed_secret.yaml
-- mysql.pvc.yaml
-- mysql.yaml
+- mariadb.sealed_secret.yaml
+- mariadb.pvc.yaml
+- mariadb.yaml
 - wordpress.yaml
 - wordpress.ingress.yaml
 EOF
@@ -61,66 +61,66 @@ EOF
 
 ## Create the Sealed Secret
 
-MySQL requires a database name, root password, and regular username and password,
+MariaDB requires a database name, root password, and regular username and password,
 which will all be stored in a Secret.
 
 ```bash
-MYSQL_DATABASE=wordpress
-MYSQL_ROOT_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
-MYSQL_USER=wordpress
-MYSQL_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
+MARIADB_DATABASE=wordpress
+MARIADB_ROOT_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
+MARIADB_USER=wordpress
+MARIADB_PASSWORD=$(head -c 16 /dev/urandom | sha256sum | head -c 32)
 ```
 
 ```bash
-kubectl create secret generic mysql \
+kubectl create secret generic mariadb \
    --namespace ${NAMESPACE} --dry-run=client -o json \
-   --from-literal=MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-   --from-literal=MYSQL_DATABASE=${MYSQL_DATABASE} \
-   --from-literal=MYSQL_USER=${MYSQL_USER} \
-   --from-literal=MYSQL_PASSWORD=${MYSQL_PASSWORD} | kubeseal -o yaml > \
-  ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mysql.sealed_secret.yaml
+   --from-literal=MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD} \
+   --from-literal=MARIADB_DATABASE=${MARIADB_DATABASE} \
+   --from-literal=MARIADB_USER=${MARIADB_USER} \
+   --from-literal=MARIADB_PASSWORD=${MARIADB_PASSWORD} | kubeseal -o yaml > \
+  ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mariadb.sealed_secret.yaml
 ```
 
-## Create the MySQL PersistentVolumeClaim
+## Create the MariaDB PersistentVolumeClaim
 
 The
 [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
-will provision a volume to store data for MySQL.
+will provision a volume to store data for MariaDB.
 
 ```bash
-cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mysql.pvc.yaml
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mariadb.pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql
+  name: mariadb
   namespace: ${NAMESPACE}
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: ${MYSQL_VOLUME_SIZE}
+      storage: ${MARIADB_VOLUME_SIZE}
   storageClassName: local-path
 EOF
 ```
 
-## Create the MySQL Database
+## Create the MariaDB Database
 
 A
 [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
-is used to deploy MySQL since it stores its state into a volume. The
-configuration references the secrets stored in the mysql sealed secret:
+is used to deploy MariaDB since it stores its state into a volume. The
+configuration references the secrets stored in the mariadb sealed secret:
 
 ```bash
-cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mysql.yaml
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mariadb.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql
+  name: mariadb
   namespace: ${NAMESPACE}
 spec:
   selector:
-    app: mysql
+    app: mariadb
   type: ClusterIP
   ports:
     - port: 3306
@@ -129,50 +129,50 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mysql
+  name: mariadb
   namespace: ${NAMESPACE}
 spec:
   selector:
     matchLabels:
-      app: mysql
-  serviceName: mysql
+      app: mariadb
+  serviceName: mariadb
   replicas: 1
   template:
     metadata:
       labels:
-        app: mysql
+        app: mariadb
     spec:
       containers:
-        - name: mysql
-          image: mysql:${MYSQL_VERSION}
+        - name: mariadb
+          image: mariadb:${MARIADB_VERSION}
           volumeMounts:
-            - name: mysql
-              mountPath: /var/lib/mysql
+            - name: mariadb
+              mountPath: /var/lib/mariadb
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysql
-                  key: MYSQL_ROOT_PASSWORD
+                  name: mariadb
+                  key: MARIADB_ROOT_PASSWORD
             - name: MYSQL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: mysql
-                  key: MYSQL_DATABASE
+                  name: mariadb
+                  key: MARIADB_DATABASE
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: mysql
-                  key: MYSQL_USER
+                  name: mariadb
+                  key: MARIADB_USER
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysql
-                  key: MYSQL_PASSWORD
+                  name: mariadb
+                  key: MARIADB_PASSWORD
       volumes:
-        - name: mysql
+        - name: mariadb
           persistentVolumeClaim:
-            claimName: mysql
+            claimName: mariadb
 EOF
 ```
 
@@ -222,22 +222,22 @@ spec:
           name: web
         env:
         - name: WORDPRESS_DB_HOST
-          value: mysql:3306
+          value: mariadb:3306
         - name: WORDPRESS_DB_NAME
           valueFrom:
             secretKeyRef:
-              name: mysql
-              key: MYSQL_DATABASE
+              name: mariadb
+              key: MARIADB_DATABASE
         - name: WORDPRESS_DB_USER
           valueFrom:
             secretKeyRef:
-              name: mysql
-              key: MYSQL_USER
+              name: mariadb
+              key: MARIADB_USER
         - name: WORDPRESS_DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql
-              key: MYSQL_PASSWORD
+              name: mariadb
+              key: MARIADB_PASSWORD
 EOF
 ```
 
@@ -286,10 +286,10 @@ Your new wordpress blog is at https://wordpress.k3s.example.com
 
 ## Check logs
 
-Mysql logs: 
+Mariadb logs: 
 
 ```bash
-kubectl -n wordpress logs statefulset/mysql
+kubectl -n wordpress logs statefulset/mariadb
 ```
 
 Wordpress logs:
