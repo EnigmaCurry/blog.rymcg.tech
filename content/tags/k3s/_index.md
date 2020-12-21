@@ -27,8 +27,9 @@ the `amd64` architecture. **Sorry, Raspberry Pis are NOT tested to work** with
 these instructions. 
 
 In this series, you will learn, and more:
- * How to setup your workstation for all development tools.
- * How to create a k3s cluster.
+ * How to setup your workstation for all development tools. (Tested on Arch
+   Linux, but should work on any OS with the BASH shell.)
+ * How to create a [K3s](https://www.k3s.io/) cluster.
  * How to host [Traefik](https://traefik.io/) (v2) to proxy HTTP and TCP traffic
    (Ingress) to your applications, giving you free TLS (https) certificates from
    [Let's Encrypt](https://letsencrypt.org/) (best option for public websites)
