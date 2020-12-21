@@ -65,7 +65,13 @@ You will need to install several command line tools on your workstation:
    * Sometimes it is useful to run a container on your local workstation.
    * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
    * [Install Podman](https://podman.io/getting-started/installation)
-   
+ * `hugo` (Optional) :
+   * To build [the source code](https://github.com/EnigmaCurry/blog.rymcg.tech)
+     and serve this blog from localhost (Or just continue reading this blog
+     online.)
+   * Arch Linux: `sudo pacman -S hugo`
+   * [Other OS](https://gohugo.io/getting-started/installing/)
+
 ## Running Commands
 
 This blog is written in a Literate Programming style, containing *exact* BASH
