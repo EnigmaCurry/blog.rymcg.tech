@@ -279,6 +279,11 @@ git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} ${NAMESPACE}"
 ```bash
 git -C ${FLUX_INFRA_DIR} push
 ```
+
+## Test it
+
+Your new wordpress blog is at https://wordpress.k3s.example.com
+
 ## Check logs
 
 Mysql logs: 
