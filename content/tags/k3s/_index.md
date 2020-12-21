@@ -10,7 +10,7 @@ cluster using GitOps (Git+DevOps) principles. [Flux (v2)](https://fluxcd.io/) is
 a controller that runs on top of kubernetes, that will synchronize your git
 repositories containing all of your kubernetes manifests (YAML), and
 automatically apply changes to your cluster. With Flux, you can administer all
-of your kubernetes infrastructure via pull request!
+of your infrastructure via pull request!
 
 Self-hosted means running full-stack, open-source software, on top of commodity
 computer hardware or virtual machines, with as little reliance on external
