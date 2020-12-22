@@ -11,6 +11,11 @@ as to start two additional containers (called sidecars) in the same pod, one
 that performs a backup of the database to a new volume, and another to upload
 the backup to offsite S3 storage via [Restic](https://restic.net/).
 
+You will need to provide S3 compatible storage bucket, with access and secret
+keys. You can use [DigitalOcean
+Spaces](https://www.digitalocean.com/products/spaces/), AWS S3, Minio, CephFS,
+etc.
+
 ## Config
 
 ```env
@@ -21,6 +26,8 @@ NAMESPACE=wordpress
 MARIADB_VERSION=10.4
 BACKUP_VOLUME_SIZE=10Gi
 ```
+
+Set your S3 bucket, endpoint, and credentials:
 
 ```env
 RESTIC_BACKUP_IMAGE=lobaro/restic-backup-docker:1.3.1-0.9.6
