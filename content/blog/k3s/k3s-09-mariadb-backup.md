@@ -220,6 +220,17 @@ resources:
 EOF
 ```
 
+## Commit and push new files
+
+```bash
+git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
+git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} ${NAMESPACE} backups"
+```
+
+```bash
+git -C ${FLUX_INFRA_DIR} push
+```
+
 ## Run the first backup
 
 The backup job is scheduled via cron to occur at 02:30 (am), so you can kick off
