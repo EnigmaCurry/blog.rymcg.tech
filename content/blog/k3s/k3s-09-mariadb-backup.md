@@ -7,9 +7,11 @@ tags: ['k3s']
 This post directly follows [part 8](/blog/k3s/k3s-08-wordpress) where you
 installed Wordpress and MariaDB. To avoid disaster, you now need to schedule
 backups of your database. You will modify the StatefulSet that runs MariaDB, so
-as to start two additional containers (called sidecars) in the same pod, one
-that performs a backup of the database to a new volume, and another to upload
-the backup to offsite S3 storage via [Restic](https://restic.net/).
+as to start two additional containers (called sidecars) in the same pod,
+[woolfg/mysql-backup-sidecar](https://github.com/woolfg/mysql-backup-sidecar)
+that performs a backup of the database to a new volume, and
+[Lobaro/restic-backup-docker](https://github.com/Lobaro/restic-backup-docker) to
+upload the backup to offsite S3.
 
 You will need to provide S3 compatible storage bucket, with access and secret
 keys. You can use [DigitalOcean
