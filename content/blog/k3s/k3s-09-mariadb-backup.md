@@ -61,7 +61,7 @@ kubectl create secret generic mariadb-backups \
   ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mariadb-backups.sealed_secret.yaml
 ```
 
-## Create Physical Volume Claim for backups
+## Create Persistent Volume Claim for backups
 
 ```bash
 cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/mariadb-backups.pvc.yaml
