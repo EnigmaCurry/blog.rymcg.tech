@@ -45,7 +45,7 @@ k3sup install --ip ${SSH_IP_ADDRESS} --local-path ${KUBE_CONFIG} \
   --k3s-extra-args '--disable traefik'
 ```
 
-## Create Droplet on DigitalOcean
+## Create k3s Droplet on DigitalOcean
 
  * Create a Debian (`10 x64`) droplet on DigitalOcean
    * $10/mo 2GB RAM (tested configuration).
@@ -112,9 +112,8 @@ k3sup install --ip ${SSH_IP_ADDRESS} --local-path ${KUBE_CONFIG} \
 
 To access the cluster from your workstation, you must download the API key from
 the k3s server. If you used `k3sup` to create your cluster, you can skip this,
-k3sup did it for you, and you can skip this part. Otherwise, set a temporary
-variable for the the floating IP address of the server, and the desired path to
-store the cluster key.
+k3sup did it for you. Otherwise, set a temporary variable for the the floating
+IP address of the server, and the desired path to store the cluster key.
 
 ```env
 FLOATING_IP=X.X.X.X
