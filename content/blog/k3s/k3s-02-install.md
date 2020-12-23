@@ -30,6 +30,20 @@ rather than the one that is bundled with k3s. The k3s installer command is:
 curl -sfL https://get.k3s.io | sh -s - server --disable traefik
 ```
 
+You can also use [k3sup](https://github.com/alexellis/k3sup) from your
+workstation, to install k3s on any machine you have SSH access to, and will
+automatically download the key to your workstation:
+
+```env
+SSH_IP_ADDRESS=x.x.x.x
+KUBE_CONFIG=${HOME}/.kube/config
+```
+
+```bash
+mkdir -p ${HOME}/.kube
+k3sup install --ip ${SSH_IP_ADDRESS} --local-path ${KUBE_CONFIG} --k3s-extra-args '--disable traefik'
+```
+
 ## Create Droplet on DigitalOcean
 
  * Create a Debian (`10 x64`) droplet on DigitalOcean

@@ -76,6 +76,11 @@ build a utility container](#create-toolbox-container) to use as your virtual
      online.)
    * Arch Linux: `sudo pacman -S hugo`
    * [Other OS](https://gohugo.io/getting-started/installing/)
+ * `k3sup` (Optional) :
+   * [alexellis/k3sup](https://github.com/alexellis/k3sup) is a very useful tool
+     to automatically create k3s clusters on machines that you already have SSH
+     access to.
+   * [Releases](https://github.com/alexellis/k3sup/releases)
 
 ## Running Commands
 
@@ -220,6 +225,7 @@ you can `alias podman=docker`)
 KUBECTL_VERSION=v1.20.1
 KUSTOMIZE_VERSION=v3.8.8
 KUBESEAL_VERSION=v0.13.1
+## Hugo version (note there is no 'v' prefix):
 HUGO_VERSION=0.79.1
 ```
 
@@ -229,25 +235,33 @@ Build the container image (`kube-toolbox`):
 cat <<EOF | podman build -t kube-toolbox -f - 
 FROM alpine:latest
 
-## Kubernetes tools dependencies:
+## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
     apk update && \
     apk add bash curl openssh git bash-completion && \
+    echo "### Kubectl: " && \
     curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
     chmod a+x /usr/local/bin/kubectl && \
+    echo "### Kustomize: " && \
     curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
     tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
     rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+    echo "### kubeseal (Sealed Secrets): " && \
     curl -LO https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.13.1/kubeseal-linux-amd64 && \
     mv kubeseal-linux-amd64 kubeseal && \
     chmod 0755 kubeseal && \
+    echo "### Flux: " && \
     curl -s https://toolkit.fluxcd.io/install.sh | bash && \
     curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
+    echo "### Hugo: " && \
     tar xfvz hugo_${HUGO_VERSION}_Linux-64bit.tar.gz hugo && \
-    rm -f hugo_${HUGO_VERSION}_Linux-64bit.tar.gz
+    rm -f hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
+    echo "### k3sup: " && \
+    curl -sLS https://get.k3sup.dev | sh
 
 WORKDIR /root
 
+## root account setup:
 RUN echo 'source /usr/share/bash-completion/bash_completion' > .bashrc && \
     echo 'source <(kubectl completion bash)' >> .bashrc && \
     echo 'source <(flux completion bash)' >> .bashrc && \
@@ -262,7 +276,7 @@ Create an alias `kbox` to easily start the container shell:
 
 ```env-static
 ## You can create multiple aliases for different environments
-## Just make sure to use a different volume for each (eg. kbox:/root)
+## Just make sure to use a different volume name for each one (eg. kbox:/root)
 alias kbox="podman run --rm -it -v kbox:/root -v ${HOME}/git:/root/git \
    -v ${HOME}/.gitconfig:/root/.gitconfig --name kbox-${RANDOM} kube-toolbox"
 ```
