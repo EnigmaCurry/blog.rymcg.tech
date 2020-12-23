@@ -11,7 +11,9 @@ the host server via SSH, unless you have to. Instead, you will create all the
 config files on your local laptop, which will be referred to as your
 workstation, and use `kubectl` to access the remote cluster API.
 
-You will need to install several command line tools on your workstation:
+You will need to install several command line tools on your workstation ([or
+build a utility container](#create-toolbox-container) to use as your virtual
+"workstation" environment):
 
  * A modern BASH shell, being the default Linux terminal shell, but also
    available on various platforms.
@@ -64,6 +66,9 @@ You will need to install several command line tools on your workstation:
  * `podman` or `docker`:
    * Sometimes it is useful to run a container on your local workstation.
    * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
+   * This is also useful for [installing all of these tools in a
+     container](#create-toolbox-container) rather than native on your
+     workstation.
    * [Install Podman](https://podman.io/getting-started/installation)
  * `hugo` (Optional) :
    * To build [the source code](https://github.com/EnigmaCurry/blog.rymcg.tech)
@@ -184,3 +189,99 @@ echo Cluster working directory: $(pwd)
 ```
 
 In an upcoming post, you will create a git remote to push this repository to.
+
+## Create toolbox container
+
+As an alternative to installing all of these command line tools natively on your
+workstation, you can build a utility container that has all of the tools inside.
+If you go this route, the utility container becomes your "workstation", and
+whenever this blog tells you to run something on your "workstation", it will
+mean for you to run it inside this container instead. The container will store a
+persistent volume mounted to the virtual home directory (`/root` inside the
+container), for keeping files safe.
+
+This requires you to [install
+podman](https://podman.io/getting-started/installation) (or if you have docker,
+you can `alias podman=docker`)
+
+```env
+## Name of toolbox:
+TOOLBOX=kube-toolbox
+## Versions of tools to install:
+KUBECTL_VERSION=v1.20.1
+KUSTOMIZE_VERSION=v3.8.8
+KUBESEAL_VERSION=v0.13.1
+HUGO_VERSION=0.79.1
+## Map git repositories from the host:
+HOST_GIT_ROOT=${HOME}/git
+```
+
+Build the container image (`kube-toolbox`):
+
+```bash
+cat <<EOF | podman build -t kube-toolbox -f - 
+FROM alpine:latest
+
+## Kubernetes tools dependencies:
+RUN cd /usr/local/bin && \
+    apk update && \
+    apk add bash curl openssh git bash-completion && \
+    curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+    chmod a+x /usr/local/bin/kubectl && \
+    curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+    tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+    rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+    curl -LO https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.13.1/kubeseal-linux-amd64 && \
+    mv kubeseal-linux-amd64 kubeseal && \
+    chmod 0755 kubeseal && \
+    curl -s https://toolkit.fluxcd.io/install.sh | bash && \
+    curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
+    tar xfvz hugo_${HUGO_VERSION}_Linux-64bit.tar.gz hugo && \
+    rm -f hugo_${HUGO_VERSION}_Linux-64bit.tar.gz
+
+WORKDIR /root
+
+RUN echo 'source /usr/share/bash-completion/bash_completion' > .bashrc && \
+    echo 'source <(kubectl completion bash)' >> .bashrc && \
+    echo 'source <(flux completion bash)' >> .bashrc && \
+    echo "export PS1=\"[\u@${TOOLBOX} \W]\\$ \"">> .bashrc && \
+    echo 'set enable-bracketed-paste on' > .inputrc
+
+CMD /bin/bash
+EOF
+```
+
+Create an alias `kbox` to easily start the container shell:
+
+```env-static
+alias kbox="podman run --rm -it -v kbox:/root -v ${HOME}/git:/root/git \
+   -v ${HOME}/.gitconfig:/root/.gitconfig --name kbox-${RANDOM} kube-toolbox"
+```
+
+Now you can run `kbox` and you will enter a sub-shell within the kube-toolbox
+container. The home directory inside the container (`/root`) is mounted to a
+persistent volume also called `kbox` (see it with `podman volume ls`). You can
+save any files under `/root` and they will be persisted to the volume, which
+includes Kubernetes API tokens, SSH keys, and any other config files. A host
+directory (`${HOST_GIT_ROOT}`) is mapped into the container to share git
+repositories with the container, and to allow you to use a native file editor on
+the host.
+
+For the most part, you should treat the kbox container as a separate machine,
+and you should therefore create a fresh SSH key. You can invoke kbox commands
+directly from the host shell by adding additional command arguments:
+
+```bash
+kbox ssh-keygen
+```
+
+Or you can enter the interactive sub-shell without any arguments:
+
+```bash
+kbox
+```
+
+You will see the toolbox prompt, indicating you are inside the container:
+```
+[root@kube-toolbox ~]$
+```
