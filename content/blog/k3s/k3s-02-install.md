@@ -48,7 +48,7 @@ k3sup install --ip ${SSH_IP_ADDRESS} --local-path ${KUBE_CONFIG} \
 ## Create k3s Droplet on DigitalOcean
 
  * Create a Debian (`10 x64`) droplet on DigitalOcean
-   * $10/mo 2GB RAM (tested configuration).
+   * $20/mo 4GB RAM (tested configuration, 2GB might work minimally.)
    * Optional: Add a block storage volume for pod data.
      * You choose how much space you need for all of your pods.
      * If you don't add a volume, pod storage will live on the root filesystem
