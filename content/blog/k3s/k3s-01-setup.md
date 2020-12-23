@@ -196,24 +196,27 @@ As an alternative to installing all of these command line tools natively on your
 workstation, you can build a utility container that has all of the tools inside.
 If you go this route, the utility container becomes your "workstation", and
 whenever this blog tells you to run something on your "workstation", it will
-mean for you to run it inside this container instead. The container will store a
-persistent volume mounted to the virtual home directory (`/root` inside the
-container), for keeping files safe.
+mean for you to run it inside this container instead. 
+
+This container will create a persistent volume mounted to the virtual home
+directory (`/root` inside the container), for keeping files safe. Git
+repositories are intended to be cloned somewhere in your native workstation home
+directory, and then mounted inside the container (eg. a host directory
+`${HOME}/git` mounted as `/root/git` inside the container). This way you can
+still use your native workstation editor tools, rather than installing an editor
+in the container.
 
 This requires you to [install
 podman](https://podman.io/getting-started/installation) (or if you have docker,
 you can `alias podman=docker`)
 
 ```env
-## Name of toolbox:
-TOOLBOX=kube-toolbox
 ## Versions of tools to install:
+## You might wish to check upstream for new versions, but these work:
 KUBECTL_VERSION=v1.20.1
 KUSTOMIZE_VERSION=v3.8.8
 KUBESEAL_VERSION=v0.13.1
 HUGO_VERSION=0.79.1
-## Map git repositories from the host:
-HOST_GIT_ROOT=${HOME}/git
 ```
 
 Build the container image (`kube-toolbox`):
@@ -244,7 +247,7 @@ WORKDIR /root
 RUN echo 'source /usr/share/bash-completion/bash_completion' > .bashrc && \
     echo 'source <(kubectl completion bash)' >> .bashrc && \
     echo 'source <(flux completion bash)' >> .bashrc && \
-    echo "export PS1=\"[\u@${TOOLBOX} \W]\\$ \"">> .bashrc && \
+    echo "export PS1=\"[\u@kube-toolbox \W]\\$ \"">> .bashrc && \
     echo 'set enable-bracketed-paste on' > .inputrc
 
 CMD /bin/bash
@@ -254,34 +257,54 @@ EOF
 Create an alias `kbox` to easily start the container shell:
 
 ```env-static
+## You can create multiple aliases for different environments
+## Just make sure to use a different volume for each (eg. kbox:/root)
 alias kbox="podman run --rm -it -v kbox:/root -v ${HOME}/git:/root/git \
    -v ${HOME}/.gitconfig:/root/.gitconfig --name kbox-${RANDOM} kube-toolbox"
 ```
 
-Now you can run `kbox` and you will enter a sub-shell within the kube-toolbox
-container. The home directory inside the container (`/root`) is mounted to a
-persistent volume also called `kbox` (see it with `podman volume ls`). You can
-save any files under `/root` and they will be persisted to the volume, which
-includes Kubernetes API tokens, SSH keys, and any other config files. A host
-directory (`${HOST_GIT_ROOT}`) is mapped into the container to share git
-repositories with the container, and to allow you to use a native file editor on
-the host.
+Now you can run `kbox`, and you will enter the BASH shell within the
+kube-toolbox container. The home directory inside the container (`/root`) is
+mounted to a persistent volume also called `kbox` (see it with `podman volume
+ls`). You can save any files under `/root` and they will be persisted to the
+volume, which includes Kubernetes API tokens, SSH keys, and any other config
+files. A host directory (`${HOME}/git`) is mapped into the container to share
+git repositories with the container, and to allow you to use a native file
+editor on the host. `${HOME}/.gitconfig` is mounted as well, so that you do not
+need to reconfigure git inside the container.
+
+You should not be concerned about running as `root` inside this container, it is
+intentional and safe. When running podman as a user, it is run *rootless*, which
+means that it will map `root` inside the container to the same UID on the host
+that ran podman (your regular workstation user ID, *not* the real root user.)
+This means that when you create files in the container, as root, in `/root/git`,
+they will show up in the host directory `${HOME}/git` owned by your regular
+workstation user ID.
 
 For the most part, you should treat the kbox container as a separate machine,
 and you should therefore create a fresh SSH key. You can invoke kbox commands
-directly from the host shell by adding additional command arguments:
+directly from the host shell by adding additional command arguments (albeit
+without bash shell completion support):
 
 ```bash
 kbox ssh-keygen
 ```
 
-Or you can enter the interactive sub-shell without any arguments:
+Or you can enter the interactive sub-shell without any arguments (and receive
+full bash shell completion inside the sub-shell):
 
 ```bash
 kbox
 ```
 
-You will see the toolbox prompt, indicating you are inside the container:
+You will see the toolbox BASH prompt (`kube-toolbox`), indicating you are now inside the container:
 ```
 [root@kube-toolbox ~]$
 ```
+
+Also note, that the lifetime of the container is the lifetime of the shell
+process, so as soon as you quit the shell, the container is removed (`podman run
+--rm`). So if you install programs (alpine Linux `apk add`) or create files
+(outside of `/root` or `/root/git`) they will be **gone** the next time you run
+`kbox`. In order to permanently add additional programs, you should modify the
+Dockerfile, and rebuild the image, as shown above.
