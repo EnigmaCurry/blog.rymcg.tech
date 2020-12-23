@@ -198,6 +198,10 @@ If you go this route, the utility container becomes your "workstation", and
 whenever this blog tells you to run something on your "workstation", it will
 mean for you to run it inside this container instead. 
 
+If you skipped down to this section, it is critical to go back up and read the
+section titled [Running Commands](#running-commands) once you get your utility
+container up and going.
+
 This container will create a persistent volume mounted to the virtual home
 directory (`/root` inside the container), for keeping files safe. Git
 repositories are intended to be cloned somewhere in your native workstation home
