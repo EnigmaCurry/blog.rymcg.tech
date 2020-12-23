@@ -108,6 +108,7 @@ Download the key from the cluster. If you installed on DigitalOcean this will
 work for you:
 
 ```bash
+mkdir -p ${HOME}/.kube
 ssh ${FLOATING_IP} -l root -o StrictHostKeyChecking=no \
   cat /etc/rancher/k3s/k3s.external.yaml > ${KUBECONFIG}
 ```
