@@ -12,7 +12,7 @@ params:
   description: 'Self-hosted, Open Source, Freedom'
   faviconfile: 'https://blog.rymcg.tech/img/favicon.png'
   latestpostcount: 1000
-  logofile: '/img/logo.jpg'
+  logofile: 'img/logo.jpg'
   highlightjs: true
   highlightjslanguages:
     - bash
