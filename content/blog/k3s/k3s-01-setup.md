@@ -84,7 +84,10 @@ build a utility container](#create-toolbox-container) to use as your virtual
  * `CDK8s` (Optional) :
    * Programmatically generate YAML from python, typescript, or java.
    * [Install CDK8s](https://cdk8s.io/docs/latest/getting-started/)
-
+ * `OpenFaaS` (Optional) :
+   * Create serverless functions and microservices
+   * [Install OpenFaaS CLI](https://docs.openfaas.com/cli/install/)
+   
 ## Running Commands
 
 This blog is written in a Literate Programming style, containing *exact* BASH
@@ -262,7 +265,9 @@ RUN cd /usr/local/bin && \
       sqlite-dev build-base python3 py3-pip yarn npm && \
    pip install --user pipenv && \
    curl https://pyenv.run | bash && \
-   yarn global add cdk8s-cli
+   yarn global add cdk8s-cli && \
+ echo "### OpenFaaS" && \
+   curl -sSL https://cli.openfaas.com | sh
     
 WORKDIR /root
 
