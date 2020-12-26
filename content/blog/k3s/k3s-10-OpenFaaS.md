@@ -169,6 +169,82 @@ export OPENFAAS_URL=https://gateway.faas.${CLUSTER}
 echo -n ${PASSWORD} | faas-cli login -g ${OPENFAAS_URL} -u admin --password-stdin
 ```
 
-## Deploy test function
+## Create test function
 
-...
+Create a new git repository someplace to create functions
+
+```env
+FUNCTIONS_ROOT=${HOME}/git/functions
+REGISTRY=registry.${CLUSTER}
+FUNCTION=hello-python
+LANGUAGE=python
+```
+
+Create the test function `hello-python` using the language template:
+
+```bash
+mkdir -p ${FUNCTIONS_ROOT}
+git init ${FUNCTIONS_ROOT}
+(cd ${FUNCTIONS_ROOT}; faas-cli new --lang ${LANGUAGE} ${FUNCTION})
+```
+
+Rewrite the function manifest with the corrected registry image name and
+gateway:
+
+```bash
+cat <<EOF > ${FUNCTIONS_ROOT}/${FUNCTION}.yml
+version: 1.0
+provider:
+  name: openfaas
+  gateway: https://gateway.faas.${CLUSTER}
+functions:
+  ${FUNCTION}:
+    lang: ${LANGUAGE}
+    handler: ./${FUNCTION}
+    image: ${REGISTRY}/functions/${FUNCTION}:latest
+EOF
+```
+
+Create the Dockerfile for the container:
+
+```bash
+(cd ${FUNCTIONS_ROOT}; faas-cli build -f ${FUNCTION}.yml --shrinkwrap)
+echo "Dockerfile created in ${FUNCTIONS_ROOT}/build/${FUNCTION}"
+```
+
+In order to build the image for the test function you will use `podman`.
+
+```bash
+podman build -f ${FUNCTIONS_ROOT}/build/${FUNCTION} \
+  -t ${REGISTRY}/functions/${FUNCTION}
+```
+
+Login to the registry with podman:
+
+```bash
+podman login ${REGISTRY}
+```
+
+(Recall the username and password used when you setup the registry. Or check
+`/etc/rancher/k3s/registries.yaml` on the k3s node.)
+
+Push the image to the registry:
+
+```bash
+podman push ${REGISTRY}/functions/${FUNCTION}
+```
+
+Now deploy the function:
+
+```bash
+(cd ${FUNCTIONS_ROOT}; faas-cli deploy -f ${FUNCTION}.yml)
+```
+
+Test the function responds:
+
+```bash
+curl -v -d "It works!" https://gateway.faas.${CLUSTER}/function/${FUNCTION}.openfaas-fn
+```
+
+It should respond with an echo of the text you sent: `It works!`
+
