@@ -201,7 +201,7 @@ echo Cluster working directory: $(pwd)
 
 In an upcoming post, you will create a git remote to push this repository to.
 
-## Create toolbox container
+## Create toolbox container (optional)
 
 As an alternative to installing all of these command line tools natively on your
 workstation, you can build a utility container that has all of the tools inside.
@@ -247,6 +247,7 @@ RUN cd /usr/local/bin && \
  echo "### Kustomize (direct URL because arkade is broken see #299): " && \
    curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.8/kustomize_v3.8.8_linux_amd64.tar.gz && \
    tar xfvz kustomize_v3.8.8_linux_amd64.tar.gz && \
+   rm kustomize_v3.8.8_linux_amd64.tar.gz && \
  echo "### Flux: " && \
    curl -s https://toolkit.fluxcd.io/install.sh | bash && \
  echo "### cdk8s / pyenv" && \
@@ -254,8 +255,13 @@ RUN cd /usr/local/bin && \
       sqlite-dev build-base python3 py3-pip yarn npm && \
    pip install --user pipenv && \
    curl https://pyenv.run | bash && \
-   yarn global add cdk8s-cli
-    
+   yarn global add cdk8s-cli && \
+ echo "### Podman remote" && \
+   curl -LO https://github.com/containers/podman/releases/download/v2.2.1/podman-remote-static.tar.gz && \
+   tar xfvz podman-remote-static.tar.gz && \
+   rm podman-remote-static.tar.gz && \
+   mv podman-remote-static podman 
+
 WORKDIR /root
 
 ## root account setup:
@@ -298,17 +304,7 @@ This means that when you create files in the container, as root, in `/root/git`,
 they will show up in the host directory `${HOME}/git` owned by your regular
 workstation user ID.
 
-For the most part, you should treat the kbox container as a separate machine,
-and you should therefore create a fresh SSH key. You can invoke kbox commands
-directly from the host shell by adding additional command arguments (albeit
-without bash shell completion support):
-
-```bash
-kbox ssh-keygen
-```
-
-Or you can enter the interactive sub-shell without any arguments (and receive
-full bash shell completion inside the sub-shell):
+Enter the interactive sub-shell:
 
 ```bash
 kbox
@@ -319,9 +315,88 @@ You will see the toolbox BASH prompt (`kube-toolbox`), indicating you are now in
 [root@kube-toolbox ~]$
 ```
 
+Create a new ssh key :
+
+```bash
+ssh-keygen
+```
+
 Also note, that the lifetime of the container is the lifetime of the shell
 process, so as soon as you quit the shell, the container is removed (`podman run
 --rm`). So if you install programs (alpine Linux `apk add`) or create files
 (outside of `/root` or `/root/git`) they will be **gone** the next time you run
 `kbox`. In order to permanently add additional programs, you should modify the
 Dockerfile, and rebuild the image, as shown above.
+
+## Setup podman-remote in toolbox container (optional)
+
+The toolbox container cannot run other containers inside of itself. This means
+that normally, you can only run `podman` or `docker` on the *host* workstation.
+However, the toolbox container has installed `podman`, which is actually
+`podman-remote` (just renamed to `podman`) which is a stripped version of podman
+that is only used for connecting to a *remote* system and running podman on the
+remote machine (this version of podman cannot run containers by itself.)
+
+You can setup your host workstation to run podman, and configure the remote
+access for the `kbox` container to use it, so that the container itself can run
+normal podman (remote) commands, and have them run on the host podman. See the
+upstream [podman-remote
+instructions](https://github.com/containers/podman/blob/master/docs/tutorials/remote_client.md)
+for setup, here is the gist:
+
+ * You must enable ssh on the host workstation. 
+ * You must copy the container root user ssh key (`/root/.ssh/id_rsa.pub`) into
+   your host workstation user's authorized_keys file
+   (`${HOME}/.ssh/authorized_keys`)
+ * You must test that ssh works from within `kbox`, to the host workstation IP
+   address: `ssh USER@X.X.X.X`
+ * You must enable the podman systemd socket activation on the host workstation:
+   `systemctl --user enable --now podman.socket`
+   
+Once ssh is tested to work, from `kbox` to your host workstation, you can add
+the connection to podman. 
+
+Run this inside `kbox`:
+
+```env
+HOST_WORKSTATION=workstation-host
+HOST_USER=ryan
+HOST_IP_ADDRESS=X.X.X.X
+```
+
+Setup the connection persistence on bash startup (run in `kbox`):
+
+```bash
+cat <<EOF >> ${HOME}/.bashrc
+## Setup podman remote to host workstation:
+podman system connection add \
+  ${HOST_WORKSTATION} ssh://${HOST_USER}@${HOST_IP_ADDRESS} \
+  --identity ~/.ssh/id_rsa
+EOF
+```
+
+Now exit and restart `kbox` (press `Ctrl-D` or type `exit` and then retstart
+`kbox`)
+
+Inside the new `kbox` shell, list the podman connections, you should see the
+workstation connection name ending with an asterisk (`*`) to indicate it is the
+default connection to use:
+
+```bash
+podman system connection list
+```
+
+Test that you can list containers:
+
+```bash
+podman ps
+```
+
+You should see a list of all of the containers that are running on your host
+workstation user account (which at least includes the running kbox container.)
+
+Test that you can run the standard `hello-world` container:
+
+```bash
+podman run --rm -it hello-world
+```
