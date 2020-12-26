@@ -98,7 +98,6 @@ spec:
   chart:
     spec:
       chart: openfaas
-      # version: '4.0.x'
       sourceRef:
         kind: HelmRepository
         name: openfaas
@@ -215,6 +214,8 @@ Create the Dockerfile for the container:
 echo "Dockerfile created in ${FUNCTIONS_ROOT}/build/${FUNCTION}"
 ```
 
+## Build the function image
+
 In order to build the image for the test function you will use `podman`.
 
 ```bash
@@ -228,7 +229,7 @@ Login to the registry with podman:
 podman login ${REGISTRY}
 ```
 
-(Recall the username and password used when you setup the registry. Or check
+(Recall the username and password created when you setup the registry. Or check
 `/etc/rancher/k3s/registries.yaml` on the k3s node.)
 
 Push the image to the registry:
@@ -236,6 +237,8 @@ Push the image to the registry:
 ```bash
 podman push ${REGISTRY}/functions/${FUNCTION}
 ```
+
+## Deploy the test function
 
 Now deploy the function:
 
@@ -246,8 +249,32 @@ Now deploy the function:
 Test the function responds:
 
 ```bash
-curl -v -d "It works!" https://gateway.faas.${CLUSTER}/function/${FUNCTION}.openfaas-fn
+curl -v -d "It works!" \
+  https://gateway.faas.${CLUSTER}/function/${FUNCTION}.openfaas-fn
 ```
 
-It should respond with an echo of the text you sent: `It works!`
+It should respond with debug headers and an echo of the text you sent: `It
+works!`
 
+```
+...
+< HTTP/2 200 
+< content-type: application/x-www-form-urlencoded
+< date: Sat, 26 Dec 2020 20:11:38 GMT
+< x-duration-seconds: 0.076057
+< content-length: 10
+< 
+It works!
+...
+```
+
+See the contents of the handler function:
+
+```bash
+HANDLER=${FUNCTIONS_ROOT}/build/${FUNCTION}/index.py
+cat ${HANDLER}
+echo "## Next steps:"
+echo "## Modify ${HANDLER} to change this function"
+echo "## Rebuild and push image to registry"
+echo "## Redeploy function"
+```
