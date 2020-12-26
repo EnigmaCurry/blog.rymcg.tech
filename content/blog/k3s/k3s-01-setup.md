@@ -231,53 +231,40 @@ Build the container image (`kube-toolbox`):
 cat <<'EOF' | podman build -t kube-toolbox -f - 
 FROM alpine:latest
 
-ARG KUBECTL_VERSION=v1.20.1
-ARG KUSTOMIZE_VERSION=v3.8.8
-ARG KUBESEAL_VERSION=v0.13.1
-## Hugo version (note there is no 'v' prefix):
-ARG HUGO_VERSION=0.79.1
-
 ## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
  apk update && \
  apk add bash curl openssh git bash-completion && \
- echo "### Kubectl: " && \
-   curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
-   chmod a+x /usr/local/bin/kubectl && \
- echo "### Kustomize: " && \
-   curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
-   tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
-   rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
- echo "### kubeseal (Sealed Secrets): " && \
-   curl -LO https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.13.1/kubeseal-linux-amd64 && \
-   mv kubeseal-linux-amd64 kubeseal && \
-   chmod 0755 kubeseal && \
+ echo "## Arkade installer" && \
+   curl -sLS https://dl.get-arkade.dev | sh && \
+   arkade get kubectl && \
+   arkade get kubeseal && \
+   arkade get hugo && \
+   arkade get k3sup && \
+   arkade get faas-cli && \
+   arkade get helm && \
+   mv /root/.arkade/bin/* /usr/local/bin && \
+ echo "### Kustomize (direct URL because arkade is broken see #299): " && \
+   curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.8/kustomize_v3.8.8_linux_amd64.tar.gz && \
+   tar xfvz kustomize_v3.8.8_linux_amd64.tar.gz && \
  echo "### Flux: " && \
    curl -s https://toolkit.fluxcd.io/install.sh | bash && \
-   curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
- echo "### Hugo: " && \
-   tar xfvz hugo_${HUGO_VERSION}_Linux-64bit.tar.gz hugo && \
-   rm -f hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
- echo "### k3sup: " && \
-   curl -sLS https://get.k3sup.dev | sh && \
  echo "### cdk8s / pyenv" && \
    apk add libffi-dev openssl-dev bzip2-dev zlib-dev readline-dev \
       sqlite-dev build-base python3 py3-pip yarn npm && \
    pip install --user pipenv && \
    curl https://pyenv.run | bash && \
-   yarn global add cdk8s-cli && \
- echo "### OpenFaaS" && \
-   curl -sSL https://cli.openfaas.com | sh
+   yarn global add cdk8s-cli
     
 WORKDIR /root
 
 ## root account setup:
 ## Note that the files in the /root volume will override these image defaults:
-RUN echo 'source /usr/share/bash-completion/bash_completion' > .bashrc && \
+RUN echo 'export PATH=${HOME}/.arkade/bin:${HOME}/.local/bin:${PATH}' >> .bashrc && \
+    echo 'source /usr/share/bash-completion/bash_completion' >> .bashrc && \
     echo 'source <(kubectl completion bash)' >> .bashrc && \
     echo 'source <(flux completion bash)' >> .bashrc && \
     echo 'export PS1="[\u@kube-toolbox \W]\$ "' >> .bashrc && \
-    echo 'export PATH=${HOME}/.local/bin:${PATH}' >> .bashrc && \
     echo 'set enable-bracketed-paste on' > .inputrc
 
 CMD /bin/bash
