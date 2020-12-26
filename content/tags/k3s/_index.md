@@ -28,7 +28,9 @@ these instructions.
 
 In this series, you will learn, and more:
  * How to setup your workstation for all development tools. (Tested on Arch
-   Linux, but should work on any OS with the BASH shell.)
+   Linux, but should work on any OS with the BASH shell.) Or how to create a
+   utility container, with all the tools inside, and keeping your host system
+   clean.
  * How to create a [K3s](https://www.k3s.io/) cluster.
  * How to host [Traefik](https://traefik.io/) (v2) to proxy HTTP and TCP traffic
    (Ingress) to your applications, giving you free TLS (https) certificates from
