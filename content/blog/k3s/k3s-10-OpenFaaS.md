@@ -4,6 +4,9 @@ date: "2020-12-25T00:10:00-06:00"
 tags: ['k3s']
 ---
 
+[OpenFaaS](https://www.openfaas.com/) is a platform for creating serverless
+functions and microservices on kubernetes. 
+
 ```env
 ## Same git repo for infrastructure as in prior posts:
 FLUX_INFRA_DIR=${HOME}/git/flux-infra
