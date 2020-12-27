@@ -49,7 +49,9 @@ In this series, you will learn, and more:
  * How to host simple applications like Wordpress, and the MySQL database.
  * How to create "serverless" functions with
    [OpenFaaS](https://www.openfaas.com/).
-
+ * How to create a Continuous Integration platform with
+   [Drone](https://www.drone.io/)
+ 
 This blog uses [Literate
 Programming](https://en.wikipedia.org/wiki/Literate_programming) concepts. You
 just need a web-browser and a BASH terminal. There are literal code blocks for
