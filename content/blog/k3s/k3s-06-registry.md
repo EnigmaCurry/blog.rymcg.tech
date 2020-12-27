@@ -57,6 +57,8 @@ echo REGISTRY_HTTP_SECRET is ${REGISTRY_HTTP_SECRET}
 ```bash
 kubectl create secret generic registry \
    --namespace registry --dry-run=client -o json \
+   --from-literal=REGISTRY_ADMIN=${REGISTRY_ADMIN} \
+   --from-literal=REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
    --from-literal=REGISTRY_HTTP_SECRET=${REGISTRY_HTTP_SECRET} \
    --from-literal=REGISTRY_AUTH=${REGISTRY_AUTH} | kubeseal -o yaml > \
  ${FLUX_INFRA_DIR}/${CLUSTER}/registry/sealed_secret.yaml
