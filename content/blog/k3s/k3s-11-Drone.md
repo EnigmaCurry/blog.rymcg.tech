@@ -7,7 +7,7 @@ tags: ['k3s']
 [Drone](https://www.drone.io/) is a self-hosted Continuous Integration platform,
 an equivalent to GitHub Actions, Jenkins, Travis CI, or similar. Drone will
 automatically run jobs in response to commits to git repositories in Gitea
-(previously setup in [Part 4](/blog/k3s/k3s-04-git).
+(previously setup in [Part 4](/blog/k3s/k3s-04-git)).
 
 ```env
 ## Same git repo for infrastructure as in prior posts:
@@ -53,7 +53,7 @@ resources:
 - serviceaccounts.yaml
 - sealed_secret.yaml
 - pvc.yaml
-- deployment.yaml
+- statefulset.yaml
 - ingress.yaml
 - secrets-plugin.yaml
 - runner.yaml
@@ -207,10 +207,10 @@ spec:
 EOF
 ```
 
-## Create deployment
+## Create StatefulSet
 
 ```bash
-cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/deployment.yaml
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/${NAMESPACE}/statefulset.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -225,7 +225,7 @@ spec:
     app: drone
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     app: drone
@@ -233,6 +233,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   replicas: 1
+  serviceName: drone
   selector:
     matchLabels:
       app: drone
