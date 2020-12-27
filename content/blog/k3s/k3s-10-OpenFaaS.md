@@ -128,6 +128,8 @@ data:
     functionNamespace: openfaas-fn
     generateBasicAuth: true
     serviceType: ClusterIP
+    operator:
+      create: true
     ingress:
       enabled: true
       hosts:
@@ -240,11 +242,59 @@ podman push ${REGISTRY}/functions/${FUNCTION}
 
 ## Deploy the test function
 
-Now deploy the function:
+Create the manifests for the openfaas-fn namespace:
 
 ```bash
-(cd ${FUNCTIONS_ROOT}; faas-cli deploy -f ${FUNCTION}.yml)
+mkdir -p ${FLUX_INFRA_DIR}/${CLUSTER}/openfaas-fn
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/openfaas-fn/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- test-functions.yaml
+EOF
 ```
+
+OpenFaaS functions can be declared in kubernetes with a [Function
+CRD](https://github.com/openfaas/faas-netes/blob/master/README-OPERATOR.md)
+object.
+
+```bash
+cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/openfaas-fn/test-functions.yaml
+apiVersion: openfaas.com/v1
+kind: Function
+metadata:
+  name: ${FUNCTION}
+  namespace: openfaas-fn
+spec:
+  name: ${FUNCTION}
+  image: ${REGISTRY}/functions/${FUNCTION}
+  labels:
+    com.openfaas.scale.min: "2"
+    com.openfaas.scale.max: "15"
+  environment:
+    write_debug: "true"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+  requests:
+    cpu: "10m"
+    memory: "128Mi"
+EOF
+```
+
+## Commit and push manfests
+
+```bash
+git -C ${FLUX_INFRA_DIR} add ${CLUSTER}
+git -C ${FLUX_INFRA_DIR} commit -m "${CLUSTER} OpenFaaS functions"
+```
+
+```bash
+git -C ${FLUX_INFRA_DIR} push
+```
+
+
+## Test the function
 
 Test the function responds:
 
