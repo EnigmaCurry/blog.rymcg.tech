@@ -243,6 +243,7 @@ RUN cd /usr/local/bin && \
    arkade get k3sup && \
    arkade get faas-cli && \
    arkade get helm && \
+   arkade get k9s && \
    mv /root/.arkade/bin/* /usr/local/bin && \
  echo "### Kustomize (direct URL because arkade is broken see #299): " && \
    curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.8/kustomize_v3.8.8_linux_amd64.tar.gz && \
