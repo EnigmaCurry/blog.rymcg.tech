@@ -75,6 +75,17 @@ build a utility container](#create-toolbox-container-optional) to use as your vi
      container](#create-toolbox-container-optional) rather than native on your
      workstation.
    * [Install Podman](https://podman.io/getting-started/installation)
+   
+ * `vagrant` (Optional):
+   * A Virtual Machine manager
+   * Only used for [Part 12](/blog/k3s/k3s-12-drone-development), for installing
+     a Virtual Machine to run Docker and a Drone runner, running CI jobs for
+     your remote cluster, but on your local workstation.
+   * [Arch Linux](https://wiki.archlinux.org/index.php/Vagrant#Installation)
+   * Also install
+     [libvirt](https://wiki.archlinux.org/index.php/Libvirt#Installation)
+   * Install the libvirt plugin too: `vagrant plugin install vagrant-libvirt`
+
  * `hugo` (Optional) :
    * To build [the source code](https://github.com/EnigmaCurry/blog.rymcg.tech)
      and serve this blog from localhost (Or just continue reading this blog

@@ -182,31 +182,15 @@ FUNCTIONS_ROOT=${HOME}/git/functions
 REGISTRY=registry.${CLUSTER}
 FUNCTION=hello-python
 LANGUAGE=python
+export OPENFAAS_URL=https://gateway.faas.${CLUSTER}
 ```
 
-Create the test function `hello-python` using the language template:
 
 ```bash
 mkdir -p ${FUNCTIONS_ROOT}
 git init ${FUNCTIONS_ROOT}
-(cd ${FUNCTIONS_ROOT}; faas-cli new --lang ${LANGUAGE} ${FUNCTION})
-```
-
-Rewrite the function manifest with the corrected registry image name and
-gateway:
-
-```bash
-cat <<EOF > ${FUNCTIONS_ROOT}/${FUNCTION}.yml
-version: 1.0
-provider:
-  name: openfaas
-  gateway: https://gateway.faas.${CLUSTER}
-functions:
-  ${FUNCTION}:
-    lang: ${LANGUAGE}
-    handler: ./${FUNCTION}
-    image: ${REGISTRY}/functions/${FUNCTION}:latest
-EOF
+(cd ${FUNCTIONS_ROOT}; faas-cli new --prefix ${REGISTRY}/functions \
+  --lang ${LANGUAGE} ${FUNCTION})
 ```
 
 Create the Dockerfile for the container:
