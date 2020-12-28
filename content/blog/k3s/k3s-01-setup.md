@@ -379,13 +379,14 @@ EOF
 Now exit and restart `kbox` (press `Ctrl-D` or type `exit` and then retstart
 `kbox`)
 
-Inside the new `kbox` shell, list the podman connections, you should see the
-workstation connection name ending with an asterisk (`*`) to indicate it is the
-default connection to use:
+Inside the new `kbox` shell, list the podman connections: 
 
 ```bash
 podman system connection list
 ```
+
+You should see the workstation connection name listed, ending with an asterisk
+(`*`) to indicate it is the default connection to use.
 
 Test that you can list containers:
 

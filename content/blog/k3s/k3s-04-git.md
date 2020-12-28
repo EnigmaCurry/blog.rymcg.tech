@@ -291,7 +291,7 @@ spec:
     app: gitea
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     app: gitea
@@ -302,6 +302,7 @@ spec:
   selector:
     matchLabels:
       app: gitea
+  serviceName: gitea-web
   template:
     metadata:
       labels:
