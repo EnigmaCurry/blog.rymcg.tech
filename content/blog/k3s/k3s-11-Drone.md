@@ -441,7 +441,7 @@ which lists gitea repositories.
 
 ## Create a simple Job Pipeline
 
-Create a new git repository:
+Create a new git repository, to hold a new example project:
  
  * Go to your Gitea instance (https://git.k3s.example.com), and click the `+`
    icon, and `New Repository`, type a name `test-drone` and click `Create

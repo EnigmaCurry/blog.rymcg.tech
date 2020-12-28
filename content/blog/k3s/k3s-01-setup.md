@@ -12,7 +12,7 @@ config files on your local laptop, which will be referred to as your
 workstation, and use `kubectl` to access the remote cluster API.
 
 You will need to install several command line tools on your workstation ([or
-build a utility container](#create-toolbox-container) to use as your virtual
+build a utility container](#create-toolbox-container-optional) to use as your virtual
 "workstation" environment):
 
  * A modern BASH shell, being the default Linux terminal shell, but also
@@ -67,7 +67,7 @@ build a utility container](#create-toolbox-container) to use as your virtual
    * Sometimes it is useful to run a container on your local workstation.
    * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
    * This is also useful for [installing all of these tools in a
-     container](#create-toolbox-container) rather than native on your
+     container](#create-toolbox-container-optional) rather than native on your
      workstation.
    * [Install Podman](https://podman.io/getting-started/installation)
  * `hugo` (Optional) :
