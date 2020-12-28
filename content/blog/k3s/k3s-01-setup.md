@@ -63,6 +63,11 @@ build a utility container](#create-toolbox-container-optional) to use as your vi
    * Ubuntu: `sudo apt install git`
    * [Other OS](https://git-scm.com/downloads)
 
+ * `jq` and `yq`:
+   * JSON and YAML wrangling tools.
+   * Arch Linux: `sudo pacman -S jq yq`
+   * Ubuntu: `sudo apt install jq yq`
+   
  * `podman` or `docker`:
    * Sometimes it is useful to run a container on your local workstation.
    * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
@@ -234,7 +239,7 @@ FROM alpine:latest
 ## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
  apk update && \
- apk add bash curl openssh git bash-completion && \
+ apk add bash curl openssh git bash-completion jq && \
  echo "## Arkade installer" && \
    curl -sLS https://dl.get-arkade.dev | sh && \
    arkade get kubectl && \
@@ -261,7 +266,9 @@ RUN cd /usr/local/bin && \
    curl -LO https://github.com/containers/podman/releases/download/v2.2.1/podman-remote-static.tar.gz && \
    tar xfvz podman-remote-static.tar.gz && \
    rm podman-remote-static.tar.gz && \
-   mv podman-remote-static podman 
+   mv podman-remote-static podman && \
+ echo "## yq" && \
+   pip install yq
 
 WORKDIR /root
 
