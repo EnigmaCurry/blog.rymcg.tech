@@ -50,12 +50,52 @@ mkdir -p ${VAGRANT_CWD}
 vagrant init generic/debian10 && vagrant up
 ```
 
-## Install Docker on the VM
-
-Install docker through `vagrant ssh`, run this on your host workstation:
+Add a permanent SSH config on your workstation:
 
 ```bash
-cat <<'EOF' | vagrant ssh
+VAGRANT_IP=$(vagrant ssh -- ip addr show scope global | grep inet | \
+             cut -d' ' -f6 | cut -d/ -f1 | head -1) && \
+cat <<EOF | tee >> ~/.ssh/config
+
+Host drone-docker
+    Hostname ${VAGRANT_IP}
+    User vagrant
+
+EOF
+```
+
+Secure the VM so that SSH requires your workstation key:
+
+```bash
+ssh-copy-id drone-docker
+```
+
+Type the password: `vagrant`
+
+Test that direct SSH access now works without a password:
+
+```bash
+ssh drone-docker sh -c 'whoami && lsb_release -a'
+```
+
+Now turn off password access so that keys are required:
+
+```bash
+cat <<'EOF' | ssh drone-docker
+TMP=$(mktemp)
+echo "PasswordAuthentication no" > ${TMP}
+sudo cat /etc/ssh/sshd_config >> ${TMP}
+sudo mv ${TMP} /etc/ssh/sshd_config
+sudo systemctl restart ssh
+EOF
+```
+
+## Install Docker on the VM
+
+Install docker onto the VM:
+
+```bash
+cat <<'EOF' | ssh drone-docker
 sudo apt update && \
 sudo apt-get -y install \
     apt-transport-https \
@@ -76,7 +116,21 @@ EOF
 You can check that the docker service started:
 
 ```bash
-vagrant ssh -- systemctl status docker
+ssh drone-docker systemctl status docker
+```
+
+Allow the `vagrant` user to run docker:
+
+```bash
+ssh drone-docker sudo gpasswd -a vagrant docker
+```
+
+To setup remote docker CLI access from your workstation, you can set
+`DOCKER_HOST`:
+
+```env-static
+# Remote docker host in VM:
+export DOCKER_HOST=ssh://drone-docker
 ```
 
 ## Install Drone Docker Runner
@@ -104,7 +158,7 @@ SERVER_HOST=$(get_secret SERVER_HOST)
 Now install the drone runner:
 
 ```bash
-cat <<EOF | vagrant ssh
+cat <<EOF | ssh drone-docker
 sudo docker run -d \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -e DRONE_RPC_PROTO=https \
@@ -113,21 +167,23 @@ sudo docker run -d \
   -e DRONE_RUNNER_CAPACITY=2 \
   -e DRONE_RUNNER_NAME=${RUNNER} \
   -e DRONE_RUNNER_LABELS=${RUNNER_LABELS} \
+  -e DRONE_RUNNER_VOLUMES=/var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
   --restart always \
   --name drone-runner \
   drone/drone-runner-docker:1
 EOF
-```
-
-Destroy the evidence:
-
-```bash
 unset RPC_SECRET KUBERNETES_SECRET_KEY SERVER_HOST
 ```
+
+This example mounts the docker socket for Drone use (required) AND it maps it on
+every single drone pipeline in the future, via `DRONE_RUNNER_VOLUMES`. This is
+optional, but required for building container images, which will be used in the
+next post. Note that this effectively gives root access (of the VM) to all
+pipelines, and so you can only support trusted workloads.
 
 Check the drone runner started:
 
 ```bash
-vagrant ssh -- sudo docker logs drone-runner
+ssh drone-docker sudo docker logs drone-runner
 ```
