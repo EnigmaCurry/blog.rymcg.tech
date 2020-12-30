@@ -63,6 +63,10 @@ build a utility container](#create-toolbox-container-optional) to use as your vi
    * Ubuntu: `sudo apt install git`
    * [Other OS](https://git-scm.com/downloads)
 
+ * `tea`:
+   * Gitea command line client, useful for creating remote git repos
+   * [Install docs](https://gitea.com/gitea/tea)
+
  * `jq` and `yq`:
    * JSON and YAML wrangling tools.
    * Arch Linux: `sudo pacman -S jq yq`
@@ -247,6 +251,10 @@ Build the container image (`kube-toolbox`):
 cat <<'EOF' | podman build -t kube-toolbox -f - 
 FROM alpine:latest
 
+ARG GIT_TEA_VERSION=0.6.0
+ARG KUSTOMIZE_VERSION=v3.9.1
+ARG PODMAN_REMOTE_VERSION=v2.2.1
+
 ## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
  apk update && \
@@ -262,9 +270,9 @@ RUN cd /usr/local/bin && \
    arkade get k9s && \
    mv /root/.arkade/bin/* /usr/local/bin && \
  echo "### Kustomize (direct URL because arkade is broken see #299): " && \
-   curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.8/kustomize_v3.8.8_linux_amd64.tar.gz && \
-   tar xfvz kustomize_v3.8.8_linux_amd64.tar.gz && \
-   rm kustomize_v3.8.8_linux_amd64.tar.gz && \
+   curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+   tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
+   rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
  echo "### Flux: " && \
    curl -s https://toolkit.fluxcd.io/install.sh | bash && \
  echo "### cdk8s / pyenv" && \
@@ -274,12 +282,17 @@ RUN cd /usr/local/bin && \
    curl https://pyenv.run | bash && \
    yarn global add cdk8s-cli && \
  echo "### Podman remote" && \
-   curl -LO https://github.com/containers/podman/releases/download/v2.2.1/podman-remote-static.tar.gz && \
+   curl -LO https://github.com/containers/podman/releases/download/${PODMAN_REMOTE_VERSION}/podman-remote-static.tar.gz && \
    tar xfvz podman-remote-static.tar.gz && \
    rm podman-remote-static.tar.gz && \
    mv podman-remote-static podman && \
  echo "## yq" && \
-   pip install yq
+   pip install yq && \
+ echo "## git-tea" && \
+   curl -LO \
+     https://dl.gitea.io/tea/${GIT_TEA_VERSION}/tea-${GIT_TEA_VERSION}-linux-amd64 && \
+   mv tea-${GIT_TEA_VERSION}-linux-amd64 tea && \
+   chmod 0755 tea
 
 WORKDIR /root
 
