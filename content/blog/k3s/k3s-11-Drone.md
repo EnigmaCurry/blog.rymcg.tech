@@ -442,24 +442,24 @@ which lists gitea repositories.
 ## Create a simple Job Pipeline
 
 Create a new git repository, to hold a new example project:
- 
- * Go to your Gitea instance (https://git.k3s.example.com), and click the `+`
-   icon, and `New Repository`, type a name `test-drone` and click `Create
-   Repository`. Copy the SSH clone URL and set the bash variable `REPO_SSH_URL`
-   as shown below.
+
+```env
+TEST_REPO=test-drone
+TEST_DIR=${HOME}/git/${TEST_REPO}
+```
+
+```bash
+tea repo create --private --name ${TEST_REPO}
+CLONE_URL=$(tea repo | grep -o "ssh://.*[ $]" | grep "/${TEST_REPO}.git[ $]")
+```
+
  * Go to your drone instance (https://drone.k3s.example.com), and click `Sync`
    to refresh the list of repositories. Find the new repository called
    `test-drone` and click `Activate`, then `Activate Repository`.
  * Clone the repo to your workstation, via SSH:
- 
-```env
-# SSH clone URL starting with ssh://...
-REPO_SSH_URL=xxx
-```
- 
+  
 ```bash
-TEST_DIR=${HOME}/git/test-drone
-git clone ${REPO_SSH_URL} ${TEST_DIR}
+git clone ${CLONE_URL} ${TEST_DIR}
 ```
 
 Create the drone config file:  `.drone.yml`:
