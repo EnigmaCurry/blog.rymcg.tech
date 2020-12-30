@@ -535,7 +535,7 @@ rm ${SSH_KEY_TMP}
 ## Setup command line gitea client
 
 `tea` is a command line gitea interface, with it, you can create new git
-repositories directly from your BASH shell.
+repositories, and other tasks, directly from your BASH shell.
 
 Login to your gitea account, go to user `Settings`->`Applications`, then click
 `Generate Token`. Create a variable to contain the token:
@@ -551,6 +551,9 @@ Now login with the client:
 tea login add --url https://git.${CLUSTER} --token ${GITEA_TOKEN}
 unset GITEA_TOKEN
 ```
+
+NOTE: your gitea token is stored, unencrypted, at
+`${HOME}/.config/tea/config.yml`
 
 Test that it is working; list all of your repos:
 
