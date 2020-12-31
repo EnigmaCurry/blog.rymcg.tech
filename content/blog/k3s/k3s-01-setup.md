@@ -7,13 +7,14 @@ tags: ['k3s']
 ## Prepare your workstation
 
 When working with kubernetes, you should resist the urge to directly login into
-the host server via SSH, unless you have to. Instead, you will create all the
+the host server via SSH, unless you have to. Instead, you will create all of the
 config files on your local laptop, which will be referred to as your
 workstation, and use `kubectl` to access the remote cluster API.
 
-You will need to install several command line tools on your workstation ([or
-build a utility container](#create-toolbox-container-optional) to use as your virtual
-"workstation" environment):
+You will need to install several command line tools on your workstation (or
+follow the guide to [build a utility
+container](#create-toolbox-container-optional) to use as your virtual
+"workstation" environment, which has all of the tools builtin):
 
  * A modern BASH shell, being the default Linux terminal shell, but also
    available on various platforms.
@@ -72,19 +73,39 @@ build a utility container](#create-toolbox-container-optional) to use as your vi
    * Arch Linux: `sudo pacman -S jq yq`
    * Ubuntu: `sudo apt install jq yq`
    
- * `podman` or `docker`:
-   * Sometimes it is useful to run a container on your local workstation.
+ * `podman` and `docker`:
+   * Sometimes it is useful to run a container on your local workstation, podman
+     can run rootless (no sudo required), and is the best option for doing this.
    * This won't be used until [part 7](/blog/k3s/k3s-07-mutual-tls)
    * This is also useful for [installing all of these tools in a
      container](#create-toolbox-container-optional) rather than native on your
      workstation.
-   * [Install Podman](https://podman.io/getting-started/installation)
-   
+   * [Install Podman](https://podman.io/getting-started/installation).
+   * The Docker CLI client is still useful for interfacing with remote docker
+     servers (or Virtual Machine).
+   * [Install Docker](https://docs.docker.com/engine/install/) (you only need
+     the client, not the engine, but this [and most distros] package both parts
+     in the same package. You do not need to start the docker service, you will
+     only use the docker client.)
+   * DO NOT follow common advice to `alias docker=podman`. Podman and Docker are
+     useful for different purposes, and you should install both. Podman doesn't
+     have a daemon, and it can't talk to one; this is convenient, and secure,
+     for running containers locally on your workstation with your normal user
+     account (rootless). Docker (the CLI client) is useful for controlling
+     *remote* Docker servers (or VM) by setting `DOCKER_HOST`. Podman can also
+     act as a client for remote *podman* hosts (through socket activation) but
+     it can't talk to a Docker daemon (local nor remote). Docker (the engine)
+     requires running a daemon, which is normally run as root (or another
+     priviliged account), and so is mostly unusable for rootless accounts, but
+     this can be made to work well with a Virtual Machine (normal user runs
+     docker client running on workstation, controlling docker daemon installed
+     inside VM.)
+     
  * `vagrant` (Optional):
    * A Virtual Machine manager
    * Only used for [Part 12](/blog/k3s/k3s-12-drone-development), for installing
-     a Virtual Machine to run Docker and a Drone runner, running CI jobs for
-     your remote cluster, but on your local workstation.
+     a Virtual Machine to run Docker (daemon) and a Drone runner, running CI
+     jobs for your remote cluster, but on your local workstation.
    * [Arch Linux](https://wiki.archlinux.org/index.php/Vagrant#Installation)
    * Also install
      [libvirt](https://wiki.archlinux.org/index.php/Libvirt#Installation)
@@ -96,14 +117,17 @@ build a utility container](#create-toolbox-container-optional) to use as your vi
      online.)
    * Arch Linux: `sudo pacman -S hugo`
    * [Other OS](https://gohugo.io/getting-started/installing/)
+   
  * `k3sup` (Optional) :
    * [alexellis/k3sup](https://github.com/alexellis/k3sup) is a very useful tool
      to automatically create k3s clusters on machines that you already have SSH
      access to.
    * [Releases](https://github.com/alexellis/k3sup/releases)
+   
  * `CDK8s` (Optional) :
    * Programmatically generate YAML from python, typescript, or java.
    * [Install CDK8s](https://cdk8s.io/docs/latest/getting-started/)
+   
  * `OpenFaaS` (Optional) :
    * Create serverless functions and microservices
    * [Install OpenFaaS CLI](https://docs.openfaas.com/cli/install/)
@@ -242,8 +266,7 @@ still use your native workstation editor tools, rather than installing an editor
 in the container.
 
 This requires you to [install
-podman](https://podman.io/getting-started/installation) (or if you have docker,
-you can `alias podman=docker`)
+podman](https://podman.io/getting-started/installation).
 
 Build the container image (`kube-toolbox`):
 
@@ -257,8 +280,7 @@ ARG PODMAN_REMOTE_VERSION=v2.2.1
 
 ## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
- apk update && \
- apk add bash curl openssh git bash-completion jq && \
+ apk add --no-cache bash curl openssh git bash-completion jq docker-cli && \
  echo "## Arkade installer" && \
    curl -sLS https://dl.get-arkade.dev | sh && \
    arkade get kubectl && \
@@ -293,7 +315,7 @@ RUN cd /usr/local/bin && \
      https://dl.gitea.io/tea/${GIT_TEA_VERSION}/tea-${GIT_TEA_VERSION}-linux-amd64 && \
    mv tea-${GIT_TEA_VERSION}-linux-amd64 tea && \
    chmod 0755 tea
-
+   
 WORKDIR /root
 
 ## root account setup:
