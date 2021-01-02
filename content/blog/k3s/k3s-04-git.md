@@ -30,13 +30,8 @@ kubernetes controller installed on the server. You already installed `kubeseal`
 in [part1](/blog/k3s/k3s-01-setup), and now you will install the kubernetes
 controller:
 
-Find the latest version via curl:
-
-```bash
-SEALED_SECRET_VERSION=$(curl --silent \
-  "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | \
-  grep -Po '"tag_name": "\K.*?(?=")')
-echo Latest version: ${SEALED_SECRET_VERSION}
+```env
+SEALED_SECRET_VERSION=v0.13.1
 ```
 Append the sealed secret manifest to the existing `kustomization.yaml` file:
 
