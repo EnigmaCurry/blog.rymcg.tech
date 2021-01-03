@@ -421,7 +421,7 @@ GITEA_EMAIL=root@example.com
 ```
 
 ```bash
-kubectl -n git-system exec deploy/gitea -it -- gitea admin user create \
+kubectl -n git-system exec statefulset/gitea -it -- gitea admin user create \
     --username ${GITEA_USER} --random-password --admin --email ${GITEA_EMAIL}
 ```
 
