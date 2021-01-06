@@ -170,7 +170,7 @@ git -C ${FLUX_INFRA_DIR} push
 
 Within one minute, you should see the new `tmp-namespace` namespace.
 
-```bash
+```
 # kubectl get ns tmp-namespace
 NAME            STATUS   AGE
 tmp-namespace   Active   20s
