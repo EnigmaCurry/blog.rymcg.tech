@@ -6,6 +6,9 @@
 ## this wrapper script. If you need to update the config after installation,
 ## edit the new script, and re-run.
 
+## Don't use this script by itself. You should extend it instead.
+## see whoami.sh for an example
+
 create_service_container() {
     ## Template function to create a systemd unit for a podman container
     ## Expects environment file at /etc/sysconfig/${SERVICE}
@@ -13,10 +16,7 @@ create_service_container() {
     IMAGE=$2
     PODMAN_ARGS=$3
     CMD_ARGS=${@:4}
-    if [ ! -f /etc/sysconfig/${SERVICE} ]; then
-        echo "No environment file found: /etc/sysconfig/${SERVICE}"
-        exit 1
-    fi
+    touch /etc/sysconfig/${SERVICE}
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
 [Unit]
 After=network-online.target
@@ -68,7 +68,6 @@ wrapper() {
 
         ## Traefik:
         DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
-        DEFAULT_DOMAIN=dev1.example.com
         DEFAULT_ACME_EMAIL=you@example.com
         DEFAULT_ACME_CA=https://acme-v02.api.letsencrypt.org/directory
 
@@ -78,7 +77,6 @@ wrapper() {
         TEMPLATES=(traefik_service)
         VARS=( SCRIPT_INSTALL_PATH \
                TRAEFIK_IMAGE \
-               DOMAIN \
                ACME_EMAIL \
                ACME_CA )
     }
@@ -86,7 +84,6 @@ wrapper() {
     traefik_service() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
-        touch /etc/sysconfig/${SERVICE}
         mkdir -p /etc/sysconfig/${SERVICE}.d
         create_service_container \
             ${SERVICE} ${IMAGE} "-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/" \
