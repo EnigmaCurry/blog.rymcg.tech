@@ -41,7 +41,7 @@ create_service_proxy() {
     TRAEFIK_SERVICE=traefik
     SERVICE=$1
     DOMAIN=$2
-    cat <<END_TRAEFIK_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
+    cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
   rule = "Host(\"${DOMAIN}\")"
@@ -56,11 +56,11 @@ create_service_proxy() {
   tls = "true"
   [http.routers.${SERVICE}-secure.tls]
     certresolver = "default"
-END_TRAEFIK_CONF
+END_PROXY_CONF
 }
 
 
-main() {
+wrapper() {
     core_config() {
         # Podman and Traefik config.
         ## Permanent install path for the new script:
@@ -87,7 +87,7 @@ main() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
         touch /etc/sysconfig/${SERVICE}
-        mkdir /etc/sysconfig/${SERVICE}.d
+        mkdir -p /etc/sysconfig/${SERVICE}.d
         create_service_container \
             ${SERVICE} ${IMAGE} "-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/" \
             --providers.file.directory=/etc/traefik \
@@ -109,9 +109,9 @@ main() {
     address = ":443"
 [certificatesResolvers.default.acme]
   storage = "/etc/traefik/acme/acme.json"
-  tlschallenge=true
-  caserver=${ACMA_CA}
-  email=${ACME_EMAIL}
+  tlschallenge = true
+  caserver = "${ACME_CA}"
+  email = "${ACME_EMAIL}"
 END_TRAEFIK_CONF
 
         systemctl enable --now ${SERVICE}
@@ -136,7 +136,7 @@ END_TRAEFIK_CONF
         touch ${SCRIPT_INSTALL_PATH} && chmod 0700 ${SCRIPT_INSTALL_PATH}
         ## Do the header first, which includes hard-coded config:
         cat <<'END_OF_SCRIPT_HEADER' > ${SCRIPT_INSTALL_PATH}
-#!/bin/bash -ex
+#!/bin/bash -eux
 ## Podman systemd config for Ubuntu 20.10
 
 ## Default values that were used during first install:
@@ -209,7 +209,6 @@ main() {
     echo "All done :)"
 }
 
-main
 END_OF_INSTALLER
 
         echo "## Script written to ${SCRIPT_INSTALL_PATH}"
@@ -227,7 +226,7 @@ END_OF_INSTALLER
         ## Run the config (which sets TEMPLATES and VARS):
         $var
         ## Append templates and vars:
-        ALL_SERVICES=(${ALL_TEMPLATES[@]} ${TEMPLATES[@]})
+        ALL_TEMPLATES=(${ALL_TEMPLATES[@]} ${TEMPLATES[@]})
         ALL_VARS=(${ALL_VARS[@]} ${VARS[@]})
     done
     # Merge all the configs, applying environment vars first, then the defaults:
@@ -235,6 +234,11 @@ END_OF_INSTALLER
     # Create the new install script, with all of the config hard-coded:
     create_script
     # Run the new install script:
-    ${SCRIPT_INSTALL_PATH}
+    source ${SCRIPT_INSTALL_PATH}
+    main
 }
 
+(
+    set -eux
+    wrapper
+)
