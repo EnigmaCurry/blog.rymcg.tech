@@ -166,7 +166,7 @@ END_OF_INSTALLER
     echo "## Script written to ${SCRIPT_INSTALL_PATH}"
 }
 
-main() {
+install() {
     # Run core config first:
     core_config
     # Run each application config function next:
