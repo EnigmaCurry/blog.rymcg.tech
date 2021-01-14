@@ -166,16 +166,21 @@ END_OF_SCRIPT_CONFIG
 }
 
 $(declare -f create_service_container)
+
 $(declare -f create_service_proxy)
+
 END_DYNAMIC_CONFIG_1
 
         for template in "${ALL_TEMPLATES[@]}"; do
             cat <<END_DYNAMIC_CONFIG_2 >> ${SCRIPT_INSTALL_PATH}
+
 $(declare -f ${template})
+
 END_DYNAMIC_CONFIG_2
         done
 
         cat <<'END_OF_INSTALLER' >> ${SCRIPT_INSTALL_PATH}
+
 install_packages() {
     ## Create /etc/sysconfig to store container environment files
     mkdir -p /etc/sysconfig
