@@ -62,6 +62,7 @@ whoami_service() {
     # PODMAN_ARGS must be in quotes if you need to specify multiple.
     # CMD_ARGS is all the rest of the args, so you can specify more, no quotes needed.
     create_service_container ${SERVICE} ${IMAGE} ${PODMAN_ARGS} -name ${RANDOM_NAME}
+}
 
 ## Get podman_traefik template and run it:
 (
