@@ -258,10 +258,4 @@ END_OF_INSTALLER
     main
 }
 
-(
-    set -eux
-    wrapper
-)
-
-
 ## THE END
