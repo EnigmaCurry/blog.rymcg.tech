@@ -213,7 +213,7 @@ install_packages() {
     echo "set enable-bracketed-paste on" >> /root/.inputrc
 }
 
-main() {
+(
     if [ ${UID} != 0 ]; then
         echo "Run this as root."
         exit 1
@@ -226,8 +226,7 @@ main() {
     done
     chmod go-rwx -R /etc/sysconfig
     echo "All done :)"
-}
-
+)
 END_OF_INSTALLER
 
         echo "## Script written to ${SCRIPT_INSTALL_PATH}"
@@ -255,8 +254,7 @@ END_OF_INSTALLER
     # Create the new install script, with all of the config hard-coded:
     create_script
     # Run the new install script:
-    source ${SCRIPT_INSTALL_PATH}
-    main
+    ${SCRIPT_INSTALL_PATH}
 }
 
 ## THE END
