@@ -104,7 +104,7 @@ wrapper() {
   [entrypoints.websecure]
     address = ":443"
 [certificatesResolvers.default.acme]
-  storage = "/etc/traefik/acme/acme.json"
+  storage = "/etc/traefik/acme.json"
   tlschallenge = true
   caserver = "${ACME_CA}"
   email = "${ACME_EMAIL}"
