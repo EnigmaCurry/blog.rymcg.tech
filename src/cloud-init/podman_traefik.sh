@@ -83,9 +83,12 @@ wrapper() {
     traefik_service() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
+        PORT_ARGS="-p 80:80 -p 443:443"
+        VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
         mkdir -p /etc/sysconfig/${SERVICE}.d
         create_service_container \
-            ${SERVICE} ${IMAGE} "-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/" \
+            ${SERVICE} ${IMAGE} \
+            "${PORT_ARGS} ${VOLUME_ARGS}" \
             --providers.file.directory=/etc/traefik \
             --providers.file.watch=true
 
