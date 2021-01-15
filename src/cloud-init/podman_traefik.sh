@@ -1,5 +1,5 @@
 #!/bin/bash
-## Podman systemd and container config with Traefik, for Ubuntu 20.10 by EnigmaCurry.
+## Podman systemd and container config with Traefik, for Ubuntu>=20.04 by EnigmaCurry.
 ## This is a wrapper script that creates another script at ${SCRIPT_INSTALL_PATH}.
 ##   ( /usr/local/sbin/podman_traefik.sh by default )
 ## The new installed script will have hard-coded the configuration gathered by
@@ -22,7 +22,6 @@ create_service_container() {
 After=network-online.target
 
 [Service]
-EnvironmentFile=/etc/sysconfig/${SERVICE}
 ExecStartPre=-/usr/bin/podman rm -f ${SERVICE}
 ExecStart=/usr/bin/podman run --name ${SERVICE} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
 ExecStop=/usr/bin/podman stop ${SERVICE}
