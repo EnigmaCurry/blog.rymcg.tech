@@ -185,7 +185,22 @@ install_packages() {
     ## Install packages:
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
-    apt-get -y install podman runc
+    ## Try to install podman, it should work in Ubuntu 20.10 + from regular repository:
+    if ! apt-get -y install podman runc; then
+        (
+          source /etc/os-release
+          if [ ${VERSION_ID} = '20.04' ]; then
+            ## For Ubuntu 20.04 (LTS) need to install from Kubic project repositories:
+            echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+            curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
+            apt-get update
+            apt-get -y upgrade
+            apt-get -y install podman
+          else
+            echo "Ubuntu ${VERSION_ID:-version Unknown} is unsupported. Sorry :("
+          fi
+        )
+    fi
 
     ## Niceties:
     echo "set enable-bracketed-paste on" >> /root/.inputrc
