@@ -52,15 +52,13 @@ whoami_service() {
     RANDOM_NAME=whoami-$(openssl rand -hex 3)
 
     # PODMAN_ARGS is any additional arguments needed to pass to `podman run`.
-    # You can specify zero or more arguments.
     # Use this to map volumes or ports etc.
     PODMAN_ARGS=""
 
     # create_service_container is a function that comes from the podman_traefik script.
     # It takes 4+ arguments: SERVICE IMAGE PODMAN_ARGS [CMD_ARG1, CMD_ARG2, ... ]
-    # PODMAN_ARGS must be in quotes. CMD_ARGS is all the rest of the args, so
-    # you can specify more, no quotes needed.
-    create_service_container ${SERVICE} ${IMAGE} \"${PODMAN_ARGS}\" -name ${RANDOM_NAME}
+    # CMD_ARGS is everything from argument 4 onwards (-name ${RANDOM_NAME}):
+    create_service_container ${SERVICE} ${IMAGE} ${PODMAN_ARGS} -name ${RANDOM_NAME}
 }
 
 ## Get podman_traefik template and run it:
