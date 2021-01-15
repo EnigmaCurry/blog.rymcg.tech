@@ -138,11 +138,12 @@ END_TRAEFIK_CONF
         ## Save config in permanent script:
         touch ${SCRIPT_INSTALL_PATH} && chmod 0700 ${SCRIPT_INSTALL_PATH}
         ## Do the header first, which includes hard-coded config:
-        cat <<'END_OF_SCRIPT_HEADER' > ${SCRIPT_INSTALL_PATH}
+        cat <<END_OF_SCRIPT_HEADER > ${SCRIPT_INSTALL_PATH}
 #!/bin/bash -eux
 ## Podman systemd config
 
 ## Default values that were used during first install:
+ALL_TEMPLATES=(${ALL_TEMPLATES[@]})
 default_config() {
 END_OF_SCRIPT_HEADER
 
@@ -221,7 +222,6 @@ install_packages() {
     default_config
     config
     install_packages
-    ALL_TEMPLATES=(${ALL_TEMPLATES[@]})
     for template in "${ALL_TEMPLATES[@]}"; do
       $template
     done
