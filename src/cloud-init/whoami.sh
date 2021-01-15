@@ -58,7 +58,7 @@ whoami_service() {
     # create_service_container is a function that comes from the podman_traefik script.
     # It takes 4+ arguments: SERVICE IMAGE PODMAN_ARGS [CMD_ARG1, CMD_ARG2, ... ]
     # CMD_ARGS is everything from argument 4 onwards (-name ${RANDOM_NAME}):
-    create_service_container ${SERVICE} ${IMAGE} ${PODMAN_ARGS} -name ${RANDOM_NAME}
+    create_service_container ${SERVICE} ${IMAGE} ${PODMAN_ARGS:-""} -name ${RANDOM_NAME}
 }
 
 ## Get podman_traefik template and run it:
