@@ -61,7 +61,7 @@ whoami_service() {
     # It takes 4+ arguments: SERVICE IMAGE PODMAN_ARGS [CMD_ARG1, CMD_ARG2, ... ]
     # PODMAN_ARGS must be wrapped in quotes as shown:
     # CMD_ARGS is everything from argument 4 onwards (-name ${RANDOM_NAME}):
-    create_service_container ${SERVICE} ${IMAGE} \"${PODMAN_ARGS}\" -name ${RANDOM_NAME}
+    create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" -name ${RANDOM_NAME}
 
     # create_service_proxy will create a public web proxy for whoami through traefik:
     # It takes 2+ arguments: SERVICE DOMAIN [CONTAINER_PORT]
