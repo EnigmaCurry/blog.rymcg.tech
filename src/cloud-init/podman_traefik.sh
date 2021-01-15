@@ -221,6 +221,7 @@ install_packages() {
     default_config
     config
     install_packages
+    ALL_TEMPLATES=(${ALL_TEMPLATES[@]})
     for template in "${ALL_TEMPLATES[@]}"; do
       $template
     done
