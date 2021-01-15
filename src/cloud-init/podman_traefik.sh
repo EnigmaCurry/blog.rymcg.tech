@@ -191,6 +191,7 @@ install_packages() {
     ## Install packages:
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
+    apt-get install -y dnsmasq
     ## Try to install podman, it should work in Ubuntu 20.10 + from regular repository:
     if ! apt-get -y install podman runc; then
         (
