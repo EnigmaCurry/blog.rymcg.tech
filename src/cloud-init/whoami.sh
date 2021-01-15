@@ -53,8 +53,9 @@ whoami_service() {
     RANDOM_NAME=whoami-$(openssl rand -hex 3)
 
     # PODMAN_ARGS is any additional arguments needed to pass to `podman run`.
-    # Use this to map volumes or ports etc.
-    PODMAN_ARGS=""
+    # Use this to map volumes or ports etc. `--network web` adds it to the same
+    # network as Traefik, allowing it to be proxied:
+    PODMAN_ARGS="--network web"
 
     # create_service_container is a function that comes from the podman_traefik script.
     # It takes 4+ arguments: SERVICE IMAGE PODMAN_ARGS [CMD_ARG1, CMD_ARG2, ... ]

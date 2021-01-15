@@ -40,6 +40,7 @@ create_service_proxy() {
     TRAEFIK_SERVICE=traefik
     SERVICE=$1
     DOMAIN=$2
+    PORT=${3:-80}
     cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
@@ -55,6 +56,8 @@ create_service_proxy() {
   tls = "true"
   [http.routers.${SERVICE}-secure.tls]
     certresolver = "default"
+[[http.services.${SERVICE}.loadBalancer.servers]]
+  address = "http://${SERVICE}:${PORT}/"
 END_PROXY_CONF
 }
 
@@ -86,9 +89,10 @@ wrapper() {
         PORT_ARGS="-p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
         mkdir -p /etc/sysconfig/${SERVICE}.d
+        podman network create web
         create_service_container \
             ${SERVICE} ${IMAGE} \
-            "${PORT_ARGS} ${VOLUME_ARGS}" \
+            "${PORT_ARGS} ${VOLUME_ARGS} --network web" \
             --providers.file.directory=/etc/traefik \
             --providers.file.watch=true
 
@@ -136,7 +140,7 @@ END_TRAEFIK_CONF
         ## Do the header first, which includes hard-coded config:
         cat <<'END_OF_SCRIPT_HEADER' > ${SCRIPT_INSTALL_PATH}
 #!/bin/bash -eux
-## Podman systemd config for Ubuntu 20.10
+## Podman systemd config
 
 ## Default values that were used during first install:
 default_config() {
