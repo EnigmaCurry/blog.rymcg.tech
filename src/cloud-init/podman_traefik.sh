@@ -14,7 +14,7 @@ create_service_container() {
     ## Expects environment file at /etc/sysconfig/${SERVICE}
     SERVICE=$1
     IMAGE=$2
-    PODMAN_ARGS=$3 -l podman_traefik
+    PODMAN_ARGS="-l podman_traefik $3"
     CMD_ARGS=${@:4}
     touch /etc/sysconfig/${SERVICE}
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
