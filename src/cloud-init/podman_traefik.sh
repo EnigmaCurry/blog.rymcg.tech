@@ -247,6 +247,8 @@ END_OF_INSTALLER
         ALL_TEMPLATES=(${ALL_TEMPLATES[@]} ${TEMPLATES[@]})
         ALL_VARS=(${ALL_VARS[@]} ${VARS[@]})
     done
+    echo "ALL_TEMPLATES=${ALL_TEMPLATES[@]}"
+    echo "ALL_VARS=${ALL_VARS[@]}"
     # Merge all the configs, applying environment vars first, then the defaults:
     merge_config
     # Create the new install script, with all of the config hard-coded:
