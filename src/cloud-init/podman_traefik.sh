@@ -86,13 +86,13 @@ wrapper() {
     traefik_service() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
-        PORT_ARGS="-p 80:80 -p 443:443"
+        NETWORK_ARGS="--network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
         mkdir -p /etc/sysconfig/${SERVICE}.d
         podman network create web
         create_service_container \
             ${SERVICE} ${IMAGE} \
-            "${PORT_ARGS} ${VOLUME_ARGS} --network web" \
+            "${NETWORK_ARGS} ${VOLUME_ARGS}" \
             --providers.file.directory=/etc/traefik \
             --providers.file.watch=true
 
