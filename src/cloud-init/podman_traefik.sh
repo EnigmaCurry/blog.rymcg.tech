@@ -53,11 +53,10 @@ create_service_proxy() {
   entrypoints = "websecure"
   rule = "Host(\"${DOMAIN}\")"
   service = "${SERVICE}"
-  tls = "true"
   [http.routers.${SERVICE}-secure.tls]
     certresolver = "default"
 [[http.services.${SERVICE}.loadBalancer.servers]]
-  address = "http://${SERVICE}:${PORT}/"
+  url = "http://${SERVICE}:${PORT}/"
 END_PROXY_CONF
 }
 
