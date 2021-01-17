@@ -88,4 +88,4 @@ systemctl enable traefik
 systemctl restart traefik
 
 # Install faasd
-curl -L https://raw.githubusercontent.com/openfaas/faasd/master/hack/install.sh | bash -ex
+curl -L ${FAASD_INSTALLER_SCRIPT} | bash -ex
