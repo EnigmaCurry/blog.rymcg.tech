@@ -3,7 +3,7 @@
 ## This script will install podman, traefik, and the whoami service.
 ## Use Ubuntu >= 20.04, run this as root, or from cloud-init.
 ## This imports podman_traefik.sh from this URL:
-PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/podman-cloud-init/src/cloud-init/podman_traefik.sh
+PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
 
 ## Main config (you should change these):
 ## any vars commented out will use the DEFAULT variable from the script instead.

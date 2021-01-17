@@ -87,20 +87,18 @@ wrapper() {
         IMAGE=${TRAEFIK_IMAGE}
         NETWORK_ARGS="--network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        mkdir -p /etc/sysconfig/${SERVICE}.d
+        mkdir -p /etc/sysconfig/${SERVICE}.d/acme
         podman network create web
         create_service_container \
             ${SERVICE} ${IMAGE} \
-            "${NETWORK_ARGS} ${VOLUME_ARGS}" \
-            --providers.file.directory=/etc/traefik \
-            --providers.file.watch=true
+            "${NETWORK_ARGS} ${VOLUME_ARGS}"
 
         cat <<END_TRAEFIK_CONF > /etc/sysconfig/${SERVICE}.d/traefik.toml
 [log]
   level = "DEBUG"
-[api]
-  insecure = false
-  dashboard = false
+[providers.file]
+  directory = "/etc/traefik"
+  watch = true
 [entrypoints]
   [entrypoints.web]
     address = ":80"
@@ -110,7 +108,7 @@ wrapper() {
   [entrypoints.websecure]
     address = ":443"
 [certificatesResolvers.default.acme]
-  storage = "/etc/traefik/acme.json"
+  storage = "/etc/traefik/acme/acme.json"
   tlschallenge = true
   caserver = "${ACME_CA}"
   email = "${ACME_EMAIL}"
