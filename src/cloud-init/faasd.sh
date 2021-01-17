@@ -1,9 +1,9 @@
 #!/bin/bash -ex
 
 DOMAIN=faas.example.com
-TRAEFIK_VERSION=v2.3.7
 TRAEFIK_CA_SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
 TRAEFIK_CA_EMAIL=you@example.com
+TRAEFIK_VERSION=v2.3.7
 FAASD_INSTALLER_SCRIPT=https://raw.githubusercontent.com/openfaas/faasd/master/hack/install.sh
 
 # Enable firewall
