@@ -1,3 +1,5 @@
+#!/bin/bash -ex
+
 DOMAIN=faas.example.com
 TRAEFIK_VERSION=v2.3.7
 TRAEFIK_CA_SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
