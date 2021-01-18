@@ -76,6 +76,7 @@ wrapper() {
         # Podman and Traefik config.
         ## Permanent install path for the new script:
         DEFAULT_SCRIPT_INSTALL_PATH=/usr/local/sbin/podman_traefik.sh
+        DEFAULT_FIREWALL=default_web_firewall
 
         ## Traefik:
         DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
@@ -87,6 +88,7 @@ wrapper() {
         ##  - Create array of all config VARS from this config:
         TEMPLATES=(traefik_service)
         VARS=( SCRIPT_INSTALL_PATH \
+               FIREWALL \
                TRAEFIK_IMAGE \
                ACME_EMAIL \
                ACME_CA )
@@ -197,6 +199,13 @@ END_DYNAMIC_CONFIG_2
 
         cat <<'END_OF_INSTALLER' >> ${SCRIPT_INSTALL_PATH}
 
+default_web_firewall() {
+    ufw allow ssh
+    ufw allow http
+    ufw allow https
+    ufw --force enable
+}
+
 install_packages() {
     ## Create /etc/sysconfig to store container environment files
     mkdir -p /etc/sysconfig
@@ -205,7 +214,7 @@ install_packages() {
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     systemctl mask dnsmasq.service
-    apt-get install -y dnsmasq
+    apt-get install -y dnsmasq ufw
     ## Try to install podman, it should work in Ubuntu 20.10 + from regular repository:
     if ! apt-get -y install podman runc; then
         (
@@ -235,6 +244,7 @@ install_packages() {
     default_config
     config
     install_packages
+    ${FIREWALL}
     for template in "${ALL_TEMPLATES[@]}"; do
       $template
     done
