@@ -237,6 +237,7 @@ install_packages() {
     done
     chmod o-rwx -R /etc/sysconfig
     chmod g-w -R /etc/sysconfig
+    chmod o+r /etc/sysconfig
     echo "All done :)"
 )
 END_OF_INSTALLER
