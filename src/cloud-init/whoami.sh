@@ -20,7 +20,8 @@ whoami_service() {
     create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" \
                              -name ${RANDOM_NAME}
     create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 80
-    systemctl enable --now ${SERVICE}
+    systemctl enable ${SERVICE}
+    systemctl restart ${SERVICE}
 }
 (
     set -euxo pipefail

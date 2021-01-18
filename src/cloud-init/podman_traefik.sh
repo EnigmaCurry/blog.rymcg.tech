@@ -20,7 +20,9 @@ create_service_container() {
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
     # Create user account to run container:
-    useradd -m ${SERVICE_USER}
+    if ! id -u ${SERVICE_USER}; then
+        useradd -m ${SERVICE_USER}
+    fi
     chown root:${SERVICE_USER} /etc/sysconfig/${SERVICE}
     # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
@@ -126,7 +128,8 @@ wrapper() {
 END_TRAEFIK_CONF
         chown -R root:${SERVICE_USER} /etc/sysconfig/${SERVICE}.d
 
-        systemctl enable --now ${SERVICE}
+        systemctl enable ${SERVICE}
+        systemctl restart ${SERVICE}
     }
 
 
