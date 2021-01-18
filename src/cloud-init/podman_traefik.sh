@@ -165,7 +165,7 @@ default_config() {
 END_OF_SCRIPT_HEADER
 
         for var in "${ALL_VARS[@]}"; do
-            echo "    DEFAULT_$var=${!var}" >> ${SCRIPT_INSTALL_PATH}
+            echo "    DEFAULT_$var=\"${!var}\"" >> ${SCRIPT_INSTALL_PATH}
         done
 
         cat <<'END_OF_SCRIPT_CONFIG' >> ${SCRIPT_INSTALL_PATH}
