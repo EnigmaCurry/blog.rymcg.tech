@@ -19,6 +19,7 @@ create_service_container() {
     PODMAN_USER=podman-${SERVICE}
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
+    chown root:${PODMAN_USER} /etc/sysconfig/${SERVICE}
     # Create user account to run container:
     useradd -m ${PODMAN_USER}
     # Create systemd unit:
@@ -65,6 +66,7 @@ create_service_proxy() {
 [[http.services.${SERVICE}.loadBalancer.servers]]
   url = "http://${SERVICE}:${PORT}/"
 END_PROXY_CONF
+    chown -R root:${PODMAN_USER} /etc/sysconfig/${TRAEFIK_SERVICE}.d
 }
 
 
@@ -94,6 +96,7 @@ wrapper() {
         IMAGE=${TRAEFIK_IMAGE}
         NETWORK_ARGS="--network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
+        PODMAN_USER=podman-${SERVICE}
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
         podman network create web
         create_service_container \
@@ -120,6 +123,7 @@ wrapper() {
   caserver = "${ACME_CA}"
   email = "${ACME_EMAIL}"
 END_TRAEFIK_CONF
+        chown -R root:${PODMAN_USER} /etc/sysconfig/${SERVICE}.d
 
         systemctl enable --now ${SERVICE}
     }
@@ -196,6 +200,7 @@ install_packages() {
     ## Install packages:
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
+    systemctl mask dnsmasq.service
     apt-get install -y dnsmasq
     ## Try to install podman, it should work in Ubuntu 20.10 + from regular repository:
     if ! apt-get -y install podman runc; then
@@ -229,7 +234,8 @@ install_packages() {
     for template in "${ALL_TEMPLATES[@]}"; do
       $template
     done
-    chmod go-rwx -R /etc/sysconfig
+    chmod o-rwx -R /etc/sysconfig
+    chmod g-w -R /etc/sysconfig
     echo "All done :)"
 )
 END_OF_INSTALLER
