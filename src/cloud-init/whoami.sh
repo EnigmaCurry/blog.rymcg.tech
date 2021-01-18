@@ -18,8 +18,8 @@ whoami_service() {
     RANDOM_NAME=whoami-$(openssl rand -hex 3)
     PODMAN_ARGS="--network web"
     create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" \
-                             -name ${RANDOM_NAME}
-    create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 80
+                             -port 8080 -name ${RANDOM_NAME}
+    create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 8080
     systemctl enable ${SERVICE}
     systemctl restart ${SERVICE}
 }

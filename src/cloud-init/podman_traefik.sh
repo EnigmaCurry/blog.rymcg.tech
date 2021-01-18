@@ -16,7 +16,7 @@ create_service_container() {
     IMAGE=$2
     PODMAN_ARGS="-l podman_traefik $3"
     CMD_ARGS=${@:4}
-    SERVICE_USER=podman-${SERVICE}
+    SERVICE_USER=${SERVICE_USER:-podman-${SERVICE}}
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
     # Create user account to run container:
@@ -97,7 +97,7 @@ wrapper() {
         IMAGE=${TRAEFIK_IMAGE}
         NETWORK_ARGS="--cap-drop ALL --network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        SERVICE_USER=podman-${SERVICE}
+        SERVICE_USER=root
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
         if ! podman network inspect web; then
             podman network create web
