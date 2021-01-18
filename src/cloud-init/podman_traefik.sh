@@ -16,12 +16,19 @@ create_service_container() {
     IMAGE=$2
     PODMAN_ARGS="-l podman_traefik $3"
     CMD_ARGS=${@:4}
+    PODMAN_USER=podman-${SERVICE}
+    # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
+    # Create user account to run container:
+    useradd -s /usr/sbin/nologin -M ${PODMAN_USER}
+    # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
 [Unit]
 After=network-online.target
 
 [Service]
+User=${PODMAN_USER}
+Group=${PODMAN_USER}
 ExecStartPre=-/usr/bin/podman rm -f ${SERVICE}
 ExecStart=/usr/bin/podman run --name ${SERVICE} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
 ExecStop=/usr/bin/podman stop ${SERVICE}
