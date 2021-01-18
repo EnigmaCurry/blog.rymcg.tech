@@ -15,9 +15,8 @@ WHOAMI_DOMAIN=whoami.example.com
 # Your email address to register with Let's Encrypt (example.com will NOT work):
 ACME_EMAIL=you@example.com
 
-# The ACME Certificate Authority (Default is to use Let's Encrypt PRODUCTION.)
-# Uncomment this ACME_CA to use the Let's Encrypt STAGING server instead:
-#ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
+# The ACME Certificate Authority (Default is to use Let's Encrypt STAGING.)
+ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 
 ### END USER CONFIG
 ### Everything below this line is for developers only:

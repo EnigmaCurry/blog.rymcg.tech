@@ -20,7 +20,7 @@ create_service_container() {
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
     # Create user account to run container:
-    useradd -s /usr/sbin/nologin -M ${PODMAN_USER}
+    useradd -m ${PODMAN_USER}
     # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
 [Unit]
