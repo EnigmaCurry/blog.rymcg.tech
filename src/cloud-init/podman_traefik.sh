@@ -51,7 +51,6 @@ create_service_proxy() {
     local SERVICE=$1
     local DOMAIN=$2
     local PORT=${3:-80}
-    local SERVICE_USER=podman-${TRAEFIK_SERVICE}
     cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
@@ -69,7 +68,6 @@ create_service_proxy() {
 [[http.services.${SERVICE}.loadBalancer.servers]]
   url = "http://${SERVICE}:${PORT}/"
 END_PROXY_CONF
-    chown -R root:${SERVICE_USER} /etc/sysconfig/${TRAEFIK_SERVICE}.d
 }
 
 
@@ -98,14 +96,13 @@ wrapper() {
     traefik_service() {
         local SERVICE=traefik
         local IMAGE=${TRAEFIK_IMAGE}
-        local NETWORK_ARGS="--network web -p 80:80 -p 443:443"
+        local NETWORK_ARGS="--cap-add NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
         local VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        local SERVICE_USER=root
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
         if ! podman network inspect web; then
             podman network create web
         fi
-        create_service_container \
+        SERVICE_USER=root create_service_container \
             ${SERVICE} ${IMAGE} \
             "${NETWORK_ARGS} ${VOLUME_ARGS}"
 
@@ -129,7 +126,6 @@ wrapper() {
   caserver = "${ACME_CA}"
   email = "${ACME_EMAIL}"
 END_TRAEFIK_CONF
-        chown -R root:${SERVICE_USER} /etc/sysconfig/${SERVICE}.d
 
         systemctl enable ${SERVICE}
         systemctl restart ${SERVICE}
@@ -277,3 +273,4 @@ END_OF_INSTALLER
 }
 
 ## THE END
+ 
