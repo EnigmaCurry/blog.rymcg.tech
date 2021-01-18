@@ -144,10 +144,10 @@ END_TRAEFIK_CONF
         echo "## Config:"
         for var in "${ALL_VARS[@]}"; do
             local default_name=DEFAULT_$var
-            local default_value=${!default_name}
-            local value=${!var:-$default_value}
-            declare -g $var=$value
-            echo $var=${!var}
+            local default_value="${!default_name}"
+            local value="${!var:-$default_value}"
+            declare -g $var="${value}"
+            echo $var="${!var}"
         done
     }
 
