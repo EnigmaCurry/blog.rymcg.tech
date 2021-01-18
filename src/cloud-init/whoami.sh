@@ -1,11 +1,11 @@
 #!/bin/bash
 ## App Config:
-local WHOAMI_DOMAIN=whoami.example.com
+WHOAMI_DOMAIN=whoami.example.com
 ## Podman_Traefik Config:
 ACME_EMAIL=you@example.com
 ALL_CONFIGS=(whoami_config)
 ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
-local PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
+PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
 ########
 
 whoami_config() {

@@ -78,7 +78,6 @@ wrapper() {
         # Podman and Traefik config.
         ## Permanent install path for the new script:
         DEFAULT_SCRIPT_INSTALL_PATH=/usr/local/sbin/podman_traefik.sh
-        DEFAULT_FIREWALL=default_web_firewall
         DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
         ## Traefik:
         DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
@@ -90,7 +89,6 @@ wrapper() {
         ##  - Create array of all config VARS from this config:
         TEMPLATES=(traefik_service)
         VARS=( SCRIPT_INSTALL_PATH \
-               FIREWALL \
                BASE_PODMAN_ARGS \
                TRAEFIK_IMAGE \
                ACME_EMAIL \
@@ -100,7 +98,7 @@ wrapper() {
     traefik_service() {
         local SERVICE=traefik
         local IMAGE=${TRAEFIK_IMAGE}
-        local NETWORK_ARGS="--cap-add CAP_NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
+        local NETWORK_ARGS="--network web -p 80:80 -p 443:443"
         local VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
         local SERVICE_USER=root
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
@@ -202,13 +200,6 @@ END_DYNAMIC_CONFIG_2
 
         cat <<'END_OF_INSTALLER' >> ${SCRIPT_INSTALL_PATH}
 
-default_web_firewall() {
-    ufw allow ssh
-    ufw allow http
-    ufw allow https
-    ufw --force enable
-}
-
 install_packages() {
     ## Create /etc/sysconfig to store container environment files
     mkdir -p /etc/sysconfig
@@ -247,7 +238,6 @@ install_packages() {
     default_config
     config
     install_packages
-    ${FIREWALL}
     for template in "${ALL_TEMPLATES[@]}"; do
       $template
     done
