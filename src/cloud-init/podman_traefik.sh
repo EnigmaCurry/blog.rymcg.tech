@@ -16,22 +16,20 @@ create_service_container() {
     IMAGE=$2
     PODMAN_ARGS="-l podman_traefik $3"
     CMD_ARGS=${@:4}
-    PODMAN_USER=podman-${SERVICE}
+    SERVICE_USER=podman-${SERVICE}
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
     # Create user account to run container:
-    useradd -m ${PODMAN_USER}
-    chown root:${PODMAN_USER} /etc/sysconfig/${SERVICE}
+    useradd -m ${SERVICE_USER}
+    chown root:${SERVICE_USER} /etc/sysconfig/${SERVICE}
     # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
 [Unit]
 After=network-online.target
 
 [Service]
-User=${PODMAN_USER}
-Group=${PODMAN_USER}
 ExecStartPre=-/usr/bin/podman rm -f ${SERVICE}
-ExecStart=/usr/bin/podman run --name ${SERVICE} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
+ExecStart=/usr/bin/podman run --name ${SERVICE} --user ${SERVICE_USER}:${SERVICE_USER} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
 ExecStop=/usr/bin/podman stop ${SERVICE}
 SyslogIdentifier=${SERVICE}
 Restart=always
@@ -49,7 +47,7 @@ create_service_proxy() {
     SERVICE=$1
     DOMAIN=$2
     PORT=${3:-80}
-    PODMAN_USER=podman-${TRAEFIK_SERVICE}
+    SERVICE_USER=podman-${TRAEFIK_SERVICE}
     cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
@@ -67,7 +65,7 @@ create_service_proxy() {
 [[http.services.${SERVICE}.loadBalancer.servers]]
   url = "http://${SERVICE}:${PORT}/"
 END_PROXY_CONF
-    chown -R root:${PODMAN_USER} /etc/sysconfig/${TRAEFIK_SERVICE}.d
+    chown -R root:${SERVICE_USER} /etc/sysconfig/${TRAEFIK_SERVICE}.d
 }
 
 
@@ -95,11 +93,13 @@ wrapper() {
     traefik_service() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
-        NETWORK_ARGS="--network web -p 80:80 -p 443:443"
+        NETWORK_ARGS="--cap-drop ALL --network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        PODMAN_USER=podman-${SERVICE}
+        SERVICE_USER=podman-${SERVICE}
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
-        podman network create web
+        if ! podman network inspect web; then
+            podman network create web
+        fi
         create_service_container \
             ${SERVICE} ${IMAGE} \
             "${NETWORK_ARGS} ${VOLUME_ARGS}"
@@ -124,7 +124,7 @@ wrapper() {
   caserver = "${ACME_CA}"
   email = "${ACME_EMAIL}"
 END_TRAEFIK_CONF
-        chown -R root:${PODMAN_USER} /etc/sysconfig/${SERVICE}.d
+        chown -R root:${SERVICE_USER} /etc/sysconfig/${SERVICE}.d
 
         systemctl enable --now ${SERVICE}
     }
@@ -237,7 +237,7 @@ install_packages() {
     done
     chmod o-rwx -R /etc/sysconfig
     chmod g-w -R /etc/sysconfig
-    chmod o+r /etc/sysconfig
+    chmod o+rx /etc/sysconfig
     echo "All done :)"
 )
 END_OF_INSTALLER
