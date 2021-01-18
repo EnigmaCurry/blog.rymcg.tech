@@ -19,9 +19,9 @@ create_service_container() {
     PODMAN_USER=podman-${SERVICE}
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
-    chown root:${PODMAN_USER} /etc/sysconfig/${SERVICE}
     # Create user account to run container:
     useradd -m ${PODMAN_USER}
+    chown root:${PODMAN_USER} /etc/sysconfig/${SERVICE}
     # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
 [Unit]
@@ -49,6 +49,7 @@ create_service_proxy() {
     SERVICE=$1
     DOMAIN=$2
     PORT=${3:-80}
+    PODMAN_USER=podman-${TRAEFIK_SERVICE}
     cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
