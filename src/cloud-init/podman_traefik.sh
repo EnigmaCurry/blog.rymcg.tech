@@ -95,7 +95,7 @@ wrapper() {
     traefik_service() {
         SERVICE=traefik
         IMAGE=${TRAEFIK_IMAGE}
-        NETWORK_ARGS="--cap-drop ALL --network web -p 80:80 -p 443:443"
+        NETWORK_ARGS="--cap-drop ALL --cap-add CAP_NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
         VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
         SERVICE_USER=root
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
