@@ -18,7 +18,7 @@ needing any running API daemon. With Podman, you can start containers as normal
 processes. So this also means you can create containers directly from systemd,
 as service units created in your host operating system (interact with
 `systemctl` for start/stop/etc and `journalctl` to view logs, exactly like any
-non-docker host service). Because there is no daemon running, it's one less
+non-docker host service). Because there is no daemon running, it's one fewer
 resource hogging the system (granted, docker is *much* less resource intensive
 than kubernetes), one fewer dependency, and one less surface of attack.
 
