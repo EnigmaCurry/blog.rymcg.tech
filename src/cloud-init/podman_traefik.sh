@@ -12,11 +12,11 @@
 create_service_container() {
     ## Template function to create a systemd unit for a podman container
     ## Expects environment file at /etc/sysconfig/${SERVICE}
-    SERVICE=$1
-    IMAGE=$2
-    PODMAN_ARGS="-l podman_traefik $3"
-    CMD_ARGS=${@:4}
-    SERVICE_USER=${SERVICE_USER:-podman-${SERVICE}}
+    local SERVICE=$1
+    local IMAGE=$2
+    local PODMAN_ARGS="-l podman_traefik $3"
+    local CMD_ARGS=${@:4}
+    local SERVICE_USER=${SERVICE_USER:-podman-${SERVICE}}
     # Create environment file (required, but might stay empty)
     touch /etc/sysconfig/${SERVICE}
     # Create user account to run container:
@@ -45,11 +45,11 @@ create_service_proxy() {
     ## Template function to create a traefik configuration for a service.
     ## Creates automatic http to https redirect.
     ## Note: traefik will automatically reload configuration when the file changes.
-    TRAEFIK_SERVICE=traefik
-    SERVICE=$1
-    DOMAIN=$2
-    PORT=${3:-80}
-    SERVICE_USER=podman-${TRAEFIK_SERVICE}
+    local TRAEFIK_SERVICE=traefik
+    local SERVICE=$1
+    local DOMAIN=$2
+    local PORT=${3:-80}
+    local SERVICE_USER=podman-${TRAEFIK_SERVICE}
     cat <<END_PROXY_CONF > /etc/sysconfig/${TRAEFIK_SERVICE}.d/${SERVICE}.toml
 [http.routers.${SERVICE}]
   entrypoints = "web"
@@ -95,11 +95,11 @@ wrapper() {
     }
 
     traefik_service() {
-        SERVICE=traefik
-        IMAGE=${TRAEFIK_IMAGE}
-        NETWORK_ARGS="--cap-drop ALL --cap-add CAP_NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
-        VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        SERVICE_USER=root
+        local SERVICE=traefik
+        local IMAGE=${TRAEFIK_IMAGE}
+        local NETWORK_ARGS="--cap-drop ALL --cap-add CAP_NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
+        local VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
+        local SERVICE_USER=root
         mkdir -p /etc/sysconfig/${SERVICE}.d/acme
         if ! podman network inspect web; then
             podman network create web
@@ -140,9 +140,9 @@ END_TRAEFIK_CONF
         # This is to be run after all all other configs have added vars to ALL_VARS
         echo "## Config:"
         for var in "${ALL_VARS[@]}"; do
-            default_name=DEFAULT_$var
-            default_value=${!default_name}
-            value=${!var:-$default_value}
+            local default_name=DEFAULT_$var
+            local default_value=${!default_name}
+            local value=${!var:-$default_value}
             declare -g $var=$value
             echo $var=${!var}
         done
@@ -265,8 +265,8 @@ END_OF_INSTALLER
     # Run all configs, core_config first:
     ALL_CONFIGS=(core_config ${ALL_CONFIGS[@]})
     for var in "${ALL_CONFIGS[@]}"; do
-        TEMPLATES=()
-        VARS=()
+        local TEMPLATES=()
+        local VARS=()
         ## Run the config (which sets TEMPLATES and VARS):
         $var
         ## Append templates and vars:
