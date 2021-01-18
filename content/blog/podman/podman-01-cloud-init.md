@@ -1,5 +1,5 @@
 ---
-title: "Podman cloud-init as docker-compose alternative"
+title: "Podman part 01: cloud-init as docker-compose alternative"
 date: 2021-01-17T00:01:00-06:00
 tags: ['podman']
 ---
@@ -96,11 +96,11 @@ log.
 At the end of all this, you should now be able to open your web browser to
 https://whoami.example.com (or whatever domain you chose.) and see the debug
 text from the whoami service. If you went with the default staging `ACME_CA`,
-you will instead be greeted with an error about the the certificate being
-invalid. This is expected behaviour until you use the production Lets Encrypt
-`ACME_CA`; if you check the certificate in the URL bar, it will be issued by
-`Fake LE Intermediate` authority; confirm the exception in your browser, and you
-should still be able to visit the whoami page anyway. If you used the production
+you will instead be greeted with an error about the certificate being invalid.
+This is expected behaviour until you use the production Lets Encrypt `ACME_CA`;
+if you check the certificate in the URL bar, it will be issued by `Fake LE
+Intermediate` authority; confirm the exception in your browser, and you should
+still be able to visit the whoami page anyway. If you used the production
 `ACME_CA`, you should see a valid certificate from `Let's Encrypt Authority`,
 and see the whoami output right away.
 
@@ -186,9 +186,9 @@ service config function:
    own URL.
 
 Because you set `ALL_CONFIGS=(whoami_config)` in the script, (listing the one
-function needed to configure the whomai service) the podman_traefik script will
-later on, know to call the function called `whoami_config` to setup the whoami
-config variables:
+function needed to configure the whoami service) the `podman_traefik` script
+will later on, know to call the function called `whoami_config` to setup the
+whoami config variables:
 
 ```
 ## This function is called by podman_traefik 
