@@ -23,6 +23,8 @@ create_service_container() {
     if ! id -u ${SERVICE_USER}; then
         useradd -m ${SERVICE_USER}
     fi
+    local SERVICE_UID=$(id -u ${SERVICE_USER})
+    local SERVICE_GID=$(id -g ${SERVICE_USER})
     chown root:${SERVICE_USER} /etc/sysconfig/${SERVICE}
     # Create systemd unit:
     cat <<EOF > /etc/systemd/system/${SERVICE}.service
@@ -31,7 +33,7 @@ After=network-online.target
 
 [Service]
 ExecStartPre=-/usr/bin/podman rm -f ${SERVICE}
-ExecStart=/usr/bin/podman run --name ${SERVICE} --user ${SERVICE_USER}:${SERVICE_USER} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
+ExecStart=/usr/bin/podman run --name ${SERVICE} --user ${SERVICE_UID}:${SERVICE_GID} --rm --env-file /etc/sysconfig/${SERVICE} ${PODMAN_ARGS} ${IMAGE} ${CMD_ARGS}
 ExecStop=/usr/bin/podman stop ${SERVICE}
 SyslogIdentifier=${SERVICE}
 Restart=always
