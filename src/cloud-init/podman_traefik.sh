@@ -254,7 +254,7 @@ END_OF_INSTALLER
     # Initialize list of all config variables
     ALL_VARS=()
     # Run all configs, core_config first:
-    ALL_CONFIGS=(core_config ${ALL_CONFIGS[@]})
+    ALL_CONFIGS=(core ${ALL_CONFIGS[@]})
     for var in "${ALL_CONFIGS[@]}"; do
         local TEMPLATES=()
         local VARS=()
