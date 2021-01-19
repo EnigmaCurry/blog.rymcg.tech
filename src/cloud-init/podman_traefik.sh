@@ -72,7 +72,7 @@ END_PROXY_CONF
 
 
 wrapper() {
-    core_config() {
+    core() {
         # Podman and Traefik config.
         ## Permanent install path for the new script:
         DEFAULT_SCRIPT_INSTALL_PATH=/usr/local/sbin/podman_traefik.sh
@@ -152,6 +152,8 @@ END_TRAEFIK_CONF
         cat <<END_OF_SCRIPT_HEADER > ${SCRIPT_INSTALL_PATH}
 #!/bin/bash -eux
 ## Podman systemd config
+## THIS IS A GENERATED FILE -
+## Your changes will be overwritten if you reinstall podman_traefik.
 
 ## Default values that were used during first install:
 ALL_TEMPLATES=(${ALL_TEMPLATES[@]})

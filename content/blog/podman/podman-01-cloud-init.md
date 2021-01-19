@@ -2,6 +2,7 @@
 title: "Podman part 01: cloud-init as docker-compose alternative"
 date: 2021-01-17T00:01:00-06:00
 tags: ['podman']
+draft: true
 ---
 
 If you use containers for web-services, you're likely running one of two things:
