@@ -14,32 +14,6 @@ export ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 export PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
 EOF
 
-
-    ## Create the whoami service config file:
-    ## Edit WHOAMI_DOMAIN for your domain name.
-    cat <<'EOF' > /etc/podman_traefik.d/whoami.sh
-#!/bin/bash
-## whoami config:
-export WHOAMI_DOMAIN=whoami.podman.rymcg.tech
-
-whoami() {
-    DEFAULT_WHOAMI_DOMAIN=whoami.example.com
-    TEMPLATES=(whoami_service)
-    VARS=(WHOAMI_DOMAIN)
-}
-whoami_service() {
-    local SERVICE=whoami
-    local IMAGE=traefik/whoami
-    local RANDOM_NAME=whoami-$(openssl rand -hex 3)
-    local PODMAN_ARGS="--network web"
-    create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" \
-                             -port 8080 -name ${RANDOM_NAME}
-    create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 8080
-    systemctl enable ${SERVICE}
-    systemctl restart ${SERVICE}
-}
-EOF
-
     ## Create the install script:
     cat <<'EOF' > /etc/podman_traefik.sh
 #!/bin/bash
@@ -60,9 +34,6 @@ EOF
         name="${filename%.*}"
         ALL_CONFIGS+=(${name})
     done
-    if ! which curl; then
-      apt-get update && apt-get install -y curl
-    fi
     source <(wget -O - ${PODMAN_TRAEFIK_SCRIPT})
     wrapper
 )
