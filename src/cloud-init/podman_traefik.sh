@@ -74,8 +74,7 @@ END_PROXY_CONF
 wrapper() {
     core() {
         # Podman and Traefik config.
-        ## Permanent install path for the new script:
-        DEFAULT_SCRIPT_INSTALL_PATH=/usr/local/sbin/podman_traefik.sh
+        DEFAULT_SCRIPT_INSTALL_PATH=/var/local/podman_traefik.sh
         DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
         ## Traefik:
         DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
