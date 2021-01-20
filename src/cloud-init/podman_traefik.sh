@@ -206,22 +206,27 @@ install_packages() {
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     systemctl mask dnsmasq.service
-    apt-get install -y dnsmasq ufw
-    ## Try to install podman, it should work in Ubuntu 20.10 + from regular repository:
+    apt-get install -y curl dnsmasq gnupg
+    # Try to install podman from stable repositories first:
     if ! apt-get -y install podman runc; then
-        (
-          source /etc/os-release
-          if [ ${VERSION_ID} = '20.04' ]; then
-            ## For Ubuntu 20.04 (LTS) need to install from Kubic project repositories:
-            echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-            curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
-            apt-get update
-            apt-get -y upgrade
-            apt-get -y install podman
-          else
-            echo "Ubuntu ${VERSION_ID:-version Unknown} is unsupported. Sorry :("
-          fi
-        )
+       ## If no packages found, then install from kubic repositories instead:
+       (
+         source /etc/os-release
+         if [ $ID == 'debian' ] && [ $VERSION_ID == "10" ]; then
+           echo 'deb http://deb.debian.org/debian buster-backports main' >> /etc/apt/sources.list
+           echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+           curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/Release.key | apt-key add -
+           apt-get update
+           apt-get -y -t buster-backports install libseccomp2
+           apt-get -y install podman runc
+         elif [ $ID == 'ubuntu' ] && [ $VERSION_ID == "20.04" ]; then
+           echo "Podman in Ubuntu 20.04 has networking bugs. Use Ubuntu 20.10 instead."
+           exit 1
+         else
+           echo "Sorry, ${PRETTY_NAME} has not been tested with this script yet."
+           exit 1
+         fi
+       )
     fi
 
     ## Niceties:
