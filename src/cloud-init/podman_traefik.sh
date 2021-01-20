@@ -2,6 +2,16 @@
 ## Podman systemd and container config with Traefik, for Ubuntu>=20.04 by EnigmaCurry.
 ## see whoami.sh for an example
 
+source_all_config() {
+    export ALL_CONFIGS=()
+    for conf in $(ls /etc/podman_traefik.d/*.sh); do
+        source ${conf}
+        filename=$(basename ${conf})
+        name="${filename%.*}"
+        ALL_CONFIGS+=(${name})
+    done
+}
+
 create_service_container() {
     ## Template function to create a systemd unit for a podman container
     ## Expects environment file at /etc/sysconfig/${SERVICE}
@@ -239,8 +249,7 @@ END_OF_INSTALLER
     ALL_TEMPLATES=()
     # Initialize list of all config variables
     ALL_VARS=()
-    # Run all configs:
-    ALL_CONFIGS=(${ALL_CONFIGS[@]})
+    source_all_config
     for var in "${ALL_CONFIGS[@]}"; do
         local TEMPLATES=()
         local VARS=()
