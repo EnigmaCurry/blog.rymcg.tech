@@ -211,7 +211,7 @@ install_packages() {
     if ! apt-get -y install podman runc; then
       echo "Sorry, no podman packages were found in your apt repositories."
       echo "The only known working OS is Ubuntu 20.10. Try that instead."
-      echo 'I DO NOT recommend installing "Kubic" repositories. They don't work."
+      echo "I DO NOT recommend installing 'Kubic' repositories. They don't work."
       exit 1
     fi
     ## Niceties:
