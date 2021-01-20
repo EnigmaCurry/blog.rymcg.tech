@@ -37,7 +37,7 @@ EOF
     cat <<'EOF' > /etc/podman_traefik.d/whoami.sh
 #!/bin/bash
 ## Edit WHOAMI_DOMAIN for your real domain name:
-export WHOAMI_DOMAIN=whoami.podman.rymcg.tech
+export WHOAMI_DOMAIN=whoami.example.com
 
 whoami() {
     ## Just sets up variables for the whoami templates.
