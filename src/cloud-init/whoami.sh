@@ -1,4 +1,5 @@
 #!/bin/bash
+## This is like docker-compose, except it's just podman and bash.
 (
     set -euxo pipefail
     ## Create directory for all config scripts:
@@ -9,7 +10,7 @@
     cat <<'EOF' > /etc/podman_traefik.d/core.sh
 #!/bin/bash
 ## Podman_Traefik Config:
-export ACME_EMAIL=letsencrypt@enigmacurry.com
+export ACME_EMAIL=you@example.com
 export ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 export PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
 EOF
