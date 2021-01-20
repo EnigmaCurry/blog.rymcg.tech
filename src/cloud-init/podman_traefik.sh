@@ -1,12 +1,5 @@
 #!/bin/bash
 ## Podman systemd and container config with Traefik, for Ubuntu>=20.04 by EnigmaCurry.
-## This is a wrapper script that creates another script at ${SCRIPT_INSTALL_PATH}.
-##   ( /usr/local/sbin/podman_traefik.sh by default )
-## The new installed script will have hard-coded the configuration gathered by
-## this wrapper script. If you need to update the config after installation,
-## edit the new script, and re-run.
-
-## Don't use this script by itself. You should extend it instead.
 ## see whoami.sh for an example
 
 create_service_container() {
@@ -242,8 +235,8 @@ END_OF_INSTALLER
     ALL_TEMPLATES=()
     # Initialize list of all config variables
     ALL_VARS=()
-    # Run all configs, core_config first:
-    ALL_CONFIGS=(core ${ALL_CONFIGS[@]})
+    # Run all configs:
+    ALL_CONFIGS=(${ALL_CONFIGS[@]})
     for var in "${ALL_CONFIGS[@]}"; do
         local TEMPLATES=()
         local VARS=()
@@ -264,4 +257,4 @@ END_OF_INSTALLER
 }
 
 ## THE END
- 
+
