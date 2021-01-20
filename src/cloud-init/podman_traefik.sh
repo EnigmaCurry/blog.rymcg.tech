@@ -199,13 +199,17 @@ install_packages() {
     apt-get update
     systemctl mask dnsmasq.service
     apt-get install -y curl dnsmasq gnupg
-    # Try to install podman from stable repositories:
-    if ! apt-get -y install podman runc; then
-      echo "Sorry, no podman packages were found in your apt repositories."
-      echo "The only known working OS is Ubuntu 20.10. Try that instead."
-      echo "I DO NOT recommend installing 'Kubic' repositories. They don't work."
-      exit 1
-    fi
+
+    ## Install updated podman from Kubic Project
+    ## See https://podman.io/getting-started/installation
+    (
+      source /etc/os-release
+      echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/testing/xUbuntu_${VERSION_ID}/ /" | tee /etc/apt/sources.list.d/devel:kubic:libcontainers:testing.list
+      curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/testing/xUbuntu_${VERSION_ID}/Release.key | apt-key add -
+      apt-get update
+      apt-get -y install podman runc
+    )
+
     ## Niceties:
     echo "set enable-bracketed-paste on" >> /root/.inputrc
 }
