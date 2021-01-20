@@ -249,6 +249,9 @@ END_OF_INSTALLER
     ALL_TEMPLATES=()
     # Initialize list of all config variables
     ALL_VARS=()
+    if [ ! -f ${SCRIPT_INSTALL_PATH} ]; then
+        export PODMAN_TRAEFIK_FIRST_TIME=true
+    fi
     source_all_config
     for var in "${ALL_CONFIGS[@]}"; do
         local TEMPLATES=()

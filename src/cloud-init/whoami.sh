@@ -19,17 +19,12 @@
 
     ## This creates the core config script:
     ## Edit ACME_EMAIL and ACME_CA for Traefik
-    cat <<'EOF' > /etc/podman_traefik.d/core.sh
+    cat <<'EOF' > /etc/podman_traefik.d/traefik.sh
 #!/bin/bash
-## Podman_Traefik Config:
 # Edit your ACME_EMAIL address to register with Let's Encrypt
 export ACME_EMAIL=you@example.com
 # Edit ACME_CA if you want to generate a valid TLS cert (remove `-staging`)
 export ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
-# Link to EnigmaCurry's podman_traefik script, (or fork your own copy)
-## Note this URL wraps two lines with `\` :
-export PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/\
-EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
 EOF
 
     ## Create the whoami service config file:
@@ -69,33 +64,20 @@ whoami_service() {
 }
 EOF
 
-    ## The rest of this is just boilerplate ...
-    ## Create the install script:
+    ## Create the installer and run it:
     cat <<'EOF' > /etc/podman_traefik.sh
 #!/bin/bash
-
-## Podman Traefik install script
-## Configs are found in separate shell scripts in /etc/podman_traefik.d
-## One of them (core.sh) must define PODMAN_TRAEFIK_SCRIPT url.
-## NOTE: There is only one namespace (shell environment) for all configs.
-## ALL variables and function names must be unique!
-
 (
-    ## Find all the configs and then run the install script from the URL:
     set -euxo pipefail
-    export ALL_CONFIGS=()
-    for conf in $(ls /etc/podman_traefik.d/*.sh); do
-        source ${conf}
-        filename=$(basename ${conf})
-        name="${filename%.*}"
-        ALL_CONFIGS+=(${name})
-    done
+    # Link to EnigmaCurry's podman_traefik script, (or fork your own copy)
+    ## Note this URL wraps two lines with `\` :
+    PODMAN_TRAEFIK_SCRIPT=https://raw.githubusercontent.com/\
+EnigmaCurry/blog.rymcg.tech/master/src/cloud-init/podman_traefik.sh
     source <(wget -O - ${PODMAN_TRAEFIK_SCRIPT})
     wrapper
 )
 EOF
 
-    ## Run install script:
     chmod 0700 /etc/podman_traefik.sh
     /etc/podman_traefik.sh
 )
