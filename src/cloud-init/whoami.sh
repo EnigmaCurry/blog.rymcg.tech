@@ -100,8 +100,10 @@ whoami_service() {
     local IMAGE=traefik/whoami
     local RANDOM_NAME=whoami-$(openssl rand -hex 3)
     local PODMAN_ARGS="--network web"
+    ## create_service_container creates and starts containers in systemd units
     create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" \
                              -port 8080 -name ${RANDOM_NAME}
+    ## create_service_proxy creates a traefik config for a container port
     create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 8080
 }
 EOF
