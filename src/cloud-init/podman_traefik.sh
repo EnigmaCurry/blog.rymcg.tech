@@ -84,8 +84,8 @@ wrapper() {
         DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
         ## Traefik:
         DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
-        DEFAULT_ACME_EMAIL=you@example.com
-        DEFAULT_ACME_CA=https://acme-v02.api.letsencrypt.org/directory
+        DEFAULT_TRAEFIK_ACME_EMAIL=you@example.com
+        DEFAULT_TRAEFIK_ACME_CA=https://acme-v02.api.letsencrypt.org/directory
 
         ## Required output variables:
         ##  - Create array of all TEMPLATES (functions) for this config:
@@ -94,8 +94,8 @@ wrapper() {
         VARS=( SCRIPT_INSTALL_PATH \
                BASE_PODMAN_ARGS \
                TRAEFIK_IMAGE \
-               ACME_EMAIL \
-               ACME_CA )
+               TRAEFIK_ACME_EMAIL \
+               TRAEFIK_ACME_CA )
     }
 
     traefik_service() {
@@ -128,8 +128,8 @@ wrapper() {
 [certificatesResolvers.default.acme]
   storage = "/etc/traefik/acme/acme.json"
   tlschallenge = true
-  caserver = "${ACME_CA}"
-  email = "${ACME_EMAIL}"
+  caserver = "${TRAEFIK_ACME_CA}"
+  email = "${TRAEFIK_ACME_EMAIL}"
 END_TRAEFIK_CONF
 
         systemctl enable ${SERVICE}
@@ -247,7 +247,6 @@ END_OF_INSTALLER
 
         echo "## Script written to ${SCRIPT_INSTALL_PATH}"
     }
-
     # Initialize list of all template functions
     ALL_TEMPLATES=()
     # Initialize list of all config variables
