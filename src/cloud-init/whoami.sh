@@ -68,7 +68,7 @@
     cat <<'EOF' > /etc/podman_traefik.d/traefik.sh
 # EDIT: TRAEFIK_ACME_EMAIL is your email address to register with Let's Encrypt
 export TRAEFIK_ACME_EMAIL=you@example.com
-# EDIT: TRAEFIK_ACME_CA if you want to generate a valid TLS cert (remove `-staging`)
+# EDIT: TRAEFIK_ACME_CA if you want a valid TLS cert (remove `-staging`)
 export TRAEFIK_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 EOF
 
