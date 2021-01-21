@@ -37,6 +37,9 @@
 ##  /etc/sysconfig/traefik.d  - GENERATED Traefik config is loaded here
 
 ## Important environment variables:
+##  WHOAMI_DOMAIN - the domain the whoami service responds to
+##  TRAEFIK_ACME_EMAIL - your email address to register with Let's Encrypt
+##  TRAEFIK_ACME_CA - the Let's Encrypt API URL (staging or production)
 ##  PODMAN_TRAEFIK_FIRST_TIME - You can check for the existance of this variable
 ##    in order to know whether this is the first time the script is being run.
 ##    You can use this to generate passwords and tokens on the first install
@@ -63,14 +66,11 @@
     mkdir -p /etc/podman_traefik.d
     chmod 0700 /etc/podman_traefik.d
 
-    ## This creates the traefik config script:
-    ## Edit TRAEFIK_ACME_EMAIL and TRAEFIK_ACME_CA for Traefik
-    cat <<'EOF' > /etc/podman_traefik.d/traefik.sh
-# EDIT: TRAEFIK_ACME_EMAIL is your email address to register with Let's Encrypt
-export TRAEFIK_ACME_EMAIL=you@example.com
-# EDIT: TRAEFIK_ACME_CA if you want a valid TLS cert (remove `-staging`)
-export TRAEFIK_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
-EOF
+    # EDIT: TRAEFIK_ACME_EMAIL is your email address to register with Let's Encrypt
+    export TRAEFIK_ACME_EMAIL=you@example.com
+    # EDIT: TRAEFIK_ACME_CA if you want a production ready TLS cert
+    #  (remove `-staging` or just comment out to use default production server)
+    export TRAEFIK_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 
     ## Create the whoami service config file:
     ## Edit WHOAMI_DOMAIN

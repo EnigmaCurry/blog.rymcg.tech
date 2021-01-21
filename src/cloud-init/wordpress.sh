@@ -6,10 +6,8 @@
     mkdir -p /etc/podman_traefik.d
     chmod 0700 /etc/podman_traefik.d
 
-    cat <<'EOF' > /etc/podman_traefik.d/traefik.sh
-export ACME_EMAIL=you@example.com
-export ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
-EOF
+    export TRAEFIK_ACME_EMAIL=you@example.com
+    export TRAEFIK_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
 
     cat <<'EOF' > /etc/podman_traefik.d/wordpress.sh
 export WORDPRESS_DOMAIN=blog.podman.rymcg.tech

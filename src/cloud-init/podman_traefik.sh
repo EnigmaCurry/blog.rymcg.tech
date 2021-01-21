@@ -79,38 +79,43 @@ END_PROXY_CONF
 
 
 wrapper() {
-    traefik() {
-        # Podman and Traefik config.
-        DEFAULT_SCRIPT_INSTALL_PATH=/var/local/podman_traefik.sh
-        DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
-        ## Traefik:
-        DEFAULT_TRAEFIK_IMAGE=traefik:v2.3
-        DEFAULT_TRAEFIK_ACME_EMAIL=you@example.com
-        DEFAULT_TRAEFIK_ACME_CA=https://acme-v02.api.letsencrypt.org/directory
+    if [ ! -f /etc/podman_traefik.d/traefik.sh ]; then
+        cat <<END_TRAEFIK_SERVICE > /etc/podman_traefik.d/traefik.sh
+export TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}
+export TRAEFIK_ACME_CA=${TRAEFIK_ACME_CA}
+export TRAEFIK_IMAGE=${TRAEFIK_IMAGE}
 
-        ## Required output variables:
-        ##  - Create array of all TEMPLATES (functions) for this config:
-        ##  - Create array of all config VARS from this config:
-        TEMPLATES=(traefik_service)
-        VARS=( SCRIPT_INSTALL_PATH \
-               BASE_PODMAN_ARGS \
-               TRAEFIK_IMAGE \
-               TRAEFIK_ACME_EMAIL \
-               TRAEFIK_ACME_CA )
-    }
-
-    traefik_service() {
-        local SERVICE=traefik
-        local IMAGE=${TRAEFIK_IMAGE}
-        local NETWORK_ARGS="--cap-add NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
-        local VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
-        mkdir -p /etc/sysconfig/${SERVICE}.d/acme
-        if ! podman network inspect web; then
-            podman network create web
-        fi
-        SERVICE_USER=root create_service_container \
-            ${SERVICE} ${IMAGE} \
-            "${NETWORK_ARGS} ${VOLUME_ARGS}"
+traefik() {
+    # Podman and Traefik config.
+    DEFAULT_SCRIPT_INSTALL_PATH=/var/local/podman_traefik.sh
+    DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
+    ## Traefik:
+    DEFAULT_TRAEFIK_IMAGE=traefik:latest
+    DEFAULT_TRAEFIK_ACME_EMAIL=you@example.com
+    DEFAULT_TRAEFIK_ACME_CA=https://acme-v02.api.letsencrypt.org/directory
+     ## Required output variables:
+    ##  - Create array of all TEMPLATES (functions) for this config:
+    ##  - Create array of all config VARS from this config:
+    TEMPLATES=(traefik_service)
+    VARS=( SCRIPT_INSTALL_PATH \
+           BASE_PODMAN_ARGS \
+           TRAEFIK_IMAGE \
+           TRAEFIK_ACME_EMAIL \
+           TRAEFIK_ACME_CA )
+}
+traefik_service() {
+    local SERVICE=traefik
+    local IMAGE=${TRAEFIK_IMAGE}
+    local NETWORK_ARGS="--cap-add NET_BIND_SERVICE --network web -p 80:80 -p 443:443"
+    local VOLUME_ARGS="-v /etc/sysconfig/${SERVICE}.d:/etc/traefik/"
+    mkdir -p /etc/sysconfig/${SERVICE}.d/acme
+    if ! podman network inspect web; then
+        podman network create web
+    fi
+    SERVICE_USER=root create_service_container \
+        ${SERVICE} ${IMAGE} \
+        "${NETWORK_ARGS} ${VOLUME_ARGS}"
+END_TRAEFIK_SERVICE
 
         cat <<END_TRAEFIK_CONF > /etc/sysconfig/${SERVICE}.d/traefik.toml
 [log]
