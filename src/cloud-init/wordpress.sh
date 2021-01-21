@@ -8,6 +8,7 @@
 
     export TRAEFIK_ACME_EMAIL=you@example.com
     export TRAEFIK_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
+    export TRAEFIK_IMAGE=traefik:v2.3
 
     cat <<'EOF' > /etc/podman_traefik.d/wordpress.sh
 export WORDPRESS_DOMAIN=blog.podman.rymcg.tech
