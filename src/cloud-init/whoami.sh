@@ -104,6 +104,7 @@ whoami_service() {
     create_service_container ${SERVICE} ${IMAGE} "${PODMAN_ARGS}" \
                              -port 8080 -name ${RANDOM_NAME}
     ## create_service_proxy creates a traefik config for a container port
+    ## container must be in same network as traefik (`--network web`)
     create_service_proxy ${SERVICE} ${WHOAMI_DOMAIN} 8080
 }
 EOF
