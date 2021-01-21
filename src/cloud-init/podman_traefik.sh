@@ -5,6 +5,7 @@
 source_all_config() {
     export ALL_CONFIGS=()
     for conf in $(ls /etc/podman_traefik.d/*.sh); do
+        echo "## Loading ${conf}"
         source ${conf}
         filename=$(basename ${conf})
         name="${filename%.*}"
