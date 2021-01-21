@@ -78,7 +78,7 @@ END_PROXY_CONF
 
 
 wrapper() {
-    core() {
+    traefik() {
         # Podman and Traefik config.
         DEFAULT_SCRIPT_INSTALL_PATH=/var/local/podman_traefik.sh
         DEFAULT_BASE_PODMAN_ARGS="-l podman_traefik --cap-drop ALL"
