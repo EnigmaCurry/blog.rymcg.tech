@@ -44,6 +44,9 @@ Restart=always
 [Install]
 WantedBy=network-online.target
 EOF
+
+    systemctl enable ${SERVICE}
+    systemctl restart ${SERVICE}
 }
 
 create_service_proxy() {
