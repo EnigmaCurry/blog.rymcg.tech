@@ -1,0 +1,17 @@
+#+title: blog.rymcg.tech/tags/k3s
+#+author: EnigmaCurry
+#+hugo_base_dir: ../
+#+hugo_section: blog/k3s
+#+filetags: k3s
+
+* TODO K3s part XX: Funkwhale
+:PROPERTIES:
+:EXPORT_FILE_NAME: funkwhale.md
+:EXPORT_DATE: <2021-01-28 Thu>
+:END:
+
+Set variables from last time:
+
+#+begin_src shell :session funkwhale
+
+#+end_src
