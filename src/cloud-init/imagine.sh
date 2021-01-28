@@ -1,5 +1,4 @@
 #!/bin/bash
-
 ## Imaginary BASH-powered DSL for Podman and Traefik, as an SSH bomb
 
 cat <<'EOF' | ssh podman.example.com /bin/bash
