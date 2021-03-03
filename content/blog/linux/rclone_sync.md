@@ -6,10 +6,10 @@ tags: ['linux']
 
 [RClone](https://rclone.org/) is an excellent file synchronization tool. It
 supports [a lot of different service backends](https://rclone.org/overview/).
-However, it does not perform continuous, immediate backups, like the
-(proprietary) Dropbox tool can. The common suggestion is to run rclone in a cron
-job, but this means that your files will only be backed up as often as the cron
-job runs.
+However, [it does not perform continuous, immediate
+backups](https://github.com/rclone/rclone/issues/249), like the (proprietary)
+Dropbox tool can. The common suggestion is to run rclone in a cron job, but this
+means that your files will only be backed up as often as the cron job runs.
 
 We can improve this, with a script that uses
 [inotifywait](https://linux.die.net/man/1/inotifywait) to run immediately
