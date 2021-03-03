@@ -64,7 +64,7 @@ WATCH_EVENTS="modify,delete,create,move"
 # SYNC_DELAY: Wait this many seconds after an event, before synchronizing:
 SYNC_DELAY=5
 
-# SYNC_INTERVAL: Wait this many seconds to force syncing:
+# SYNC_INTERVAL: Wait this many seconds between forced synchronizations:
 SYNC_INTERVAL=3600
 
 # NOTIFY_ENABLE: Enable Desktop notifications
