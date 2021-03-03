@@ -28,7 +28,7 @@ this script as `sync.sh` anywhere on your system, read it, then edit:
 ##  to a remote Rclone backup URL. ( S3, SFTP, FTP, WebDAV, Dropbox, etc. )
 ## Optional desktop notifications on sync events or errors.
 ## Useful only for syncing a SMALL number of files (< 8192).
-##  (See note in `man inotifywait` about `--recursive` being limited to 8192 files.)
+##  (See note in `man inotifywait` under `--recursive` about raising this limit.)
 ## Think use-case: Backup Traefik TLS certificates file (acme.json)
 ## Think use-case: Backup Keepass (.kdbx) database file immediately on save.
 
