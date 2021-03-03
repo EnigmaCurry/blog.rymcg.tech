@@ -44,7 +44,7 @@ this script as `sync.sh` anywhere on your system, read it, then edit:
 
 ## Edit the variables below, according to your own environment:
 
-# RCLONE_SYNC_PATH: The path to COPY FROM (files are never synced TO here):
+# RCLONE_SYNC_PATH: The path to COPY FROM (files are not synced TO here):
 RCLONE_SYNC_PATH="/home/user/dav-sync"
 
 # RCLONE_REMOTE: The rclone remote name to synchronize with.
