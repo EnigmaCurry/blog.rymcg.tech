@@ -104,6 +104,7 @@ rclone_sync() {
 	elif [ $? -eq 1 ]; then
 	    # inotify error occured
 	    notify "inotifywait error exit code 1"
+        sleep 10
 	elif [ $? -eq 2 ]; then
 	    # Do the sync now even though no changes were detected:
 	    ${RCLONE_CMD}
