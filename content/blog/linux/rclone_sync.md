@@ -14,9 +14,13 @@ means that your files will only be backed up as often as the cron job runs.
 We can improve this, with a script that uses
 [inotifywait](https://linux.die.net/man/1/inotifywait) to run immediately
 whenever files are changed. Furthermore, we can run the script in a User systemd
-unit so that backups occur all of the time, even after a system reboot.
+unit so that backups occur all of the time, even after a system reboot. Optional
+Desktop notifications, will give you extra confidence that the script is
+functional, and that backups are actually ocurring. (Otherwise you can check the
+systemd log for the verbose rclone output.)
 
-All of the documentation is included in the script itself:
+All of the documentation is included in the script itself, just copy and save
+this script as `sync.sh` anywhere on your system, read it, then edit:
 
 ```sh
 #!/bin/bash
