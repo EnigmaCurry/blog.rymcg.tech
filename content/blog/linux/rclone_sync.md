@@ -42,7 +42,9 @@ this script as `sync.sh` anywhere on your system, read it, then edit:
 ##   subdirectory path to sync to.
 ## MAKE SURE that the remote (sub)directory is EMPTY
 ##   or else ALL CONTENTS WILL BE DELETED by rclone when it syncs.
-## Copy this script any place, and make it executable: `chown a+x sync.sh`
+## If unsure, add `--dry-run` to the RCLONE_CMD variable below, 
+##   to simulate what would be copied/deleted. 
+## Copy this script any place, and make it executable: `chown +x sync.sh`
 ## Edit all the variables below, before running the script.
 ## Run: `./sync.sh systemd_setup` to create and enable systemd service.
 ## Run: `journalctl --user --unit rclone_sync.${RCLONE_REMOTE}` to view the logs.
@@ -55,7 +57,7 @@ RCLONE_SYNC_PATH="/home/user/dav-sync"
 # RCLONE_REMOTE: The rclone remote name to synchronize with.
 # Identical to one of the remote names listed via `rclone listremotes`.
 # Make sure to include the final `:` in the remote name, which
-#   indicates to sync/delete from the same directory as defined in the URL.
+#   indicates to sync/delete from the same (sub)directory as defined in the URL.
 # (ALL CONTENTS of the remote are continuously DELETED
 #  and replaced with the contents from RCLONE_SYNC_PATH)
 RCLONE_REMOTE="my-webdav-remote:"
