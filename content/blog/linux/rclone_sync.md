@@ -4,13 +4,13 @@ date: 2021-03-03T00:01:00-06:00
 tags: ['linux']
 ---
 
-[RClone](https://rclone.org/) is an excellent file synchronization tool. It
-supports [a lot of different service backends](https://rclone.org/overview/).
-However, [it does not automatically sync when files are
-saved](https://github.com/rclone/rclone/issues/249), like the (proprietary)
-Dropbox tool can. Instead, the common suggestion is to run rclone in a cron job,
-but this means that your files will only be synchronized as often as the cron
-job runs.
+[RClone](https://rclone.org/) is an excellent, open-source, file synchronization
+tool. It supports [a lot of different service
+backends](https://rclone.org/overview/). However, [it does not automatically
+sync when files are saved](https://github.com/rclone/rclone/issues/249), like
+the (proprietary) Dropbox tool can. Instead, the common suggestion is to run
+rclone in a cron job, but this means that your files will only be synchronized
+as often as the cron job runs.
 
 We can improve this, with a script that uses
 [inotifywait](https://linux.die.net/man/1/inotifywait) to run immediately
