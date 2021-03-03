@@ -124,10 +124,10 @@ systemd_setup() {
     else
 	    cat <<EOF > ${SERVICE_FILE}
 [Unit]
-Description=rclone_sync
+Description=rclone_sync ${RCLONE_REMOTE}
 
 [Service]
-ExecStart=$SYNC_SCRIPT
+ExecStart=${SYNC_SCRIPT}
 
 [Install]
 WantedBy=default.target
