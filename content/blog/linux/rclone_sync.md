@@ -1,5 +1,5 @@
 ---
-title: "Continuous immediate backups with rclone sync"
+title: "Continuous immediate backups with Rclone sync"
 date: 2021-03-03T00:01:00-06:00
 tags: ['linux']
 ---
