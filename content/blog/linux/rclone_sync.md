@@ -138,6 +138,8 @@ EOF
     systemctl --user daemon-reload
     systemctl --user enable --now rclone_sync.${RCLONE_REMOTE}
     systemctl --user status rclone_sync.${RCLONE_REMOTE}
+    echo "You can watch the logs with this command:"
+    echo "   journalctl --user --unit rclone_sync.${RCLONE_REMOTE}"
 }
 
 if test $# = 0; then
