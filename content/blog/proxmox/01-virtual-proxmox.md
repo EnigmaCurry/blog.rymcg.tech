@@ -4,6 +4,9 @@ date: 2021-07-21T00:01:00-06:00
 tags: ['proxmox']
 ---
 
+This is the first post in the proxmox series, [read the introduction
+first](/tags/proxmox).
+
 ## Virtual K3s Cluster in a Virtual Proxmox Host
 
 If you want to have a virtual [K3s](https://k3s.io) cluster on your workstation,
@@ -13,12 +16,12 @@ Machines. Proxmox is designed to run on dedicated, bare-metal server hardware.
 You can abuse it however, in a development environment, and get Proxmox to run
 inside of another Virtual Machine host ([Qemu KVM +
 libvirt](https://wiki.archlinux.org/title/QEMU)), running in your own user
-environment on an existing Linux laptop/workstation.
+environment, on an existing Linux laptop/workstation.
 
 So, if you have a laptop, with a lot of free RAM and CPU, you can create a
-virtual machine (libvirt), install Proxmox inside that VM, use Proxmox to
-create several nested virtual machines (VMs running inside VMs), and install K3s
-worker nodes on those nested VMs.
+virtual machine (libvirt), install Proxmox inside that VM, use Proxmox to create
+several nested virtual machines, and install K3s worker nodes on those nested
+VMs. (K3s VMs on Proxmox VM on Libvirt Host.)
 
 This will also serve as a general introduction for installing and configuring
 Proxmox, even for non-virtual environments, it is the same.
@@ -161,6 +164,17 @@ run `ssh-keygen`.
  * Restart ssh, run: `systemctl restart sshd`
  * Exit the SSH session, and test logging in and out again still works, using
    your SSH key.
+ * To test that `PasswordAuthentication` is really turned off, you can attempt
+   to SSH again, with a bogus username, one that you know does not really exist:
+
+```
+$ ssh hunter1@proxmox-k3s-1
+hunter1@192.168.122.177: Permission denied (publickey).
+```
+
+   The attempt should immediately fail and say `Permission denied (publickey)`, *and if it
+   also does not ask you for a password*, then you have successfully turned off
+   password authentication.
 
 ## Login to Proxmox web console
 
@@ -188,7 +202,8 @@ of this section.
  * You will see a message that says `No Proxmox VE repository is enabled.`
  * Click `Add`, it will nag you about the license again, just click `OK`.
  * Select `No-Subscription` in the Repository drop-down list, click `Add`.
-  
+ * You should now expect to to see this warning message: `The no-subscription
+   repository is not recommended for production use`.
 
 ## Setup Firewall
 

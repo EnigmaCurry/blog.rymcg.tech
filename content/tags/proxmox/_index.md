@@ -2,7 +2,7 @@
 title: proxmox
 ---
 
-# Proxmox
+# Proxmox and virtualized Kubernetes
 
 [Proxmox VE](https://www.proxmox.com/en/proxmox-ve) is an open source Virtual
 Machine hypervisor Operating System, built on top of Debian Linux. It has a
@@ -24,10 +24,15 @@ scenarios will likely be better served by installing a native Kubernetes
 distribution (K3s) onto multiple bare-metal machines, rather than using Proxmox.
 
 Yo dawg, you can run Proxmox inside another virtual machine, through *nested
-vitualization*. Read now the [first post of this
+virtualization*. Read now the [first post of this
 series](/blog/proxmox/01-virtual-proxmox/), and you will learn how to install
-Proxmox itself as a KVM virtual machine, on any Linux computer (on top of an
-existing operating system), thus setting up your first Virtual Proxmox
-development environment.
+Proxmox on any Linux computer (on top of an existing operating system). Proxmox
+itself will be running in a KVM virtual machine. On top of Proxmox, you will
+prepare an Ubuntu VM template, configuring the default VM size
+(cpu+memory+storage), and adding your SSH keys for cloud-init. You can clone new
+VMs using the template anytime, even through an API, thus setting up your first
+Virtual Proxmox development cloud. Finally, you will create a small
+[K3s](https://k3s.io) Kubernetes cluster using two or three of these nested
+Proxmox KVM nodes, and you can use this for your local development environment.
 
 {{< about_footer >}}

@@ -4,6 +4,9 @@ date: 2020-12-11T00:01:00-06:00
 tags: ['k3s']
 ---
 
+This is the first post in the K3s series, [read the introduction
+first](/tags/k3s).
+
 ## Prepare your workstation
 
 When working with kubernetes, you should resist the urge to directly login into
