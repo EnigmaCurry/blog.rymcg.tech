@@ -23,10 +23,11 @@ not protected from hardware or network failures. Large scale production
 scenarios will likely be better served by installing a native Kubernetes
 distribution (K3s) onto multiple bare-metal machines, rather than using Proxmox.
 
-Yo dawg, you can run Proxmox itself inside another virtual machine, through
-*nested vitualization*. In the [first post of this
-series](/blog/proxmox/01-virtual-proxmox/), you will learn how to install Proxmox
-itself as a KVM virtual machine, on any Linux computer (on top of an existing
-operating system), thus setting up your first Virtual Proxmox development environment.
+Yo dawg, you can run Proxmox inside another virtual machine, through *nested
+vitualization*. Read now the [first post of this
+series](/blog/proxmox/01-virtual-proxmox/), and you will learn how to install
+Proxmox itself as a KVM virtual machine, on any Linux computer (on top of an
+existing operating system), thus setting up your first Virtual Proxmox
+development environment.
 
 {{< about_footer >}}

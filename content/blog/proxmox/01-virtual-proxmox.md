@@ -273,8 +273,8 @@ Remove the CD-ROM drive from the VM:
 qm set 9000 --delete ide0
 ```
 
-Remove the VGA adapter (no longer needed now that gparted is done), and replace
-it with it with a serial device:
+Remove the VGA adapter (no longer needed, now that gparted is done), and replace
+it with a serial device:
 
 ```
 qm set 9000 --vga serial0
@@ -302,7 +302,7 @@ Now that you have an Ubuntu template, you can create nodes for K3s workers:
  * Repeat and clone for as many other worker nodes as you want.
  
 Once the machine starts, wait for DHCP to assign an IP address. You can check
-for the IP address on the host running libvirt:
+for the IP address on the host running libvirt (your workstation):
 
 ```
 # Query DHCP leases on the host:
@@ -345,7 +345,7 @@ cat /var/lib/rancher/k3s/server/node-token
 ```
 
 On the second and rest of the nodes, install the k3s worker agent, filling in
-the propert cluster token you retreived, and the IP address of the first (k3s
+the proper cluster token you retreived, and the IP address of the first (k3s
 server) node:
 
 ```
