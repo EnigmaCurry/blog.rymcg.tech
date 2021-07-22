@@ -40,7 +40,7 @@ If the answer is not `Y`, read this [Arch wiki
 section](https://wiki.archlinux.org/title/KVM#Nested_virtualization) for
 enabling this support in your kernel.
 
-# Install packages and start libvirt KVM service
+## Install packages and start libvirt KVM service
 
 On Arch Linux:
 
@@ -52,7 +52,7 @@ sudo systemctl enable --now libvirtd.service
 For other Linux distributions, you just need to install the same packages (the
 names may be different), and start the libvirt service.
 
-# Create VM with virt-manager
+## Create VM with virt-manager
 
 `virt-manager` is a GUI frontend for the libvirt backend service, which will
 allow you to create a virtual machine, boot from a `proxmox.iso` file, and
