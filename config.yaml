@@ -61,3 +61,5 @@ menu:
       name: Tags
       url: /tags/
       weight: 50
+ignoreFiles:
+  - ^ryan@
