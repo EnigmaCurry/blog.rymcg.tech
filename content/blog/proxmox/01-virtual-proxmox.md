@@ -48,7 +48,8 @@ enabling this support in your kernel.
 On Arch Linux:
 
 ```
-sudo pacman -S qemu libvirt libguestfs virt-manager
+sudo pacman -S qemu libvirt libguestfs virt-manager \
+    iptables-nft bridge-utils ebtables dnsmasq
 sudo systemctl enable --now libvirtd.service
 ```
 
