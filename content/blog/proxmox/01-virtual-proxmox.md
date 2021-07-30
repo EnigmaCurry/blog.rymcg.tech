@@ -55,6 +55,12 @@ sudo systemctl enable --now libvirtd.service
 For other Linux distributions, you just need to install the same packages (the
 names may be different), and start the libvirt service.
 
+## Add your user to the libvirt group
+
+```
+sudo gpasswd -a ${USER} libvirt
+```
+
 ## Create VM with virt-manager
 
 `virt-manager` is a GUI frontend for the libvirt backend service, which will
