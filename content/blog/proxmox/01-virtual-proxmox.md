@@ -30,7 +30,7 @@ Proxmox, even for non-virtual environments, it is the same.
 
 To find out if your Linux host is capable of nested virtualization, run:
 
-```
+```bash
 ## Intel machine:
 systool -m kvm_intel -v | grep -E "nested\W"
 ## AMD machine:
@@ -47,7 +47,7 @@ enabling this support in your kernel.
 
 On Arch Linux:
 
-```
+```bash
 sudo pacman -S qemu libvirt libguestfs virt-manager \
     iptables-nft bridge-utils ebtables dnsmasq
 sudo systemctl enable --now libvirtd.service
@@ -58,7 +58,7 @@ names may be different), and start the libvirt service.
 
 ## Add your user to the libvirt group
 
-```
+```bash
 sudo gpasswd -a ${USER} libvirt
 ```
 
@@ -236,23 +236,23 @@ firewall, then click `OK`. (The `Firewall` value should now show `Yes`).
 
  * Open a terminal to the proxmox server (`ssh proxmox`)
  * Download the Ubuntu 20.04 LTS cloud image:
-```
+```bash
 wget  http://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
 ```
  * Create a new VM that will become a template:
-```
+```bash
 qm create 9000
 ```
 
  * Import the cloud image as the primary drive:
-```
+```bash
 qm importdisk 9000 focal-server-cloudimg-amd64.img local-lvm
 ```
 
    * You can delete the downloaded image now if you wish.
    
  * Configure the VM: 
-```
+```bash
 qm set 9000 --name Ubuntu-20.04 --memory 2048 --net0 virtio,bridge=vmbr0 \
   --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0 \
   --ide0 none,media=cdrom --ide2 local-lvm:cloudinit --boot c \
@@ -261,19 +261,19 @@ qm set 9000 --name Ubuntu-20.04 --memory 2048 --net0 virtio,bridge=vmbr0 \
 ```
 
  * Download the `gparted` ISO image, which is to be used to resize the disk:
-```
+```bash
 wget -P /var/lib/vz/template/iso \
   https://downloads.sourceforge.net/gparted/gparted-live-1.3.0-1-amd64.iso
 ```
 
  * Set the first boot device to load `gparted`
-```
+```bash
 qm set 9000 --ide0 local:iso/gparted-live-1.3.0-1-amd64.iso,media=cdrom \
   --boot 'order=ide0;scsi0'
 ```
 
  * Resize the disk, adding 50GB (or whatever size you prefer for your template):
-```
+```bash
 qm resize 9000 scsi0 +50G
 ```
 
@@ -291,20 +291,20 @@ Go to the web console, and find VM 9000 in the list, then click `Start`. Click
  
 Remove the CD-ROM drive from the VM:
 
-```
+```bash
 qm set 9000 --delete ide0
 ```
 
 Remove the VGA adapter (no longer needed, now that gparted is done), and replace
 it with a serial device:
 
-```
+```bash
 qm set 9000 --vga serial0
 ```
 
 Convert virtual machine to a template:
 
-```
+```bash
 qm template 9000
 ```
 
@@ -326,7 +326,7 @@ Now that you have an Ubuntu template, you can create nodes for K3s workers:
 Once the machine starts, wait for DHCP to assign an IP address. You can check
 for the IP address on the host running libvirt (your workstation):
 
-```
+```bash
 # Query DHCP leases on the host:
 sudo cat /var/lib/libvirt/dnsmasq/virbr0.status
 ```
@@ -349,20 +349,20 @@ Host proxmox-k3s-2
 
 Test login via ssh with your key: 
 
-```
+```bash
 ssh proxmox-k3s-1
 ```
 
 On the first node, install the k3s server:
 
-```
+```bash
 # Install K3s server on first node:
 curl -sfL https://get.k3s.io | sh -s - server --disable traefik
 ```
 
 Retrieve the K3s cluster token:
 
-```
+```bash
 cat /var/lib/rancher/k3s/server/node-token
 ```
 
@@ -370,7 +370,7 @@ On the second and rest of the nodes, install the k3s worker agent, filling in
 the proper cluster token you retreived, and the IP address of the first (k3s
 server) node:
 
-```
+```bash
 # Install K3s worker agent: fill in K3S_URL and K3S_TOKEN
 curl -sfL https://get.k3s.io | K3S_URL=https://192.168.X.X:6443 K3S_TOKEN=xxxx sh
 ```
@@ -380,7 +380,7 @@ curl -sfL https://get.k3s.io | K3S_URL=https://192.168.X.X:6443 K3S_TOKEN=xxxx s
 In order to access the k3s cluster from the host workstation, you need to copy
 the config file:
 
-```
+```bash
 # From your workstation:
 mkdir -p $HOME/.kube && \
 scp proxmox-k3s-1:/etc/rancher/k3s/k3s.yaml $HOME/.kube/proxmox-k3s && \
@@ -396,7 +396,7 @@ and [helm](https://helm.sh/docs/intro/install/).
 
 Test that `kubectl` works:
 
-```
+```bash
 kubectl get nodes
 ```
 
