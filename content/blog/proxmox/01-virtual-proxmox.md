@@ -389,7 +389,8 @@ export KUBECONFIG=$HOME/.kube/proxmox-k3s
 ```
 
 You now must edit `$HOME/.kube/proxmox-k3s` and replace `127.0.0.1` with the IP
-address of the server node.
+address of the server node. Also search and replace for the word `default` and
+replace it with the name of the cluster `k3s-1`. Save the file.
 
 Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 and [helm](https://helm.sh/docs/intro/install/).
