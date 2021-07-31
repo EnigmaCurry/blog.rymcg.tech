@@ -384,7 +384,7 @@ the config file:
 # From your workstation:
 mkdir -p $HOME/.kube && \
 scp proxmox-k3s-1:/etc/rancher/k3s/k3s.yaml $HOME/.kube/proxmox-k3s && \
-echo "export KUBECONFIG=$HOME/.kube/proxmox-k3s" >> $HOME/.bashrc && \
+echo "export KUBECONFIG=$HOME/.kube/proxmox-k3s" >> $HOME/.bash_profile && \
 export KUBECONFIG=$HOME/.kube/proxmox-k3s
 ```
 
@@ -402,7 +402,7 @@ kubectl get nodes
 ```
 
 If you have more than one `kubectl` config file, you can list multiple in your
-`$HOME/.bashrc`, separated with colons:
+`$HOME/.bash_profile`, separated with colons:
 
 ```
 export KUBECONFIG="$HOME/.kube/proxmox-k3s:$HOME/.kube/localhost-k3s"
@@ -437,7 +437,7 @@ sudo pacman -S kubectx
 
  * Enable Bash completion, create `k` alias for kubectl, and configure your
    `PS1` prompt to show the current K8s context and namespace. Put this in your
-   `$HOME/.bashrc` file:
+   `$HOME/.bash_profile` file:
  
 ```
 ## Enable bash completion:
