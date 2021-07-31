@@ -416,3 +416,53 @@ between clusters (`kubectx`) and namespaces (`kubens`).
 The next post in this series will install Traefik, and generate a wildcard TLS
 certificate using Let's Encrypt ACME DNS challenge (for certificate use beind
 LAN firewall).
+
+## Configure extra workstation niceties
+
+All of these steps are optional, but improve the user experience:
+
+ * Install the `bash-completion` package. On Arch Linux: 
+ 
+```bash
+sudo pacman -S bash-completion
+```
+ * Install the `kubectx` package. On Arch Linux:
+ 
+```bash
+sudo pacman -S kubectx
+```
+ * Install the [kube-ps1](https://github.com/jonmosco/kube-ps1) package. On Arch
+   Linux you can install `kube-ps1` with an [AUR
+   helper](https://wiki.archlinux.org/title/AUR_helpers).
+
+ * Enable Bash completion, create `k` alias for kubectl, and configure your
+   `PS1` prompt to show the current K8s context and namespace. Put this in your
+   `$HOME/.bashrc` file:
+ 
+```
+## Enable bash completion:
+if [ -f /etc/bash_completion ]; then
+    source /etc/bash_completion
+fi
+## kubectl completion is automatically loaded 
+## from /usr/share/bash-completion/completions/kubectl
+
+## Alias k for kubectl:
+alias k="kubectl"
+complete -F __start_kubectl k
+
+## Create PS1 prompt with current K8s context and namespace:
+source '/opt/kube-ps1/kube-ps1.sh'
+PS1='[\u@\h $(kube_ps1)] \W $ '
+
+## List several separate context files in one KUBECONFIG, 
+## separated with ':':
+export KUBECONFIG="$HOME/.kube/k3s-1:$HOME/.kube/k3s-2"
+```
+
+ * Switch between contexts with `kubectx`.
+ 
+ * Switch the default Kubernetes namespace: `kubens` (`kubens` is
+   installed with `kubectx`)
+
+
