@@ -180,6 +180,7 @@ status() {
     do
         state=$(ssh $PROXMOX_SSH_HOST qm status ${VM_ID})
         echo "${VM_ID}: ${state}"
+        ssh $PROXMOX_SSH_HOST qm listsnapshot ${VM_ID}
     done
 }
 
