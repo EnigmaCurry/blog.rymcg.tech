@@ -82,32 +82,24 @@ install Proxmox.
    * Choose appropriate Memory, CPU, and disk storage size, settings, depending on your specific
    hardware (Note this is for all of Proxmox and all of your k3s nodes combined).
    * Give your new machine an appropriate name, like `proxmox`.
-   * Choose one of the Network selection types:
-     * Choose `Virtual Network 'default': NAT` in order to provide NAT and DHCP
-     to the Proxmox VM on a private subnet, so that the Proxmox installer should
-     automatically detect all of the correct network IP address settings. You
-     should still customize the new Hostname for Proxmox (default `pve`). The
-     private subnet will route outgoing connections (eg. `curl` or `docker pull`
-     initiated from inside a running VM), but it will not route incoming
-     external connections by default (eg. you cannot `ssh` to a VM from an
-     external network). The private subnet is accessible only between VMs and
-     from the local host workstation, unless you add additional routing rules.
-     * Or choose the `bridge` device, and bind it to another device name, if you
-     wish Proxmox to communicate on the same network as the host itself. This
-     will make additional DHCP requests on the same network as your host
-     network, essentially assigning two IP addresses to the same primary network
-     device (with different MACs), one for the host IP address, and one for the
-     VM IP address, both in the same subnet on the same LAN. Use this mode to
-     allow other hosts on your LAN full network access to the cluster running on
-     your host. (You can use a local firewall to limit this access if you wish.)
-     Note also that this mode requires elevated privileges, so unless you're
-     running as `root`, and know what you're doing, stick to the `default`
-     device instead, and then you can still create routes to the private subnet
-     if you need to. Furthermore, if you are on a laptop binding to the wifi
-     interface, consider the implications of new dhcp requests on foreign
-     networks. The `default` NAT private subnet seems superior to `bridge` in
-     almost every way.
+   * Choose the Network selection type: `Virtual Network 'default': NAT` in
+     order to provide NAT and DHCP to the Proxmox VM on a private subnet, so
+     that the Proxmox installer should automatically detect all of the correct
+     network IP address settings. You should still customize the new Hostname
+     for Proxmox (default `pve`). The private subnet will route outgoing
+     connections (eg. `curl` or `docker pull` initiated from inside a running
+     VM), but it will not route incoming external connections by default (eg.
+     you cannot `ssh` to a VM from an external network). The private subnet is
+     accessible only between VMs and from the local host workstation, unless you
+     add additional routing rules.
  * Click `Finish` to commit the changes and create the VM.
+ * Click on the `Proxmox` VM in the main `virt-manager` window.
+ * Click on the menu entry `Edit -> Connection Details`.
+ * In the `Connection Details` screen, click on the `Virtual Networks` tab.
+ * Edit the `default` Virtual Network, find the `Autostart` field and checkmark `On Boot`.
+ * Ensure the network has been started, click the `Start Network` button at the
+   bottom of the window, which looks like a small play button on a remote
+   control.
  
 The virtual machine should boot, and provide you the graphical terminal to
 access it. 
