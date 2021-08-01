@@ -91,7 +91,8 @@ install Proxmox.
      VM), but it will not route incoming external connections by default (eg.
      you cannot `ssh` to a VM from an external network). The private subnet is
      accessible only between VMs and from the local host workstation, unless you
-     add additional routing rules.
+     add additional routing rules (See [Part 3 - Port
+     Forwarding](/blog/proxmox/03-port-forwarding/)).
  * Click `Finish` to commit the changes and create the VM.
  * Click on the `Proxmox` VM in the main `virt-manager` window.
  * Click on the menu entry `Edit -> Connection Details`.
