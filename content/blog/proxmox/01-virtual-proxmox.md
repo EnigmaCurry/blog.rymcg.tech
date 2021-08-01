@@ -100,6 +100,13 @@ install Proxmox.
  * Ensure the network has been started, click the `Start Network` button at the
    bottom of the window, which looks like a small play button on a remote
    control.
+
+Optionally, you can enable this VM to start on boot:
+  
+```bash
+# Optional: autostart VM on boot:
+sudo virsh autostart Proxmox
+```
  
 The virtual machine should boot, and provide you the graphical terminal to
 access it. 
