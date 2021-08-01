@@ -8,7 +8,7 @@ tags: ['proxmox']
 
 In [Part 1](/blog/proxmox/01-virtual-proxmox/) of this series, you installed a
 Virtual Proxmox server in a libvirt virtual machine (with the GUI tool
-`virt-manager`), and you chose the the network selection of type `Virtual
+`virt-manager`), and you chose the network selection of type `Virtual
 Network 'default': NAT`. This type of network only allows traffic from another
 (virtual) machine on the same network (`'default'`), including from your host
 workstation (libvirt has created a virtual network device, on the host
@@ -17,8 +17,9 @@ No external traffic is allowed to this network (ie. from your LAN), because, by
 default, there are no external routes created for it.
 
 The NAT network type provides pretty good default security for a development
-environment, however you may soon wish to deliberately expose some services to
-other machines on your LAN, or even to the internet.
+environment, where you only want access from your workstation. However, you may
+soon wish to deliberately expose some services to other machines on your LAN, or
+even to the Internet.
 
 When exposing the Proxmox dashboard, it is important to install a valid TLS
 certificate, and stop using the default self-signed certificate created on first
@@ -26,14 +27,14 @@ install. (Remember how you had to tell your browser that the certificate was
 OK?) Proxmox has the ability to generate a valid certificate, using [Let's
 Encrypt](https://letsencrypt.org/) with ACME [DNS-01 challenge
 type](https://letsencrypt.org/docs/challenge-types/). This allows you to create
-valid browser-trusted TLS certificates, even if your host system itself is
+a valid browser-trusted TLS certificate, even if your host system itself is
 behind another NAT firewall (which is the typical home Interet configuration,
 with no external ports opened, which excludes the use of ACME HTTP or TLS
 challenge types).
 
 If you follow the suggestions in this post for exposing services, you are
 changing the role of your workstation: it is now a a hybrid workstation and
-server (for your LAN).
+server (for your LAN and/or the Internet).
 
 ## Setup firewall and routes on host
 
@@ -111,7 +112,7 @@ need to add additional rules to allow access from outside your workstation:
    * Click the `Enable` checkbox.
    * Click the `Macro` dropdown, and select `SSH`.
    * Optional: Enter a `Source` to filter by IP/Subnet range. (Note that Proxmox
-     already allows the private virbr0 network by default, so you only need to
+     already allows the private virbr0 network by default [anti-lockout rule for your workstation], so you only need to
      filter the outside network.)
    * Click the `Add` button to add the new rule.
  * Click on `Add` to add another new firewall rule:
@@ -119,8 +120,8 @@ need to add additional rules to allow access from outside your workstation:
    * Click the `Protocol` dropdown, and select `tcp`.
    * Enter the `Dest. port` as `8006`.
    * Optional: Enter a `Source` to filter by IP/Subnet range. (Note that Proxmox
-     already allows the private virbr0 network by default, so you only need to
-     filter the outside network.)
+     already allows the private virbr0 network by default [anti-lockout rule for
+     your workstation], so you only need to filter the outside network.)
    * Click the `Add` button to add the new rule.
 
 ## Test the firewall
@@ -145,7 +146,7 @@ denied (publickey)`, because this shows that the connection itself is working.)
 
 In order to generate a certificate from a private LAN, you need to use the ACME
 DNS-01 challenge type, which requires you to control the DNS server for the
-internet domain the certificate is to be issued for. You can use a DNS host like
+Internet domain the certificate is to be issued for. You can use a DNS host like
 [DigitalOcean](https://digitalocean.com), which offers an API that Proxmox can
 use to update DNS automatically to satisfy the requirements of the ACME DNS-01
 challenge. This example will use DigitalOcean DNS.
@@ -236,3 +237,13 @@ anywhere on your LAN (unless you added an IP filter in the firewall rule), and
 you can access the Proxmox dashboard. Your web browser should now automatically
 trust the certificate, issued by Let's Encrypt. Bookmark the dashboard, so that
 you always access it using this full domain name.
+
+## Exposing services to the Internet
+
+After you have exposed the port to the LAN, you can configure your Internet
+router to port forward certain port ranges to the workstation IP address, thus
+exposing them to the Internet.
+
+If you don't want to open your Internet router ports, you can use a VPN or do
+something a bit fancier like [sish](https://github.com/antoniomika/sish) using
+only SSH to tunnel traffic through another public bastion host.
