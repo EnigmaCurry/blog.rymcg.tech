@@ -453,7 +453,7 @@ complete -F __start_kubectl k
 
 ## Create PS1 prompt with current K8s context and namespace:
 source '/opt/kube-ps1/kube-ps1.sh'
-PS1='[\u@\h $(kube_ps1)] \W $ '
+PS1='\[\u@\h $(kube_ps1)\] \W $ '
 
 ## List several separate context files in one KUBECONFIG, 
 ## separated with ':':
