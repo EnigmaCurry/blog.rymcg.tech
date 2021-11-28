@@ -299,7 +299,7 @@ RUN cd /usr/local/bin && \
    tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
    rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
  echo "### Flux: " && \
-   curl -s https://toolkit.fluxcd.io/install.sh | bash && \
+   curl -sL https://toolkit.fluxcd.io/install.sh | bash && \
  echo "### cdk8s / pyenv" && \
    apk add libffi-dev openssl-dev bzip2-dev zlib-dev readline-dev \
       sqlite-dev build-base python3 py3-pip yarn npm && \
