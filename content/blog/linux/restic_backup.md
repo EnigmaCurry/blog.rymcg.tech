@@ -7,7 +7,7 @@ tags: ['linux']
 [Restic](https://restic.net/) is a modern backup program that can archive your
 files onto many different cloud and network storage locations, and to help
 restore your files in case of disaster. This article will show you how to backup
-a single user directory to S3, using restic and systemd.
+one or more user directories to S3, using restic and systemd.
 
 ## Choose an S3 vendor and create a bucket
 

@@ -11,8 +11,9 @@
 ## Edit the variables below (especially the ones like change-me-change-me-change-me):  
 ## WARNING: This will include plain text passwords for restic and S3
 
-## Which directory do you want to backup from?
-RESTIC_BACKUP_PATH=${HOME}/Sync
+## Which directories do you want to backup from?
+## Specify one or more directories inside single parentheses (bash array) separated by spaces:
+RESTIC_BACKUP_PATHS=(${HOME}/Documents ${HOME}/Music ${HOME}/Sync)
 
 ## Create a secure encryption passphrase for your restic data:
 ## WRITE THIS PASSWORD DOWN IN A SAFE PLACE:
@@ -44,13 +45,12 @@ run_restic() {
     restic -v -r s3:https://${S3_ENDPOINT}/${S3_BUCKET} $@
 }
 
-init() { # : Initialize restic repository in ${RESTIC_BACKUP_PATH}
-    mkdir -p ${RESTIC_BACKUP_PATH}
+init() { # : Initialize restic repository
     run_restic init
 }
 
 backup() { # : Run backup now
-    run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATH}
+    run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}
 }
 
 prune() { # : Remove old snapshots from repository
@@ -190,3 +190,4 @@ main() {
 }
 
 main $@
+
