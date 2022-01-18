@@ -92,12 +92,13 @@ manager](https://restic.readthedocs.io/en/stable/020_installation.html).
 Here is an all-in-one script that can setup and run your restic backups
 automatically on a daily basis, all from your user account (No root needed).
 
- * Download the script to any place you like (suggestion:
+ * Download (copy and paste) the script to any place you like (suggestion:
 `${HOME}/.config/restic_backup/restic_backup.sh`)
  * Change the permissions: `chmod 0700 <PATH-TO-SCRIPT>`
 
 ```sh
 #!/bin/bash
+## restic_backup.sh - https://blog.rymcg.tech/blog/linux/restic_backup/
 ## Restic Backup Script for S3 cloud storage (and compatible APIs)
 ## Install the `restic` package with your package manager
 ## Copy this script to any directory, and change the permissions:
@@ -119,7 +120,7 @@ S3_ENDPOINT=s3.us-west-1.wasabisys.com
 S3_ACCESS_KEY_ID=change-me-change-me-change-me
 S3_SECRET_ACCESS_KEY=change-me-change-me-change-me
 
-## Restic data retention policy:
+## Restic snapshot retention policy:
 # https://restic.readthedocs.io/en/stable/060_forget.html#removing-snapshots-according-to-a-policy
 RETENTION_DAYS=7
 RETENTION_WEEKS=4
@@ -195,18 +196,44 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
+    PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
+    PRUNE_FILE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
+    PRUNE_TIMER_FILE=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
+    cat <<EOF > ${PRUNE_FILE}
+[Unit]
+Description=restic_backup prune $(realpath ${BASH_SOURCE})
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=$(realpath ${BASH_SOURCE}) prune
+EOF
+    cat <<EOF > ${PRUNE_TIMER_FILE}
+[Unit]
+Description=restic_backup $(realpath ${BASH_SOURCE}) monthly pruning
+[Timer]
+OnCalendar=*-*-01 00:02:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
 
     systemctl --user daemon-reload
     systemctl --user enable --now ${SERVICE_NAME}.timer
+    systemctl --user enable --now ${PRUNE_NAME}.timer
     systemctl --user status ${SERVICE_NAME} --no-pager
+    systemctl --user status ${PRUNE_NAME} --no-pager
     echo "You can watch the logs with this command:"
     echo "   journalctl --user --unit ${SERVICE_NAME}"
 }
 
 status() {
     SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
+    PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
     set -x
     systemctl --user list-timers ${SERVICE_NAME} --no-pager
+    systemctl --user list-timers ${PRUNE_NAME} --no-pager
 }
 
 main() {
@@ -235,19 +262,24 @@ main $@
 ## Usage
 
  * Procure your S3 Bucket, credentials, and endpoint URL.
+ * Save the script to any directory you like.
+ * Change the permissions on the script: `chmod 0700 restic_backup.sh`
  * Edit all the variables at the top of your `restic_backup.sh` file.
- * Initialize the repository:
+ 
+ * Initialize the restic repository:
  
 ```
 ./restic_backup.sh init
 ```
+
  * Run the first backup manually:
  
 ```
 ./restic_backup.sh backup
 ```
 
- * Schedule the backups automatically with systemd:
+ * Install the systemd service, scheduling the backup to automatically run
+   daily:
  
 ```
 ./restic_backup.sh systemd_setup
@@ -268,4 +300,12 @@ main $@
 
 ```
 ./restic_backup.sh restore latest
+```
+
+ * Prune the repository, cleaning up storage space, and deleting old snapshots
+   that are past the time of your data retention policy. (This is scheduled to
+   be run automatically once a month:)
+
+```
+./restic_backup.sh prune
 ```
