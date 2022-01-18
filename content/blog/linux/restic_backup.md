@@ -12,7 +12,7 @@ a single user directory to S3, using restic and systemd.
 ## Choose an S3 vendor and create a bucket
 
 Restic supports many different storage mechanisms, but this article and
-associated scripts will only focus on using S3 storage (AWS and/or S3 API
+associated scripts will only focus on using S3 storage (AWS or S3 API
 compatible endpoint). You can choose from many different storage vendors: AWS,
 DigitalOcean, Backblaze, Wasabi, Minio etc.
 
