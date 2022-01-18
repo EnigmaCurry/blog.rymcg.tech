@@ -84,7 +84,7 @@ compatible API, with a pricing and usage model perfect for backups.
      later, which are dependent on the Region you chose for the bucket. (eg.
      `s3.us-west-1.wasabisys.com`)
    
-## Download the backup script
+## Download and edit the backup script
 
 Install `restic` [with your package
 manager](https://restic.readthedocs.io/en/stable/020_installation.html).
@@ -92,9 +92,14 @@ manager](https://restic.readthedocs.io/en/stable/020_installation.html).
 Here is an all-in-one script that can setup and run your restic backups
 automatically on a daily basis, all from your user account (No root needed).
 
- * Download (copy and paste) the script to any place you like (suggestion:
-`${HOME}/.config/restic_backup/restic_backup.sh`)
- * Change the permissions: `chmod 0700 <PATH-TO-SCRIPT>`
+ * Open your text editor and create a new file named `restic_backup.sh`. You can
+   save it wherever you want, but one suggestion is to put it in
+   `${HOME}/.config/restic_backup/restic_backup.sh`
+ * Copy the following script into your clipboard and paste it into the new file.
+ * Review and edit all of the variables at the top of the file, and save the
+   file.
+ * Change the permissions on the file to be executable and private: `chmod 0700
+   ${HOME}/.config/restic_backup/restic_backup.sh`
 
 ```sh
 #!/bin/bash
@@ -256,7 +261,8 @@ logs() { # : Show recent service logs
 }
 
 help() { # : Show this help
-    echo "Subcommand Help:"
+    echo "## restic_backup.sh Help:"
+    echo -e "# subcommand [ARG1] [ARG2]\t#  Help Description" | expand -t35
     for cmd in "${commands[@]}"; do
         annotation=$(grep -E "^${cmd}\(\) { # " ${BASH_SOURCE} | sed "s/^${cmd}() { # \(.*\)/\1/")
         args=$(echo ${annotation} | cut -d ":" -f1)
@@ -289,52 +295,71 @@ main $@
 
 ## Usage
 
- * Procure your S3 Bucket, credentials, and endpoint URL.
- * Save the script to your computer in any directory you like.
- * Change the permissions on the script: `chmod 0700 restic_backup.sh`
- * Edit all the variables at the top of your `restic_backup.sh` file.
+ * To make using the script easier, create this BASH alias in your `~/.bashrc`:
  
+```
+## backup alias for the restic backup script:
+alias backup=${HOME}/.config/restic_backup/restic_backup.sh
+```
+ * Restart the shell / close and reopen your terminal.
+ * Run the script alias, to see the help screen: `backup`
+
+```
+## restic_backup.sh Help:
+# subcommand [ARG1] [ARG2]         #  Help Description
+init                               #  Initialize restic repository in ${RESTIC_BACKUP_PATH} 
+backup                             #  Run backup now 
+forget                             #  Apply the configured data retention policy to the backend 
+prune                              #  Remove old snapshots from repository 
+systemd_setup                      #  Schedule backups by installing systemd timers 
+status                             #  Show the last and next backup/prune times 
+logs                               #  Show recent service logs 
+snapshots                          #  List all snapshots 
+restore [SNAPSHOT] [ROOT_PATH]     #  Restore data from snapshot (default 
+help                               #  Show this help 
+```
+
  * Initialize the restic repository:
  
 ```
-./restic_backup.sh init
+backup init
 ```
 
  * Run the first backup manually:
  
 ```
-./restic_backup.sh backup
+backup backup
 ```
 
  * Install the systemd service, scheduling the backup to automatically run
    daily:
  
 ```
-./restic_backup.sh systemd_setup
+backup systemd_setup
 ```
 
  * Check the status (See the next and previous timers):
  
 ```
-./restic_backup.sh status
+backup status
 ```
 
  * List snapshots
 ```
-./restic_backup.sh snapshots
+backup snapshots
 ```
 
  * Restore from the latest snapshot
 
 ```
-./restic_backup.sh restore 
+backup restore 
 ```
 
  * Restore from a different snapshot (`xxxxxx`), to an alternative directory
    (`~/copy`):
  
 ```
-./restic_backup.sh restore xxxxxx ~/copy
+backup restore xxxxxx ~/copy
 ```
 
  * Prune the repository, cleaning up storage space, and deleting old snapshots
@@ -342,5 +367,19 @@ main $@
    be run automatically once a month:)
 
 ```
-./restic_backup.sh prune
+backup prune
 ```
+
+## Security considerations
+
+**Be sure not to share your edited script with anyone else, because it now
+contains your Restic password and S3 credentials!** 
+
+The script has permissions of `0700` (`-rwx------`) so only your user account
+(and `root`) can read the configuraton. However, this also means that *any other
+program your user runs can potentially read this file*. 
+
+To limit the possiblity of leaking the passwords, you may consider running this
+script in a new user account dedicated to backups. You will also need to take
+care that this second user has the correct permissions to read all of the files
+that are to be backed up.
