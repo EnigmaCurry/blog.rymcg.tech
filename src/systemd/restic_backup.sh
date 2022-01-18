@@ -67,7 +67,7 @@ snapshots() { # : List all snapshots
     run_restic snapshots
 }
 
-restore() { # [SNAPSHOT] [ROOT_PATH] : Restore data from snapshot (default: 'latest')
+restore() { # [SNAPSHOT] [ROOT_PATH] : Restore data from snapshot (default 'latest')
     SNAPSHOT=${1:-latest}; ROOT_PATH=${2:-/};
     if test -d ${ROOT_PATH} && [[ ${ROOT_PATH} != "/" ]]; then
         echo "ERROR: Non-root restore path already exists: ${ROOT_PATH}"
