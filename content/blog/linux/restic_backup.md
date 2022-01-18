@@ -4,15 +4,17 @@ date: 2022-01-17T00:01:00-06:00
 tags: ['linux']
 ---
 
-[Restic](https://restic.net/) is a modern backup program that can back up your
-files to many different cloud and network storage locations. This article will
-show you how to backup a single user folder to S3, using restic and systemd.
+[Restic](https://restic.net/) is a modern backup program that can archive your
+files onto many different cloud and network storage locations, and to help
+restore your files in case of disaster. This article will show you how to backup
+a single user directory to S3, using restic and systemd.
 
 ## Choose an S3 vendor and create a bucket
 
-This article and associated scripts will only focus on using S3 storage (AWS
-and/or S3 API compatible endpoint). You can choose from many different storage
-vendors: AWS, DigitalOcean, Backblaze, Wasabi, Minio etc. 
+Restic supports many different storage mechanisms, but this article and
+associated scripts will only focus on using S3 storage (AWS and/or S3 API
+compatible endpoint). You can choose from many different storage vendors: AWS,
+DigitalOcean, Backblaze, Wasabi, Minio etc.
 
 ### Example with Minio
 
@@ -33,9 +35,9 @@ compatible API, with a pricing and usage model perfect for backups.
  * Click on `Buckets` in the menu, then click `Create Bucket`. Choose a unique
    name for the bucket. Select the region, then click `Create Bucket`.
  * Click on `Policies` in the menu, then click `Create Policy`. Enter any name
-   for the policy, and enter the full policy document below, replacing
-   `BUCKET_NAME` (two instances) for your chosen bucket name, then click `Create
-   Policy`.
+   for the policy. Copy and paste the full policy document below into the policy
+   form, replacing `BUCKET_NAME` with your chosen bucket name (there are two
+   instances to replace in the body).
    
 ```
 {
@@ -59,6 +61,8 @@ compatible API, with a pricing and usage model perfect for backups.
 }
  
 ```
+ * Once the policy document is edited, click `Create Policy`.
+
  * Click on `Users` in the menu, then click `Create User`. 
  
    * Enter any name you like. 
