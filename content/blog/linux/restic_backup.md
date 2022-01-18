@@ -120,7 +120,7 @@ S3_ENDPOINT=s3.us-west-1.wasabisys.com
 S3_ACCESS_KEY_ID=change-me-change-me-change-me
 S3_SECRET_ACCESS_KEY=change-me-change-me-change-me
 
-## Restic snapshot retention policy:
+## Restic data retention policy:
 # https://restic.readthedocs.io/en/stable/060_forget.html#removing-snapshots-according-to-a-policy
 RETENTION_DAYS=7
 RETENTION_WEEKS=4
@@ -130,6 +130,8 @@ RETENTION_YEARS=3
 ## The tag to apply to all snapshots made by this script:
 BACKUP_TAG=${BASH_SOURCE}
 
+commands=(init backup forget prune systemd_setup status snapshots restore help)
+
 run_restic() {
     export RESTIC_PASSWORD
     export AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
@@ -138,34 +140,45 @@ run_restic() {
     restic -v -r s3:https://${S3_ENDPOINT}/${S3_BUCKET} $@
 }
 
-init() {
+init() { # : Initialize restic repository in ${RESTIC_BACKUP_PATH}
     mkdir -p ${RESTIC_BACKUP_PATH}
     run_restic init
 }
 
-backup() {
+backup() { # : Run backup now
     run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATH}
 }
 
-prune() {
+prune() { # : Remove old snapshots from repository
     run_restic prune
 }
 
-forget() {
+forget() { # : Apply the configured data retention policy to the backend
     run_restic forget --tag ${BACKUP_TAG} --group-by "paths,tags" \
            --keep-daily $RETENTION_DAYS --keep-weekly $RETENTION_WEEKS \
            --keep-monthly $RETENTION_MONTHS --keep-yearly $RETENTION_YEARS
 }
 
-snapshots() {
+snapshots() { # : List all snapshots
     run_restic snapshots
 }
 
-restore() {
-    run_restic restore -t / $1
+restore() { # [SNAPSHOT] [ROOT_PATH] : Restore data from snapshot (default: 'latest')
+    SNAPSHOT=${1:-latest}; ROOT_PATH=${2:-/};
+    if test -d ${ROOT_PATH} && [[ ${ROOT_PATH} != "/" ]]; then
+        echo "ERROR: Non-root restore path already exists: ${ROOT_PATH}"
+        echo "Choose a non-existing directory name and try again. Exiting."
+        exit 1
+    fi
+    read -p "Are you sure you want to restore all data from snapshot '${SNAPSHOT}' (y/N)? " yes_no
+    if [[ ${yes_no,,} == "y" ]] || [[ ${yes_no,,} == "yes" ]]; then
+        run_restic restore -t ${ROOT_PATH} ${SNAPSHOT}
+    else
+        echo "Exiting." && exit 1
+    fi
 }
 
-systemd_setup() {
+systemd_setup() { # : Schedule backups by installing systemd timers
     if loginctl show-user ${USER} | grep "Linger=no"; then
 	    echo "User account does not allow systemd Linger."
 	    echo "To enable lingering, run as root: loginctl enable-linger $USER"
@@ -228,12 +241,22 @@ EOF
     echo "   journalctl --user --unit ${SERVICE_NAME}"
 }
 
-status() {
+status() { # : Show the last and next backup/prune times 
     SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
     PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
     set -x
     systemctl --user list-timers ${SERVICE_NAME} --no-pager
     systemctl --user list-timers ${PRUNE_NAME} --no-pager
+}
+
+help() { # : Show this help
+    echo "Subcommand Help:"
+    for cmd in "${commands[@]}"; do
+        annotation=$(grep -E "^${cmd}\(\) { # " ${BASH_SOURCE} | sed "s/^${cmd}() { # \(.*\)/\1/")
+        args=$(echo ${annotation} | cut -d ":" -f1)
+        description=$(echo ${annotation} | cut -d ":" -f2)
+        echo -e "${cmd} ${args}\t# ${description} " | expand -t35
+    done
 }
 
 main() {
@@ -244,9 +267,8 @@ main() {
     fi
 
     if test $# = 0; then
-        echo TODO
+        help
     else
-        commands=(init backup forget prune systemd_setup status snapshots restore help)
         CMD=$1; shift;
         if [[ " ${commands[*]} " =~ " ${CMD} " ]]; then
             ${CMD} $@
@@ -299,7 +321,14 @@ main $@
  * Restore from the latest snapshot
 
 ```
-./restic_backup.sh restore latest
+./restic_backup.sh restore 
+```
+
+ * Restore from a different snapshot (`xxxxxx`), to an alternative directory
+   (`~/copy`):
+ 
+```
+./restic_backup.sh restore xxxxxx ~/copy
 ```
 
  * Prune the repository, cleaning up storage space, and deleting old snapshots
