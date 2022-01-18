@@ -255,7 +255,7 @@ main $@
 
  * List snapshots
 ```
-./restic_backup.sh list
+./restic_backup.sh snapshots
 ```
 
  * Restore from the latest snapshot
