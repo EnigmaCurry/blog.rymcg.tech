@@ -35,9 +35,10 @@ compatible API, with a pricing and usage model perfect for backups.
  * Click on `Buckets` in the menu, then click `Create Bucket`. Choose a unique
    name for the bucket. Select the region, then click `Create Bucket`.
  * Click on `Policies` in the menu, then click `Create Policy`. Enter any name
-   for the policy. Copy and paste the full policy document below into the policy
-   form, replacing `BUCKET_NAME` with your chosen bucket name (there are two
-   instances to replace in the body).
+   for the policy, but its easiest to name it the same thing as the bucket. Copy
+   and paste the full policy document below into the policy form, replacing
+   `BUCKET_NAME` with your chosen bucket name (there are two instances to
+   replace in the body).
    
 ```
 {
@@ -65,7 +66,8 @@ compatible API, with a pricing and usage model perfect for backups.
 
  * Click on `Users` in the menu, then click `Create User`. 
  
-   * Enter any name you like. 
+   * Enter any username you like, but its easiest to name the user the same as
+     the bucket.
    * Check the type of access as `Programatic`. 
    * Click `Next`. 
    * Skip the Groups screen. 
