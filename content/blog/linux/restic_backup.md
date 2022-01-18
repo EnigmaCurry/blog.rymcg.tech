@@ -130,7 +130,7 @@ RETENTION_YEARS=3
 ## The tag to apply to all snapshots made by this script:
 BACKUP_TAG=${BASH_SOURCE}
 
-commands=(init backup forget prune systemd_setup status snapshots restore help)
+commands=(init backup forget prune systemd_setup status logs snapshots restore help)
 
 run_restic() {
     export RESTIC_PASSWORD
@@ -249,6 +249,12 @@ status() { # : Show the last and next backup/prune times
     systemctl --user list-timers ${PRUNE_NAME} --no-pager
 }
 
+logs() { # : Show recent service logs
+    SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
+    set -x
+    journalctl --user --unit ${SERVICE_NAME} --since yesterday
+}
+
 help() { # : Show this help
     echo "Subcommand Help:"
     for cmd in "${commands[@]}"; do
@@ -284,7 +290,7 @@ main $@
 ## Usage
 
  * Procure your S3 Bucket, credentials, and endpoint URL.
- * Save the script to any directory you like.
+ * Save the script to your computer in any directory you like.
  * Change the permissions on the script: `chmod 0700 restic_backup.sh`
  * Edit all the variables at the top of your `restic_backup.sh` file.
  
