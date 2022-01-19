@@ -99,11 +99,11 @@ manager](https://restic.readthedocs.io/en/stable/020_installation.html).
 Here is an all-in-one script that can setup and run your restic backups
 automatically on a daily basis, all from your user account (No root needed).
 
- * Open your text editor and create a new file named `restic_backup.sh`. You can
-   save it wherever you want, but one suggestion is to put it in
-   `${HOME}/.config/restic_backup/restic_backup.sh`
- * Copy the following script into your clipboard and paste it into the new file.
- * (Alternatively, you may [download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/systemd/restic_backup.sh).)
+ * [Download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/systemd/restic_backup.sh)
+ * You can save it wherever you want, named whatever you want, but one
+   suggestion is to put it in `${HOME}/.config/restic_backup/my_backup.sh`
+ * Alternatively, you may copy and paste the entire script into a new file, as
+   follows:
  
 {{< code file="/src/systemd/restic_backup.sh" language="shell" >}}
 
@@ -123,10 +123,11 @@ chmod 0700 ${HOME}/.config/restic_backup/restic_backup.sh
  * To make using the script easier, create this BASH alias in your `~/.bashrc`:
  
 ```
-## backup alias for the restic backup script:
-alias backup=${HOME}/.config/restic_backup/restic_backup.sh
+## 'backup' is an alias to the full path of my personal backup script:
+alias backup=${HOME}/.config/restic_backup/my_backup.sh
 ```
- * Restart the shell / close and reopen your terminal.
+
+ * Restart the shell or close/reopen your terminal.
  * Run the script alias, to see the help screen: `backup`
 
 ```
@@ -231,3 +232,106 @@ is for. Persistent timers remember when they last ran, and if your laptop turns
 on and finds that it is past due for running one of the timers it will run it
 immediately. So you'll never miss a scheduled backup just because you were
 offline.
+
+
+## Frequently s/asked/expected/ questions
+
+### How do I know its working? 
+
+I hope this script will be reliable for you, but I make no guarantees. You
+should check `backup status` and `backup logs` regularly to make sure it's still
+working and stable for you in the long term. It might be nice if this script
+would email you if there were an error, but this has not been implemented yet.
+
+You should play a mock-disaster scenario: use a second computer and test that
+your backup copy of your backup script works (*You did* save a backup of your
+script in your password manager, right??):
+
+```
+## After copying the script onto a second computer ....
+## Test restoring and copying all backed up files into a new directory:
+chmod 0700 ./my_backup.sh
+./my_backup.sh restore latest ~/restored-files
+```
+
+Now you should see all your backed up files in `~/restored-files`, if you do,
+you now have evidence that the backup and restore procedures are working.
+
+### I lost my whole computer, how do I get my files back? 
+
+Copy your backup script (the one you saved in your password manager) to any
+computer, and run the `restore` command:
+
+```
+## After installing your backup script and BASH alias onto a new computer ....
+## Restore all files to the same directories they were in before:
+backup restore
+```
+
+### Can I move or rename the script?
+
+Yes, you can name it whatever you like, and save it in any directory. But
+there's some things you need to know about moving it later:
+
+ * The full path of the script is used as the restic backup tag. (Shown via
+   `backup snapshots`)
+ * This tag is an identifier, so that you can differentiate between backups made
+   by this script vs. backups made by running the restic command manually.
+ * If you change the path of the script, you will change the backup tag going
+   forward.
+ * This script doesn't really care about the tag, but its something to be aware
+   of.
+
+### Can I move my backups to a new bucket name or endpoint?
+
+Yes, after copying your bucket data to the new endpoint/name, you will also need
+to disable and then re-enable the systemd timers:
+
+ * The name of the systemd service and timer is based upon the bucket name and
+   the systemd timer, from the `BACKUP_NAME` variable which is set to
+   `restic_backup.${S3_ENDPOINT}-${S3_BUCKET}` by default, so by changing either
+   of these variables necessitates changing the name of the systemd service and
+   timers.
+ * Note: if you only need to change the S3 access or secret keys, but the bucket
+   and endpoint stay the same, there's no need to do anything besides editing
+   the script.
+   
+Before making the change, disable the existing timers:
+
+```
+backup disable
+```
+
+Now edit your script to account for the updated bucket name and/or endpoint.
+
+After making the change, re-enable the timers:
+
+```
+backup enable
+```
+
+Check the status:
+
+```
+backup status
+```
+
+### Why suggest the path ~/.config/restic_backup/my_backup.sh?
+
+ * `~/.config` is the default [XDG Base
+   Directory](https://wiki.archlinux.org/title/XDG_Base_Directory) which is
+   defined as `Where user-specific configurations should be written (analogous
+   to /etc).`
+ * Normally, scripts wouldn't go into `/etc`, but this script is a hybrid config
+   file *and* program script, so it counts as a config file.
+ * Each project makes its own subdirectory in `~/.config`, using the project
+   name, eg. `restic_backup`. By creating a sub-directory, this allows you to
+   save (and use) more than one backup script. (Note: to do so, you would need
+   to create an additional BASH alias with a different name.)
+ * `my_backup.sh` implies that the script contains personal information and
+   should not be shared. Both of which are true! 
+ * If you share your `~/.config` publicly (some people I've seen share this
+   entire directory on GitHub), you should choose a different path for your
+   script!
+ * The name and path of the script does not functionally matter.
+ 
