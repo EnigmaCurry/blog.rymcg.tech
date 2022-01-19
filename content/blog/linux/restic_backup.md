@@ -279,8 +279,13 @@ there's some things you need to know about moving it later:
    by this script vs. backups made by running the restic command manually.
  * If you change the path of the script, you will change the backup tag going
    forward.
- * This script doesn't really care about the tag, but its something to be aware
-   of.
+ * The full path of the script is written to the systemd service file, so if you
+   change the name or the path, you need to re-enable the service:
+   
+```
+## Reinstall the systemd services after changing the script path:
+backup enable
+```
 
 ### Can I move my backups to a new bucket name or endpoint?
 
