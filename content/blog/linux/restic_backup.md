@@ -103,7 +103,8 @@ automatically on a daily basis, all from your user account (No root needed).
    save it wherever you want, but one suggestion is to put it in
    `${HOME}/.config/restic_backup/restic_backup.sh`
  * Copy the following script into your clipboard and paste it into the new file.
-
+ * (Alternatively, you may [download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/systemd/restic_backup.sh).)
+ 
 {{< code file="/src/systemd/restic_backup.sh" language="shell" >}}
 
  * Review and edit all of the variables at the top of the file, and save the
