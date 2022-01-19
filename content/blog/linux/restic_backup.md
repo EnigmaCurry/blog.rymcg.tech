@@ -16,6 +16,13 @@ associated scripts will only focus on using S3 storage (AWS or S3 API
 compatible endpoint). You can choose from many different storage vendors: AWS,
 DigitalOcean, Backblaze, Wasabi, Minio etc.
 
+You'll need to gather the following information from your S3 provider:
+
+ * `S3_BUCKET` - the name of the S3 bucket
+ * `S3_ENDPOINT` the domain name of the S3 server
+ * `S3_ACCESS_KEY_ID` The S3 access ID
+ * `S3_SECRET_ACCESS_KEY` The S3 secret key
+
 ### Example with Minio
 
 Minio is an open-source self-hosted S3 server. You can easily install Minio on
