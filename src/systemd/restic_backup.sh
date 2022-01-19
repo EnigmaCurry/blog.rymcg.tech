@@ -106,7 +106,7 @@ Wants=network.target
 
 [Service]
 Type=oneshot
-ExecStart=$(realpath ${BASH_SOURCE}) backup
+ExecStart=$(realpath ${BASH_SOURCE}) now
 ExecStartPost=$(realpath ${BASH_SOURCE}) forget
 EOF
     cat <<EOF > ${BACKUP_TIMER}
