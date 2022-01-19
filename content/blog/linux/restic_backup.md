@@ -157,20 +157,25 @@ backup init
 backup now
 ```
 
-### Install the systemd service, scheduling the backup to automatically run
-   daily
+### Install the systemd service
+
+This will schedule the backup to automatically run daily
  
 ```
 backup enable
 ```
 
-### Check the status (See the next and previous timers)
+### Check the status 
+
+This will show you the last time and the next time that the timers will run the
+backup job:
  
 ```
 backup status
 ```
 
 ### List snapshots
+
 ```
 backup snapshots
 ```
@@ -182,14 +187,15 @@ backup snapshots
 backup restore 
 ```
 
-### Restore from a different snapshot (`xxxxxx`), to an alternative directory
-   (`~/copy`)
+### Restore from a different snapshot
+
+This will restore the snapshot (`xxxxxx`) to an alternative directory (`~/copy`):
  
 ```
 backup restore xxxxxx ~/copy
 ```
 
-### Prune the repository, 
+### Prune the repository
 
 This will clean up storage space, and delete old snapshots that are past the
 time of your data retention policy. (This is scheduled to be runautomatically
