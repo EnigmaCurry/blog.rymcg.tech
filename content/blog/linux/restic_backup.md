@@ -7,7 +7,7 @@ tags: ['linux']
 [Restic](https://restic.net/) is a modern backup program that can archive your
 files onto many different cloud and network storage locations, and to help
 restore your files in case of disaster. This article will show you how to backup
-one or more user directories to S3, using restic and systemd.
+one or more user directories to S3 cloud storage, using restic and systemd.
 
 ## Choose an S3 vendor and create a bucket
 
@@ -279,6 +279,7 @@ there's some things you need to know about moving it later:
    by this script vs. backups made by running the restic command manually.
  * If you change the path of the script, you will change the backup tag going
    forward.
+ * Make sure you update your BASH alias to the new path.
  * The full path of the script is written to the systemd service file, so if you
    change the name or the path, you need to re-enable the service:
    
@@ -327,8 +328,8 @@ backup status
    Directory](https://wiki.archlinux.org/title/XDG_Base_Directory) which is
    defined as `Where user-specific configurations should be written (analogous
    to /etc).`
- * Normally, scripts wouldn't go into `/etc`, but this script is a hybrid config
-   file *and* program script, so it counts as a config file.
+ * Normally, scripts wouldn't go into `~/.config` (nor `/etc`), but this script
+   is a hybrid config file *and* program script, so it counts as a config file.
  * Each project makes its own subdirectory in `~/.config`, using the project
    name, eg. `restic_backup`. By creating a sub-directory, this allows you to
    save (and use) more than one backup script. (Note: to do so, you would need
