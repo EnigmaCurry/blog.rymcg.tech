@@ -133,7 +133,7 @@ alias backup=${HOME}/.config/restic_backup/restic_backup.sh
 ## restic_backup.sh Help:
 # subcommand [ARG1] [ARG2]         #  Help Description
 init                               #  Initialize restic repository in ${RESTIC_BACKUP_PATH} 
-backup                             #  Run backup now 
+now                                #  Run backup now 
 forget                             #  Apply the configured data retention policy to the backend 
 prune                              #  Remove old snapshots from repository 
 enable                             #  Schedule backups by installing systemd timers 
@@ -145,52 +145,55 @@ restore [SNAPSHOT] [ROOT_PATH]     #  Restore data from snapshot (default
 help                               #  Show this help 
 ```
 
- * Initialize the restic repository:
+### Initialize the restic repository
  
 ```
 backup init
 ```
 
- * Run the first backup manually:
+### Run the first backup manually
  
 ```
-backup backup
+backup now
 ```
 
- * Install the systemd service, scheduling the backup to automatically run
-   daily:
+### Install the systemd service, scheduling the backup to automatically run
+   daily
  
 ```
 backup enable
 ```
 
- * Check the status (See the next and previous timers):
+### Check the status (See the next and previous timers)
  
 ```
 backup status
 ```
 
- * List snapshots
+### List snapshots
 ```
 backup snapshots
 ```
 
- * Restore from the latest snapshot
+### Restore from the latest snapshot 
 
 ```
+## WARNING: this will reset your files to the backed up versions! 
 backup restore 
 ```
 
- * Restore from a different snapshot (`xxxxxx`), to an alternative directory
-   (`~/copy`):
+### Restore from a different snapshot (`xxxxxx`), to an alternative directory
+   (`~/copy`)
  
 ```
 backup restore xxxxxx ~/copy
 ```
 
- * Prune the repository, cleaning up storage space, and deleting old snapshots
-   that are past the time of your data retention policy. (This is scheduled to
-   be run automatically once a month:)
+### Prune the repository, 
+
+This will clean up storage space, and delete old snapshots that are past the
+time of your data retention policy. (This is scheduled to be runautomatically
+once a month)
 
 ```
 backup prune
@@ -209,3 +212,16 @@ To limit the possiblity of leaking the passwords, you may consider running this
 script in a new user account dedicated to backups. You will also need to take
 care that this second user has the correct permissions to read all of the files
 that are to be backed up.
+
+## Systemd timers are way better than cron
+
+The backups timers are set to run
+[OnCalendar=daily](https://www.freedesktop.org/software/systemd/man/systemd.timer.html#OnCalendar=),
+which means to run every single day at midnight. But what if you're running
+backups on a laptop, and your laptop wasn't turned on at midnight? Well that's
+what
+[Persistent=true](https://www.freedesktop.org/software/systemd/man/systemd.timer.html#Persistent=)
+is for. Persistent timers remember when they last ran, and if your laptop turns
+on and finds that it is past due for running one of the timers it will run it
+immediately. So you'll never miss a scheduled backup just because you were
+offline.

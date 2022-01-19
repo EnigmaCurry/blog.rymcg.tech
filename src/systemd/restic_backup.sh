@@ -43,7 +43,7 @@ PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
 PRUNE_SERVICE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
 PRUNE_TIMER=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
 
-commands=(init backup forget prune enable disable status logs snapshots restore help)
+commands=(init now forget prune enable disable status logs snapshots restore help)
 
 run_restic() {
     export RESTIC_PASSWORD
@@ -57,7 +57,7 @@ init() { # : Initialize restic repository
     run_restic init
 }
 
-backup() { # : Run backup now
+now() { # : Run backup now
     run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}
 }
 
