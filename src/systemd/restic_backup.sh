@@ -208,6 +208,9 @@ main() {
         echo "  chmod 0700 $(realpath ${BASH_SOURCE})"
         exit 1
     fi
+    if ! which restic >/dev/null; then
+        echo "You need to install restic." && exit 1
+    fi
 
     if test $# = 0; then
         help
