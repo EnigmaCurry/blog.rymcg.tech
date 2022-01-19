@@ -59,7 +59,7 @@ PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
 PRUNE_SERVICE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
 PRUNE_TIMER=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
 
-commands=(init now forget prune enable disable status logs snapshots restore help)
+commands=(init now trigger forget prune enable disable status logs snapshots restore help)
 
 run_restic() {
     export RESTIC_PASSWORD
@@ -79,6 +79,10 @@ now() { # : Run backup now
         echo "Restic backup failed!"
         exit 1
     fi
+}
+
+trigger() { # : Run backup now, by triggering the systemd service
+    systemctl --user start ${BACKUP_NAME}.service
 }
 
 prune() { # : Remove old snapshots from repository
@@ -179,8 +183,11 @@ status() { # : Show the last and next backup/prune times
     PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
     echo "Restic backup paths: (${RESTIC_BACKUP_PATHS[@]})"
     echo "Restic S3 endpoint/bucket: ${S3_ENDPOINT}/${S3_BUCKET}"
-    journalctl --user --unit ${BACKUP_NAME} --since yesterday | GREP_COLOR="01;32" grep --color "Restic backup finished successfully"
-    journalctl --user --unit ${BACKUP_NAME} --since yesterday | grep --color "Restic backup failed" && echo "Run the 'logs' subcommand for more information"
+    journalctl --user --unit ${BACKUP_NAME} --since yesterday | \
+        grep -E "(Restic backup finished successfully|Restic backup failed)" | \
+        sort | awk '{ gsub("Restic backup finished successfully", "\033[1;33m&\033[0m");
+                      gsub("Restic backup failed", "\033[1;31m&\033[0m"); print }'
+    echo "Run the 'logs' subcommand for more information."
     set -x
     systemctl --user list-timers ${BACKUP_NAME} ${PRUNE_NAME} --no-pager
 }
