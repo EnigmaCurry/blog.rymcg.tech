@@ -160,8 +160,7 @@ status() { # : Show the last and next backup/prune times
     echo "Restic backup paths: (${RESTIC_BACKUP_PATHS[@]})"
     echo "Restic S3 endpoint/bucket: ${S3_ENDPOINT}/${S3_BUCKET}"
     set -x
-    systemctl --user list-timers ${BACKUP_NAME} --no-pager
-    systemctl --user list-timers ${PRUNE_NAME} --no-pager
+    systemctl --user list-timers ${BACKUP_NAME} ${PRUNE_NAME} --no-pager
 }
 
 logs() { # : Show recent service logs
