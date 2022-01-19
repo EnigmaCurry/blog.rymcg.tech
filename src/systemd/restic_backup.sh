@@ -25,12 +25,28 @@ S3_ENDPOINT=s3.us-west-1.wasabisys.com
 S3_ACCESS_KEY_ID=change-me-change-me-change-me
 S3_SECRET_ACCESS_KEY=change-me-change-me-change-me
 
-## Restic data retention policy:
+### How often to backup? Use systemd timer OnCalander= notation:
+### https://man.archlinux.org/man/systemd.time.7#CALENDAR_EVENTS
+### (Backups may occur later if the computer is turned off)
+## Hourly on the hour:
+# BACKUP_FREQUENCY='*-*-* *:00:00'
+## Daily at 3:00 AM:
+# BACKUP_FREQUENCY='*-*-* 03:00:00'
+## Every 10 minutes:
+# BACKUP_FREQUENCY='*-*-* *:0/10:00'
+## Systemd also knows aliases like hourly, daily, weekly, monthly:
+BACKUP_FREQUENCY=daily
+
+## Restic data retention (prune) policy:
 # https://restic.readthedocs.io/en/stable/060_forget.html#removing-snapshots-according-to-a-policy
 RETENTION_DAYS=7
 RETENTION_WEEKS=4
 RETENTION_MONTHS=6
 RETENTION_YEARS=3
+### How often to prune the backups?
+## Use systemd timer OnCalendar= notation
+### https://man.archlinux.org/man/systemd.time.7#CALENDAR_EVENTS
+PRUNE_FREQUENCY=monthly
 
 ## The tag to apply to all snapshots made by this script:
 BACKUP_TAG=${BASH_SOURCE}
@@ -49,8 +65,7 @@ run_restic() {
     export RESTIC_PASSWORD
     export AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
     export AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
-    set -x
-    restic -v -r s3:https://${S3_ENDPOINT}/${S3_BUCKET} $@
+    (set -x; restic -v -r s3:https://${S3_ENDPOINT}/${S3_BUCKET} $@)
 }
 
 init() { # : Initialize restic repository
@@ -58,7 +73,12 @@ init() { # : Initialize restic repository
 }
 
 now() { # : Run backup now
-    run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}
+    if run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}; then
+        echo "Restic backup finished successfully."
+    else
+        echo "Restic backup failed!"
+        exit 1
+    fi
 }
 
 prune() { # : Remove old snapshots from repository
@@ -113,7 +133,7 @@ EOF
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE}) daily backups
 [Timer]
-OnCalendar=daily
+OnCalendar=${BACKUP_FREQUENCY}
 Persistent=true
 [Install]
 WantedBy=timers.target
@@ -132,7 +152,7 @@ EOF
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE}) monthly pruning
 [Timer]
-OnCalendar=*-*-01 00:02:00
+OnCalendar=${PRUNE_FREQUENCY}
 Persistent=true
 [Install]
 WantedBy=timers.target
@@ -159,6 +179,8 @@ status() { # : Show the last and next backup/prune times
     PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
     echo "Restic backup paths: (${RESTIC_BACKUP_PATHS[@]})"
     echo "Restic S3 endpoint/bucket: ${S3_ENDPOINT}/${S3_BUCKET}"
+    journalctl --user --unit ${BACKUP_NAME} --since yesterday | GREP_COLOR="01;32" grep --color "Restic backup finished successfully"
+    journalctl --user --unit ${BACKUP_NAME} --since yesterday | grep --color "Restic backup failed" && echo "Run the 'logs' subcommand for more information"
     set -x
     systemctl --user list-timers ${BACKUP_NAME} ${PRUNE_NAME} --no-pager
 }
