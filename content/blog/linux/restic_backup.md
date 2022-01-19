@@ -107,6 +107,9 @@ automatically on a daily basis, all from your user account (No root needed).
 chmod 0700 ${HOME}/.config/restic_backup/restic_backup.sh
 ```
 
+ * Consider saving a copy of the final script in your password manager, you will
+   need this to recover your files in the event of a disaster.
+
 ## Usage
 
  * To make using the script easier, create this BASH alias in your `~/.bashrc`:
@@ -125,7 +128,8 @@ init                               #  Initialize restic repository in ${RESTIC_B
 backup                             #  Run backup now 
 forget                             #  Apply the configured data retention policy to the backend 
 prune                              #  Remove old snapshots from repository 
-systemd_setup                      #  Schedule backups by installing systemd timers 
+enable                             #  Schedule backups by installing systemd timers 
+disable                            #  Disable scheduled backups and remove systemd timers
 status                             #  Show the last and next backup/prune times 
 logs                               #  Show recent service logs 
 snapshots                          #  List all snapshots 
@@ -149,7 +153,7 @@ backup backup
    daily:
  
 ```
-backup systemd_setup
+backup enable
 ```
 
  * Check the status (See the next and previous timers):

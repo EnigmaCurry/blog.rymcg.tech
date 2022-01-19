@@ -35,7 +35,15 @@ RETENTION_YEARS=3
 ## The tag to apply to all snapshots made by this script:
 BACKUP_TAG=${BASH_SOURCE}
 
-commands=(init backup forget prune systemd_setup status logs snapshots restore help)
+## These are the names and paths for the systemd services, you can leave these as-is probably:
+BACKUP_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
+BACKUP_SERVICE=${HOME}/.config/systemd/user/${BACKUP_NAME}.service
+BACKUP_TIMER=${HOME}/.config/systemd/user/${BACKUP_NAME}.timer
+PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
+PRUNE_SERVICE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
+PRUNE_TIMER=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
+
+commands=(init backup forget prune enable disable status logs snapshots restore help)
 
 run_restic() {
     export RESTIC_PASSWORD
@@ -82,7 +90,7 @@ restore() { # [SNAPSHOT] [ROOT_PATH] : Restore data from snapshot (default 'late
     fi
 }
 
-systemd_setup() { # : Schedule backups by installing systemd timers
+enable() { # : Schedule backups by installing systemd timers
     if loginctl show-user ${USER} | grep "Linger=no"; then
 	    echo "User account does not allow systemd Linger."
 	    echo "To enable lingering, run as root: loginctl enable-linger $USER"
@@ -90,10 +98,7 @@ systemd_setup() { # : Schedule backups by installing systemd timers
 	    exit 1
     fi
     mkdir -p ${HOME}/.config/systemd/user
-    SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
-    SERVICE_FILE=${HOME}/.config/systemd/user/${SERVICE_NAME}.service
-    TIMER_FILE=${HOME}/.config/systemd/user/${SERVICE_NAME}.timer
-    cat <<EOF > ${SERVICE_FILE}
+    cat <<EOF > ${BACKUP_SERVICE}
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE})
 After=network.target
@@ -104,7 +109,7 @@ Type=oneshot
 ExecStart=$(realpath ${BASH_SOURCE}) backup
 ExecStartPost=$(realpath ${BASH_SOURCE}) forget
 EOF
-    cat <<EOF > ${TIMER_FILE}
+    cat <<EOF > ${BACKUP_TIMER}
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE}) daily backups
 [Timer]
@@ -113,10 +118,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
-    PRUNE_FILE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
-    PRUNE_TIMER_FILE=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
-    cat <<EOF > ${PRUNE_FILE}
+    cat <<EOF > ${PRUNE_SERVICE}
 [Unit]
 Description=restic_backup prune $(realpath ${BASH_SOURCE})
 After=network.target
@@ -126,7 +128,7 @@ Wants=network.target
 Type=oneshot
 ExecStart=$(realpath ${BASH_SOURCE}) prune
 EOF
-    cat <<EOF > ${PRUNE_TIMER_FILE}
+    cat <<EOF > ${PRUNE_TIMER}
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE}) monthly pruning
 [Timer]
@@ -137,26 +139,35 @@ WantedBy=timers.target
 EOF
 
     systemctl --user daemon-reload
-    systemctl --user enable --now ${SERVICE_NAME}.timer
+    systemctl --user enable --now ${BACKUP_NAME}.timer
     systemctl --user enable --now ${PRUNE_NAME}.timer
-    systemctl --user status ${SERVICE_NAME} --no-pager
+    systemctl --user status ${BACKUP_NAME} --no-pager
     systemctl --user status ${PRUNE_NAME} --no-pager
     echo "You can watch the logs with this command:"
-    echo "   journalctl --user --unit ${SERVICE_NAME}"
+    echo "   journalctl --user --unit ${BACKUP_NAME}"
+}
+
+disable() { # : Disable scheduled backups and remove systemd timers
+    systemctl --user disable --now ${BACKUP_NAME}.timer
+    systemctl --user disable --now ${PRUNE_NAME}.timer
+    rm -f ${BACKUP_SERVICE} ${BACKUP_TIMER} ${PRUNE_SERVICE} ${PRUNE_TIMER}
+    systemctl --user daemon-reload
 }
 
 status() { # : Show the last and next backup/prune times 
-    SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
+    BACKUP_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
     PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
+    echo "Restic backup paths: (${RESTIC_BACKUP_PATHS[@]})"
+    echo "Restic S3 endpoint/bucket: ${S3_ENDPOINT}/${S3_BUCKET}"
     set -x
-    systemctl --user list-timers ${SERVICE_NAME} --no-pager
+    systemctl --user list-timers ${BACKUP_NAME} --no-pager
     systemctl --user list-timers ${PRUNE_NAME} --no-pager
 }
 
 logs() { # : Show recent service logs
-    SERVICE_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
+    BACKUP_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
     set -x
-    journalctl --user --unit ${SERVICE_NAME} --since yesterday
+    journalctl --user --unit ${BACKUP_NAME} --since yesterday
 }
 
 help() { # : Show this help
