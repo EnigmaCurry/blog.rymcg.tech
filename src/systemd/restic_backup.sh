@@ -4,16 +4,17 @@
 ## Restic Backup Script for S3 cloud storage (and compatible APIs).
 ## Install the `restic` package with your package manager.
 ## Copy this script to any directory, and change the permissions:
-##   chmod 0700 rclone_backup.sh
+##   chmod 0700 restic_backup.sh
 ## Put all your configuration directly in this script.
-## SAVE A COPY of this configured script to a safe place in the case of disaster.
-## Consider creating an alias in your .bashrc: alias backup=<path-to-this-script>
+## Consider creating an alias in your ~/.bashrc: alias backup=<path-to-this-script>
 ## Edit the variables below (especially the ones like change-me-change-me-change-me):  
 ## WARNING: This will include plain text passwords for restic and S3
+## SAVE A COPY of this configured script to a safe place in the case of disaster.
 
-## Which directories do you want to backup from?
-## Specify one or more directories inside single parentheses (bash array) separated by spaces:
-RESTIC_BACKUP_PATHS=(${HOME}/Documents ${HOME}/Music ${HOME}/Sync)
+## Which local directories do you want to backup?
+## Specify one or more directories inside this bash array (paths separated by space):
+## Directories that don't exist will be skipped:
+RESTIC_BACKUP_PATHS=(${HOME}/Documents ${HOME}/Music ${HOME}/Photos ${HOME}/Sync)
 
 ## Create a secure encryption passphrase for your restic data:
 ## WRITE THIS PASSWORD DOWN IN A SAFE PLACE:
@@ -25,16 +26,16 @@ S3_ENDPOINT=s3.us-west-1.wasabisys.com
 S3_ACCESS_KEY_ID=change-me-change-me-change-me
 S3_SECRET_ACCESS_KEY=change-me-change-me-change-me
 
-### How often to backup? Use systemd timer OnCalander= notation:
+### How often do you want to backup? Use systemd timer OnCalander= notation:
 ### https://man.archlinux.org/man/systemd.time.7#CALENDAR_EVENTS
-### (Backups may occur later if the computer is turned off)
+### (Backups may occur at a later time if the computer is turned off)
 ## Hourly on the hour:
 # BACKUP_FREQUENCY='*-*-* *:00:00'
 ## Daily at 3:00 AM:
 # BACKUP_FREQUENCY='*-*-* 03:00:00'
 ## Every 10 minutes:
 # BACKUP_FREQUENCY='*-*-* *:0/10:00'
-## Systemd also knows aliases like hourly, daily, weekly, monthly:
+## Systemd also knows aliases like 'hourly', 'daily', 'weekly', 'monthly':
 BACKUP_FREQUENCY=daily
 
 ## Restic data retention (prune) policy:
@@ -49,6 +50,7 @@ RETENTION_YEARS=3
 PRUNE_FREQUENCY=monthly
 
 ## The tag to apply to all snapshots made by this script:
+## (Default is to use the full command path name)
 BACKUP_TAG=${BASH_SOURCE}
 
 ## These are the names and paths for the systemd services, you can leave these as-is probably:
@@ -59,7 +61,7 @@ PRUNE_NAME=restic_backup.prune.${S3_ENDPOINT}-${S3_BUCKET}
 PRUNE_SERVICE=${HOME}/.config/systemd/user/${PRUNE_NAME}.service
 PRUNE_TIMER=${HOME}/.config/systemd/user/${PRUNE_NAME}.timer
 
-commands=(init now trigger forget prune enable disable status logs snapshots restore help)
+commands=(init now trigger forget prune enable disable status logs prune_logs snapshots restore help)
 
 run_restic() {
     export RESTIC_PASSWORD
@@ -121,7 +123,7 @@ enable() { # : Schedule backups by installing systemd timers
 	    echo "Then try running this command again."
 	    exit 1
     fi
-    mkdir -p ${HOME}/.config/systemd/user
+    mkdir -p $(dirname $BACKUP_SERVICE)
     cat <<EOF > ${BACKUP_SERVICE}
 [Unit]
 Description=restic_backup $(realpath ${BASH_SOURCE})
@@ -193,9 +195,13 @@ status() { # : Show the last and next backup/prune times
 }
 
 logs() { # : Show recent service logs
-    BACKUP_NAME=restic_backup.${S3_ENDPOINT}-${S3_BUCKET}
     set -x
     journalctl --user --unit ${BACKUP_NAME} --since yesterday
+}
+
+prune_logs() { # : Show prune logs
+    set -x
+    journalctl --user --unit ${PRUNE_NAME}
 }
 
 help() { # : Show this help
