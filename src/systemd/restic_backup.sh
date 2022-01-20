@@ -75,7 +75,12 @@ init() { # : Initialize restic repository
 }
 
 now() { # : Run backup now
-    if run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}; then
+    ## Test if running in a terminal and have enabled the backup service:
+    if [[ -t 0 ]] && [[ -f ${BACKUP_SERVICE} ]]; then
+        ## Run by triggering the systemd unit, so everything gets logged:
+        trigger
+    ## Not running interactive, or haven't run 'enable' yet, so run directly:
+    elif run_restic backup --tag ${BACKUP_TAG} ${RESTIC_BACKUP_PATHS[@]}; then
         echo "Restic backup finished successfully."
     else
         echo "Restic backup failed!"
@@ -84,7 +89,8 @@ now() { # : Run backup now
 }
 
 trigger() { # : Run backup now, by triggering the systemd service
-    systemctl --user start ${BACKUP_NAME}.service
+    (set -x; systemctl --user start ${BACKUP_NAME}.service)
+    echo "systemd is now running the backup job in the background. Check 'status' later."
 }
 
 prune() { # : Remove old snapshots from repository
