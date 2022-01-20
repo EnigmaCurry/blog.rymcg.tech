@@ -199,7 +199,7 @@ backup restore xxxxxx ~/copy
 ### Prune the repository
 
 This will clean up storage space, and delete old snapshots that are past the
-time of your data retention policy. (This is scheduled to be runautomatically
+time of your data retention policy. (This is scheduled to be run automatically
 once a month)
 
 ```
@@ -294,7 +294,7 @@ Yes, after copying your bucket data to the new endpoint/name, you will also need
 to disable and then re-enable the systemd timers:
 
  * The name of the systemd service and timer is based upon the bucket name and
-   the systemd timer, from the `BACKUP_NAME` variable which is set to
+   the S3 endpoint, from the `BACKUP_NAME` variable which is set to
    `restic_backup.${S3_ENDPOINT}-${S3_BUCKET}` by default, so by changing either
    of these variables necessitates changing the name of the systemd service and
    timers.
