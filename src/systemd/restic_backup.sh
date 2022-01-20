@@ -190,8 +190,8 @@ status() { # : Show the last and next backup/prune times
         sort | awk '{ gsub("Restic backup finished successfully", "\033[1;33m&\033[0m");
                       gsub("Restic backup failed", "\033[1;31m&\033[0m"); print }'
     echo "Run the 'logs' subcommand for more information."
-    set -x
-    systemctl --user list-timers ${BACKUP_NAME} ${PRUNE_NAME} --no-pager
+    (set -x; systemctl --user list-timers ${BACKUP_NAME} ${PRUNE_NAME} --no-pager)
+    run_restic stats
 }
 
 logs() { # : Show recent service logs
