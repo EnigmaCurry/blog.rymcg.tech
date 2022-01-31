@@ -101,7 +101,8 @@ automatically on a daily basis, all from your user account (No root needed).
 
  * [Download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/systemd/restic_backup.sh)
  * You can save it wherever you want, named whatever you want, but one
-   suggestion is to put it in `${HOME}/.config/restic_backup/my_backup.sh`
+   suggestion is to put it in `${HOME}/.config/restic_backup/` and rename it to
+   `my_backup.sh` or another recognizable name for you.
  * Alternatively, you may copy and paste the entire script into a new file, as
    follows:
  
@@ -112,7 +113,7 @@ automatically on a daily basis, all from your user account (No root needed).
  * Change the permissions on the file to be executable and private:
  
 ```
-chmod 0700 ${HOME}/.config/restic_backup/restic_backup.sh
+chmod 0700 ${HOME}/.config/restic_backup/my_backup.sh
 ```
 
  * Consider saving a copy of the final script in your password manager, you will
