@@ -4,18 +4,19 @@
 ## Choose your distribution base template:
 ## Supported: archlinux-base
 ##            debian-11-standard
+##            alpine-3.15
 DISTRO=${DISTRO:-archlinux-base}
 
-## Configure these variables to configure the container:
-CONTAINER_ID=${CONTAINER_ID:-8002}
-CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-${DISTRO}}
+## Set these variables to configure the container:
+CONTAINER_ID=${CONTAINER_ID:-8001}
+CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 NUM_CORES=${NUM_CORES:-1}
 MEMORY=${MEMORY:-2048}
 FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 
-## Arch Linux specific
+## Arch Linux specific:
 ARCH_MIRROR=${ARCH_MIRROR:-"https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"}
 
 ## Configure these variables to configure the PVE host:
@@ -63,6 +64,8 @@ create() {
         echo "Creating Arch Linux container"
     elif [[ ${DISTRO} == "debian-11-standard" ]]; then
         echo "Creating Debian 11 container"
+    elif [[ ${DISTRO} == "alpine-3.15" ]]; then
+        echo "Creating Alpine 3.15 container"
     else
         echo "DISTRO '${DISTRO}' is not supported by this script yet."
         exit 1
@@ -108,6 +111,8 @@ EOM
         _archlinux_init
     elif [[ "${DISTRO}" =~ ^debian ]]; then
         _debian_init
+    elif [[ "${DISTRO}" =~ ^alpine ]]; then
+        _alpine_init
     fi
 }
 
@@ -145,6 +150,14 @@ _archlinux_init() {
 
 }
 
+_alpine_init() {
+    pct exec ${CONTAINER_ID} -- apk upgrade -U
+    pct exec ${CONTAINER_ID} -- apk add openssh
+    _ssh_config
+    pct exec ${CONTAINER_ID} -- rc-update add sshd
+    pct exec ${CONTAINER_ID} -- /etc/init.d/sshd start
+}
+
 _ssh_config() {
     SSHD_CONFIG=$(mktemp)
     cat <<EOM > ${SSHD_CONFIG}
@@ -153,16 +166,19 @@ PasswordAuthentication no
 ChallengeResponseAuthentication no
 AcceptEnv LANG LC_*
 Subsystem sftp /usr/lib/openssh/sftp-server
-UsePAM yes
 EOM
     pct push ${CONTAINER_ID} ${SSHD_CONFIG} /etc/ssh/sshd_config
 }
 
 destroy() {
-    _confirm yes "This will destroy container ${CONTAINER_ID}"
+    _confirm yes "This will destroy container ${CONTAINER_ID} ($(pct config ${CONTAINER_ID} | grep hostname))"
     set -x
     pct stop "${CONTAINER_ID}" || true
     pct destroy "${CONTAINER_ID}"
+}
+
+login() {
+    pct enter ${CONTAINER_ID}
 }
 
 if [[ $# == 0 ]]; then
