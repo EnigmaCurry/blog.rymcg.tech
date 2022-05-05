@@ -1,15 +1,21 @@
 #!/bin/bash
-## Interactive script to setup fully updated Arch Linux container on Proxmox (PVE)
+## Automated script to setup LXC containers on Proxmox (PVE)
+
+## Choose your distribution base template:
+## Supported: archlinux-base
+##            debian-11-standard
+DISTRO=${DISTRO:-archlinux-base}
 
 ## Configure these variables to configure the container:
-CONTAINER_ID=${CONTAINER_ID:-8001}
-CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-arch}
+CONTAINER_ID=${CONTAINER_ID:-8002}
+CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-${DISTRO}}
 NUM_CORES=${NUM_CORES:-1}
 MEMORY=${MEMORY:-2048}
 FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
-PASSWORD=${PASSWORD:-$(openssl rand -hex 45)}
+
+## Arch Linux specific
 ARCH_MIRROR=${ARCH_MIRROR:-"https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"}
 
 ## Configure these variables to configure the PVE host:
@@ -19,6 +25,18 @@ CONTAINER_STORAGE=${CONTAINER_STORAGE:-local-lvm}
 
 ## Set YES=yes to disable all confirmations:
 YES=${YES:-no}
+
+## You can provide a password, or leave it blank by default:
+PASSWORD=${PASSWORD}
+## If the PASSWORD is blank, a long random password will be generated:
+if [[ ${#PASSWORD} == 0 ]]; then
+    if ! command -v openssl &> /dev/null; then
+        echo "openssl is not installed. Cannot generate random password."
+        exit 1
+    fi
+    ## Generate a long random password with openssl:
+    PASSWORD=$(openssl rand -hex 45)
+fi
 
 _confirm() {
     test ${YES:-no} == "yes" && return 0
@@ -40,14 +58,24 @@ _confirm() {
 
 create() {
     set -e
+
+    if [[ ${DISTRO} == "archlinux-base" ]]; then
+        echo "Creating Arch Linux container"
+    elif [[ ${DISTRO} == "debian-11-standard" ]]; then
+        echo "Creating Debian 11 container"
+    else
+        echo "DISTRO '${DISTRO}' is not supported by this script yet."
+        exit 1
+    fi
+
     test -f ${SSH_KEYS} || \
         (echo "Missing required SSH authorized_keys file: ${SSH_KEYS}" && exit 1)
 
     ## Download latest template
     echo "Updating templates ... "
     pveam update
-    TEMPLATE=$(pveam available | grep archlinux-base | sort -n | \
-                   head -1 | tr -s ' ' | cut -d" " -f2)
+    TEMPLATE=$(pveam available --section system | grep ${DISTRO} | sort -n | \
+                       head -1 | tr -s ' ' | cut -d" " -f2)
     pveam download ${TEMPLATE_STORAGE} ${TEMPLATE}
 
     read -r -d '' CREATE_COMMAND <<EOM || true
@@ -75,11 +103,49 @@ EOM
 
     pct start ${CONTAINER_ID}
     sleep 5
+
+    if [[ "${DISTRO}" == "archlinux-base" ]]; then
+        _archlinux_init
+    elif [[ "${DISTRO}" =~ ^debian ]]; then
+        _debian_init
+    fi
+}
+
+_debian_init() {
+    # Mask these services because they fail:
+    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
+    pct exec ${CONTAINER_ID} -- systemctl mask sys-kernel-config.mount
+    pct exec ${CONTAINER_ID} -- env DEBIAN_FRONTEND=noninteractive apt-get update
+    pct exec ${CONTAINER_ID} -- env DEBIAN_FRONTEND=noninteractive \
+        apt-get \
+        -o Dpkg::Options::="--force-confnew" \
+        -fuy \
+        dist-upgrade
+
+    _ssh_config
+    pct exec ${CONTAINER_ID} -- systemctl enable --now ssh
+}
+
+_archlinux_init() {
     pct exec ${CONTAINER_ID} -- pacman-key --init
     pct exec ${CONTAINER_ID} -- pacman-key --populate
     pct exec ${CONTAINER_ID} -- /bin/sh -c "echo 'Server = ${ARCH_MIRROR}' > /etc/pacman.d/mirrorlist"
     pct exec ${CONTAINER_ID} -- pacman -Syu --noconfirm
 
+    # Mask this service because its failing:
+    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
+
+    _ssh_config
+    pct exec ${CONTAINER_ID} -- systemctl enable --now sshd
+
+    set +x
+    echo
+    echo "Container IP address (eth0):"
+    pct exec ${CONTAINER_ID} -- sh -c "ip addr show dev eth0 | grep inet"
+
+}
+
+_ssh_config() {
     SSHD_CONFIG=$(mktemp)
     cat <<EOM > ${SSHD_CONFIG}
 PermitRootLogin prohibit-password
@@ -90,15 +156,6 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 UsePAM yes
 EOM
     pct push ${CONTAINER_ID} ${SSHD_CONFIG} /etc/ssh/sshd_config
-    pct exec ${CONTAINER_ID} -- systemctl enable --now sshd
-
-    # Mask this service because its failing:
-    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
-
-    set +x
-    echo
-    echo "Container IP address (eth0):"
-    pct exec ${CONTAINER_ID} -- sh -c "ip addr show dev eth0 | grep inet"
 }
 
 destroy() {
