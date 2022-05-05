@@ -89,6 +89,10 @@ UsePAM yes
 EOM
     pct push ${CONTAINER_ID} ${SSHD_CONFIG} /etc/ssh/sshd_config
     pct exec ${CONTAINER_ID} -- systemctl enable --now sshd
+
+    # Mask this service because its failing:
+    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
+
     set +x
     echo
     echo "Container IP address (eth0):"
