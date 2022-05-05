@@ -10,10 +10,10 @@ FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 PASSWORD=${PASSWORD:-$(openssl rand -hex 45)}
-ARCH_MIRROR="https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"
+ARCH_MIRROR=${ARCH_MIRROR:-"https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"}
 
 ## Configure these variables to configure the PVE host:
-PUBLIC_BRIDGE=vmbr0
+PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 TEMPLATE_STORAGE=${TEMPLATE_STORAGE:-local}
 CONTAINER_STORAGE=${CONTAINER_STORAGE:-local-lvm}
 
