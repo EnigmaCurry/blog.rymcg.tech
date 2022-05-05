@@ -6,6 +6,7 @@ CONTAINER_ID=${CONTAINER_ID:-8001}
 CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-arch}
 NUM_CORES=${NUM_CORES:-1}
 MEMORY=${MEMORY:-2048}
+FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 PASSWORD=${PASSWORD:-$(openssl rand -hex 45)}
@@ -53,6 +54,7 @@ create() {
     pct create ${CONTAINER_ID}
     ${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE}
     --storage ${CONTAINER_STORAGE}
+    --rootfs ${CONTAINER_STORAGE}:${FILESYSTEM_SIZE}
     --unprivileged 1
     --cores ${NUM_CORES}
     --features nesting=1
