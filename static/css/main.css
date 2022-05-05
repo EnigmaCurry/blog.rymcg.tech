@@ -429,3 +429,7 @@ p code, li code {
 hr {
     border-top: 1px solid white;
 }
+
+.highlight pre {
+    width: 100%;
+}
