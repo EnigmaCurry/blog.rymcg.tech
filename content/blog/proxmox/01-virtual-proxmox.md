@@ -5,7 +5,16 @@ tags: ['proxmox']
 ---
 
 This is the first post in the proxmox series, [read the introduction
-first](/tags/proxmox).
+first](/tags/proxmox). This post describes how to install Proxmox
+inside of a KVM virtual machine on your development workstation and
+setup a small K3s cluster.
+
+If you want to install Proxmox on a non-virtual computer instead, you
+can [follow the official
+guide](https://www.proxmox.com/en/proxmox-ve/get-started) and then
+come back here and skip to the middle of this page ([Setup SSH keys
+and secure properly](#setup-ssh-keys-and-secure-properly)) and follow
+along from there.
 
 ## Virtual K3s Cluster in a Virtual Proxmox Host
 
