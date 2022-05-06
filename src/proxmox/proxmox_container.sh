@@ -2,24 +2,30 @@
 ## Automated script to setup LXC containers on Proxmox (PVE)
 
 ## Choose your distribution base template:
-## Supported: archlinux-base
-##            debian-11-standard
-##            alpine-3.15
-DISTRO=${DISTRO:-archlinux-base}
+## Supported: arch, debian, alpine
+DISTRO=${DISTRO:-arch}
 
 ## Set these variables to configure the container:
+## (All variables can be overriden from the parent environment)
 CONTAINER_ID=${CONTAINER_ID:-8001}
 CONTAINER_HOSTNAME=${CONTAINER_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
+# Container CPUs:
 NUM_CORES=${NUM_CORES:-1}
+# Container RAM in MB:
 MEMORY=${MEMORY:-2048}
-FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
+# Container swap size in MB:
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
+# Container root filesystem size in GB:
+FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
+## Point to the local authorized_keys file to copy into container:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
+## To install docker inside the container, set INSTALL_DOCKER=yes
+INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 
 ## Arch Linux specific:
-ARCH_MIRROR=${ARCH_MIRROR:-"https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"}
+ARCH_MIRROR=${ARCH_MIRROR:-"https://mirror.rackspace.com"}
 
-## Configure these variables to configure the PVE host:
+## Proxmox specific variables:
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 TEMPLATE_STORAGE=${TEMPLATE_STORAGE:-local}
 CONTAINER_STORAGE=${CONTAINER_STORAGE:-local-lvm}
@@ -27,9 +33,8 @@ CONTAINER_STORAGE=${CONTAINER_STORAGE:-local-lvm}
 ## Set YES=yes to disable all confirmations:
 YES=${YES:-no}
 
-## You can provide a password, or leave it blank by default:
+## You can provide a password, or leave it blank to generate a secure one:
 PASSWORD=${PASSWORD}
-## If the PASSWORD is blank, a long random password will be generated:
 if [[ ${#PASSWORD} == 0 ]]; then
     if ! command -v openssl &> /dev/null; then
         echo "openssl is not installed. Cannot generate random password."
@@ -59,7 +64,15 @@ _confirm() {
 
 create() {
     set -e
-
+    ## De-Reference common short distro aliases to the longer name:
+    if [[ ${DISTRO} == "arch" ]] || [[ ${DISTRO} == "archlinux" ]]; then
+        DISTRO="archlinux-base"
+    elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "debian-11" ]]; then
+        DISTRO="debian-11-standard"
+    elif [[ ${DISTRO} == "alpine" ]] || [[ ${DISTRO} == "alpine-3" ]]; then
+        DISTRO="alpine-3.15"
+    fi
+    ## Only support specific templates that have been tested to work:
     if [[ ${DISTRO} == "archlinux-base" ]]; then
         echo "Creating Arch Linux container"
     elif [[ ${DISTRO} == "debian-11-standard" ]]; then
@@ -88,7 +101,7 @@ create() {
     --rootfs ${CONTAINER_STORAGE}:${FILESYSTEM_SIZE}
     --unprivileged 1
     --cores ${NUM_CORES}
-    --features nesting=1
+    --features nesting=1,keyctl=1,fuse=1
     --hostname ${CONTAINER_HOSTNAME}
     --memory ${MEMORY}
     --password ${PASSWORD}
@@ -106,21 +119,27 @@ EOM
 
     pct start ${CONTAINER_ID}
     sleep 5
+    set +x
 
-    if [[ "${DISTRO}" == "archlinux-base" ]]; then
+    if [[ "${DISTRO}" =~ ^arch ]]; then
         _archlinux_init
     elif [[ "${DISTRO}" =~ ^debian ]]; then
         _debian_init
     elif [[ "${DISTRO}" =~ ^alpine ]]; then
         _alpine_init
     fi
+
+    set +x
+    echo
+    echo "Container IP address (eth0):"
+    pct exec ${CONTAINER_ID} -- sh -c "ip addr show dev eth0 | grep inet"
 }
 
 _debian_init() {
     # Mask these services because they fail:
     pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
     pct exec ${CONTAINER_ID} -- systemctl mask sys-kernel-config.mount
-    pct exec ${CONTAINER_ID} -- env DEBIAN_FRONTEND=noninteractive apt-get update
+    pct exec ${CONTAINER_ID} -- env apt-get update
     pct exec ${CONTAINER_ID} -- env DEBIAN_FRONTEND=noninteractive \
         apt-get \
         -o Dpkg::Options::="--force-confnew" \
@@ -129,12 +148,24 @@ _debian_init() {
 
     _ssh_config
     pct exec ${CONTAINER_ID} -- systemctl enable --now ssh
+
+    if [[ ${INSTALL_DOCKER} == "yes" ]]; then
+        pct exec ${CONTAINER_ID} -- apt-get -y install \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
+        pct exec ${CONTAINER_ID} -- sh -c "curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+        pct exec ${CONTAINER_ID} -- sh -c "echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \$(lsb_release -cs) stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null"
+        pct exec ${CONTAINER_ID} -- apt-get update
+        pct exec ${CONTAINER_ID} -- apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    fi
 }
 
 _archlinux_init() {
     pct exec ${CONTAINER_ID} -- pacman-key --init
     pct exec ${CONTAINER_ID} -- pacman-key --populate
-    pct exec ${CONTAINER_ID} -- /bin/sh -c "echo 'Server = ${ARCH_MIRROR}' > /etc/pacman.d/mirrorlist"
+    pct exec ${CONTAINER_ID} -- /bin/sh -c "echo 'Server = ${ARCH_MIRROR}/archlinux/\$repo/os/\$arch' > /etc/pacman.d/mirrorlist"
     pct exec ${CONTAINER_ID} -- pacman -Syu --noconfirm
 
     # Mask this service because its failing:
@@ -143,10 +174,10 @@ _archlinux_init() {
     _ssh_config
     pct exec ${CONTAINER_ID} -- systemctl enable --now sshd
 
-    set +x
-    echo
-    echo "Container IP address (eth0):"
-    pct exec ${CONTAINER_ID} -- sh -c "ip addr show dev eth0 | grep inet"
+    if [[ ${INSTALL_DOCKER} == "yes" ]]; then
+        pct exec ${CONTAINER_ID} -- pacman -S --noconfirm docker
+        pct exec ${CONTAINER_ID} -- systemctl enable --now docker
+    fi
 
 }
 
@@ -156,6 +187,12 @@ _alpine_init() {
     _ssh_config
     pct exec ${CONTAINER_ID} -- rc-update add sshd
     pct exec ${CONTAINER_ID} -- /etc/init.d/sshd start
+
+    if [[ ${INSTALL_DOCKER} == "yes" ]]; then
+        pct exec ${CONTAINER_ID} -- apk add docker
+        pct exec ${CONTAINER_ID} -- rc-update add docker
+        pct exec ${CONTAINER_ID} -- /etc/init.d/docker start
+    fi
 }
 
 _ssh_config() {

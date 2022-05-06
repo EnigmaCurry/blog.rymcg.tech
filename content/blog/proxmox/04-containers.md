@@ -4,12 +4,14 @@ date: 2022-05-04T00:02:00-06:00
 tags: ['proxmox']
 ---
 
-Here is an automated script to install Proxmox containers (LXC).
+Here is an automated script to install Proxmox containers (LXC) from
+base templates, configuring their SSH servers with passwords disabled,
+and optionally installing Docker for nesting containers.
 
 ## LXC?
 
 According to the [LXC Introduction
-page](https://linuxcontainers.org/lxc/introduction/)
+page](https://linuxcontainers.org/lxc/introduction/):
 
 ```
 LXC is a userspace interface for the Linux kernel containment
@@ -35,8 +37,9 @@ PID 1, eg. systemd). Startup time is extremely quick.
 templates.](https://pve.proxmox.com/wiki/Linux_Container) The script
 outlined in this post is simply automation for the process of
 downloading the template and creating a container based upon it. At
-the end of this you'll have a fully updated Arch Linux or Debian LXC
-container up and running, with secured SSH pubkey-only authentication.
+the end of this you'll have a fully updated Arch, Debian, or Alpine
+Linux LXC container up and running, with secured SSH pubkey-only
+authentication.
 
 ## Usage
 
@@ -48,8 +51,9 @@ Download the script:
 wget https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_container.sh
 ```
 
-Edit the variables at the top of the script, or create them in your
-shell environment to override them.
+Read all of the comments, and then edit the variables at the top of
+the script to change any defaults you desire. You can also override
+the configuration defaults in your parent shell environment.
 
 Make the script executable:
 
@@ -57,11 +61,19 @@ Make the script executable:
 chmod a+x proxmox_container.sh
 ```
 
-And run it:
+Now run the script, passing any configuration you like to override:
 
 ```bash
+DISTRO=debian \
+INSTALL_DOCKER=yes \
+CONTAINER_ID=100 \
+CONTAINER_HOSTNAME=foo \
 ./proxmox_container.sh create
 ```
+
+(The above example shows setting some variables outside the script,
+modifying the defaults. You can also just edit the script instead of
+providing them on the command line.)
 
 The container will be created, and at the very end the IP address of
 the new container will be printed. You can login via SSH to the `root`
