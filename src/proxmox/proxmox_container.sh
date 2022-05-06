@@ -2,7 +2,7 @@
 ## Automated script to setup LXC containers on Proxmox (PVE)
 
 ## Choose your distribution base template:
-## Supported: arch, debian, alpine
+## Supported: arch, debian, alpine, fedora
 DISTRO=${DISTRO:-arch}
 
 ## Set these variables to configure the container:
@@ -44,6 +44,10 @@ if [[ ${#PASSWORD} == 0 ]]; then
     PASSWORD=$(openssl rand -hex 45)
 fi
 
+_run() {
+    pct exec ${CONTAINER_ID} -- "${@}"
+}
+
 _confirm() {
     test ${YES:-no} == "yes" && return 0
     default=$1; prompt=$2; question=${3:-". Proceed?"}
@@ -71,6 +75,8 @@ create() {
         DISTRO="debian-11-standard"
     elif [[ ${DISTRO} == "alpine" ]] || [[ ${DISTRO} == "alpine-3" ]]; then
         DISTRO="alpine-3.15"
+    elif [[ ${DISTRO} == "fedora" ]]; then
+        DISTRO="fedora-35"
     fi
     ## Only support specific templates that have been tested to work:
     if [[ ${DISTRO} == "archlinux-base" ]]; then
@@ -79,6 +85,8 @@ create() {
         echo "Creating Debian 11 container"
     elif [[ ${DISTRO} == "alpine-3.15" ]]; then
         echo "Creating Alpine 3.15 container"
+    elif [[ ${DISTRO} == "fedora-35" ]]; then
+        echo "Creating Fedora 35 container"
     else
         echo "DISTRO '${DISTRO}' is not supported by this script yet."
         exit 1
@@ -127,71 +135,87 @@ EOM
         _debian_init
     elif [[ "${DISTRO}" =~ ^alpine ]]; then
         _alpine_init
+    elif [[ "${DISTRO}" =~ ^fedora ]]; then
+        _fedora_init
     fi
 
     set +x
     echo
     echo "Container IP address (eth0):"
-    pct exec ${CONTAINER_ID} -- sh -c "ip addr show dev eth0 | grep inet"
+    _run sh -c "ip addr show dev eth0 | grep inet"
 }
 
 _debian_init() {
     # Mask these services because they fail:
-    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
-    pct exec ${CONTAINER_ID} -- systemctl mask sys-kernel-config.mount
-    pct exec ${CONTAINER_ID} -- env apt-get update
-    pct exec ${CONTAINER_ID} -- env DEBIAN_FRONTEND=noninteractive \
+    _run systemctl mask systemd-journald-audit.socket
+    _run systemctl mask sys-kernel-config.mount
+    _run env apt-get update
+    _run env DEBIAN_FRONTEND=noninteractive \
         apt-get \
         -o Dpkg::Options::="--force-confnew" \
         -fuy \
         dist-upgrade
 
     _ssh_config
-    pct exec ${CONTAINER_ID} -- systemctl enable --now ssh
+    _run systemctl enable --now ssh
 
     if [[ ${INSTALL_DOCKER} == "yes" ]]; then
-        pct exec ${CONTAINER_ID} -- apt-get -y install \
+        _run apt-get -y install \
             ca-certificates \
             curl \
             gnupg \
             lsb-release
-        pct exec ${CONTAINER_ID} -- sh -c "curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
-        pct exec ${CONTAINER_ID} -- sh -c "echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \$(lsb_release -cs) stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null"
-        pct exec ${CONTAINER_ID} -- apt-get update
-        pct exec ${CONTAINER_ID} -- apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+        _run sh -c "curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+        _run sh -c "echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \$(lsb_release -cs) stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null"
+        _run apt-get update
+        _run apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
     fi
 }
 
 _archlinux_init() {
-    pct exec ${CONTAINER_ID} -- pacman-key --init
-    pct exec ${CONTAINER_ID} -- pacman-key --populate
-    pct exec ${CONTAINER_ID} -- /bin/sh -c "echo 'Server = ${ARCH_MIRROR}/archlinux/\$repo/os/\$arch' > /etc/pacman.d/mirrorlist"
-    pct exec ${CONTAINER_ID} -- pacman -Syu --noconfirm
+    _run pacman-key --init
+    _run pacman-key --populate
+    _run /bin/sh -c "echo 'Server = ${ARCH_MIRROR}/archlinux/\$repo/os/\$arch' > /etc/pacman.d/mirrorlist"
+    _run pacman -Syu --noconfirm
 
     # Mask this service because its failing:
-    pct exec ${CONTAINER_ID} -- systemctl mask systemd-journald-audit.socket
+    _run systemctl mask systemd-journald-audit.socket
 
     _ssh_config
-    pct exec ${CONTAINER_ID} -- systemctl enable --now sshd
+    _run systemctl enable --now sshd
 
     if [[ ${INSTALL_DOCKER} == "yes" ]]; then
-        pct exec ${CONTAINER_ID} -- pacman -S --noconfirm docker
-        pct exec ${CONTAINER_ID} -- systemctl enable --now docker
+        _run pacman -S --noconfirm docker
+        _run systemctl enable --now docker
     fi
 
 }
 
 _alpine_init() {
-    pct exec ${CONTAINER_ID} -- apk upgrade -U
-    pct exec ${CONTAINER_ID} -- apk add openssh
+    _run apk upgrade -U
+    _run apk add openssh
     _ssh_config
-    pct exec ${CONTAINER_ID} -- rc-update add sshd
-    pct exec ${CONTAINER_ID} -- /etc/init.d/sshd start
+    _run rc-update add sshd
+    _run /etc/init.d/sshd start
 
     if [[ ${INSTALL_DOCKER} == "yes" ]]; then
-        pct exec ${CONTAINER_ID} -- apk add docker
-        pct exec ${CONTAINER_ID} -- rc-update add docker
-        pct exec ${CONTAINER_ID} -- /etc/init.d/docker start
+        _run apk add docker
+        _run rc-update add docker
+        _run /etc/init.d/docker start
+    fi
+}
+
+_fedora_init() {
+    _run dnf -y upgrade --refresh
+    _run dnf -y install openssh-server less
+    _ssh_config
+    _run systemctl enable --now sshd
+
+    if [[ ${INSTALL_DOCKER} == "yes" ]]; then
+        _run dnf -y install dnf-plugins-core
+        _run dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+        _run dnf -y install docker-ce docker-ce-cli containerd.io
+        _run systemctl enable --now docker
     fi
 }
 

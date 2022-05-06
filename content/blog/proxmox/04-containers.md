@@ -36,10 +36,15 @@ PID 1, eg. systemd). Startup time is extremely quick.
 [In Proxmox, you install LXC containers via maintained
 templates.](https://pve.proxmox.com/wiki/Linux_Container) The script
 outlined in this post is simply automation for the process of
-downloading the template and creating a container based upon it. At
-the end of this you'll have a fully updated Arch, Debian, or Alpine
-Linux LXC container up and running, with secured SSH pubkey-only
-authentication.
+downloading the template and creating a container based upon it.
+
+This script currently supports the following container distributions
+(more are easily added):
+
+ * `arch` - Arch Linux
+ * `debian` - Debian 11
+ * `alpine` - Alpine 3.15
+ * `fedora` - Fedora 35
 
 ## Usage
 
