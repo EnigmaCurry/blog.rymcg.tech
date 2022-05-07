@@ -50,4 +50,9 @@ quicker start up time and efficient resource utilization. Unlike
 Docker containers, LXC containers are stateful and run systemd inside,
 and offer the same lifecycle as if it were a VM.
 
+In [part five: KVM and Cloud-Init](/blog/proxmox/05-kvm-templates) we
+use a shell script to generate several KVM virtual machine templates
+from various distributions, including Arch Linux, Debian, Ubuntu,
+Fedora, and even FreeBSD (can't do that one with a container!)
+
 {{< about_footer >}}
