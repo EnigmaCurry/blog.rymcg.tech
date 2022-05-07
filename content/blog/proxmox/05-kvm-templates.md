@@ -159,3 +159,9 @@ qm set ${VM_ID} --ciuser ryan
 qm snapshot ${VM_ID} init
 qm start ${VM_ID}
 ```
+
+## The script
+
+ * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_kvm.sh)
+
+{{< code file="/src/proxmox/proxmox_kvm.sh" language="shell" >}}
