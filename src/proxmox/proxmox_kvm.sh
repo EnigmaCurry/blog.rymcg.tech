@@ -23,6 +23,7 @@ MEMORY=${MEMORY:-2048}
 SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 # Container root filesystem size in GB:
 FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
+INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 
@@ -91,6 +92,10 @@ template() {
            --vga serial0 \
            --ciuser ${VM_USER}
 
+        if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
+            _install_docker
+        fi
+
         qm resize "${VM_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
         qm template "${VM_ID}"
     )
@@ -105,6 +110,24 @@ destroy() {
     _confirm yes "This will destroy VM ${VM_ID} ($(qm config ${VM_ID} | grep name))"
     set -ex
     qm destroy ${VM_ID}
+}
+
+_install_docker() {
+    ## Attach the Docker install script as Cloud-Init User Data so
+    ## that it is installed automatically on first boot:
+    mkdir -p /var/lib/vz/snippets
+    cat <<EOF > /var/lib/vz/snippets/vm-template-${VM_ID}-user-data.yaml
+#cloud-config
+users:
+ - name: ${VM_USER}
+   gecos: ${VM_USER}
+   groups: docker
+   ssh_authorized_keys:
+$(cat ${SSH_KEYS} | grep -E "^ssh" | xargs -iXX echo "     - XX")
+runcmd:
+ - sh -c "curl -sSL https://get.docker.com | sh"
+EOF
+    qm set "${VM_ID}" --cicustom "user=local:snippets/vm-template-${VM_ID}-user-data.yaml"
 }
 
 _template_from_url() {

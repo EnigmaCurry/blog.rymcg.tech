@@ -87,6 +87,21 @@ DISTRO=ubuntu VM_ID=9002 ./proxmox_kvm.sh template
 DISTRO=fedora VM_ID=9003 ./proxmox_kvm.sh template
 ```
 
+### Docker
+
+You can install Docker on any of the supported distributions. Pass the
+`INSTALL_DOCKER=yes` variable to attach a small install script to the
+VM so that it automatically installs Docker on first boot, via
+cloud-init:
+
+```bash
+VM_HOSTNAME=docker \
+DISTRO=debian \
+VM_ID=9998 \
+INSTALL_DOCKER=yes \
+./proxmox_kvm.sh template
+```
+
 ### FreeBSD (13)
 
 FreeBSD does not allow root login, so you must choose an alternate `VM_USER`:
