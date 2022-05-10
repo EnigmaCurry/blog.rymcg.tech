@@ -19,6 +19,8 @@ SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 ## Point to the local authorized_keys file to copy into container:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
+## Set an IP address or use DHCP by default:
+IP_ADDRESS=${IP_ADDRESS:-dhcp}
 ## To install docker inside the container, set INSTALL_DOCKER=yes
 INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 
@@ -113,7 +115,7 @@ create() {
     --hostname ${CONTAINER_HOSTNAME}
     --memory ${MEMORY}
     --password ${PASSWORD}
-    --net0 name=eth0,bridge=${PUBLIC_BRIDGE},firewall=1,ip=dhcp
+    --net0 name=eth0,bridge=${PUBLIC_BRIDGE},firewall=1,ip=${IP_ADDRESS}
     --swap ${SWAP_SIZE}
     --ssh-public-keys ${SSH_KEYS}
 EOM
@@ -246,6 +248,7 @@ if [[ $# == 0 ]]; then
     echo "Commands:"
     echo " create"
     echo " destroy"
+    echo " login"
     exit 1
 elif [[ $# > 1 ]]; then
     shift
