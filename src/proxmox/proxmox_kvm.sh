@@ -142,6 +142,7 @@ _template_from_url() {
 }
 
 if [[ $# == 0 ]]; then
+    echo "# Documentation: https://blog.rymcg.tech/blog/proxmox/05-kvm-templates/"
     echo "Commands:"
     echo " template"
     echo " destroy"

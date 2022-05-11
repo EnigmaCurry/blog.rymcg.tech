@@ -153,10 +153,12 @@ console:
 ```bash
 TEMPLATE_ID=9999
 VM_ID=123
+VM_NAME=my-pet
+VM_USER=ryan
 
-qm clone ${TEMPLATE_ID} ${VM_ID} --name my-pet
-qm set ${VM_ID} --ciuser ryan
-qm snapshot ${VM_ID} init
+qm clone ${TEMPLATE_ID} ${VM_ID} --name ${VM_NAME} && \
+qm set ${VM_ID} --ciuser ${VM_USER} && \
+qm snapshot ${VM_ID} init && \
 qm start ${VM_ID}
 ```
 

@@ -245,6 +245,7 @@ login() {
 }
 
 if [[ $# == 0 ]]; then
+    echo "# Documentation: https://blog.rymcg.tech/blog/proxmox/04-containers/"
     echo "Commands:"
     echo " create"
     echo " destroy"
