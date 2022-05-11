@@ -98,6 +98,7 @@ template() {
            --bootdisk scsi0 \
            --serial0 socket \
            --vga serial0 \
+           --agent 1 \
            --ciuser ${VM_USER}
 
         ## Generate cloud-init User Data script:
