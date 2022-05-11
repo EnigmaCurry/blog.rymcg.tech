@@ -126,40 +126,18 @@ IMAGE_URL=https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4
 ./proxmox_kvm.sh template
 ```
 
-## Creating new virtual machines from these templates
+## Creating new virtual machines by cloning these templates
 
-In the Proxmox GUI you can easily clone a new VM from a template. 
-
- * Find the template ID in the node list, right click it, and select
-`Clone`. 
- * Choose a new VM ID and new name.
- * Click `Clone`.
- * Find the new cloned VM in the node list, and then click on `Cloud-Init`
- * Change the username you want.
- * Click on the `Snapshots` tab and click `Take Snapshot` (optional).
-   This will allow you to rollback to a clean state (before first
-   boot) if you need to later on.
- * Click the `Start` button to start the VM.
- * Click on the `Hardware` tab and find the Network Device `net0` and
-   it shows the MAC address eg. `virtio=[MAC ADDRESS]`
- * Look on your LAN router and find the DHCP lease for the VM MAC
-   address.
- * SSH into the new VM using the IP address your DHCP server handed
-   out, using the username you set in Cloud-Init.
-
-You can automate all of the above steps using the root Proxmox
-console:
+This script uses a custom cloud-init User Data section, which means
+you cannot use the Proxmox GUI to edit cloud-init data. Therefore, the
+script encapsulates this logic for you, and makes it easy to clone the
+template:
 
 ```bash
-TEMPLATE_ID=9999
-VM_ID=123
-VM_NAME=my-pet
-VM_USER=ryan
-
-qm clone ${TEMPLATE_ID} ${VM_ID} --name ${VM_NAME} && \
-qm set ${VM_ID} --ciuser ${VM_USER} && \
-qm snapshot ${VM_ID} init && \
-qm start ${VM_ID}
+TEMPLATE_ID=9000 \
+VM_ID=100 \
+VM_HOSTNAME=my_arch \
+./proxmox_kvm.sh clone
 ```
 
 ## The script

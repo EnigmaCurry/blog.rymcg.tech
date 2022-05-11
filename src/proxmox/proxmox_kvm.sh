@@ -11,6 +11,7 @@ DISTRO=${DISTRO:-arch}
 ## Set these variables to configure the container:
 ## (All variables can be overriden from the parent environment)
 TEMPLATE_ID=${TEMPLATE_ID:-9001}
+VM_ID=${VM_ID:-100}
 VM_HOSTNAME=${VM_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 VM_USER=${VM_USER:-root}
 ## Point to the local authorized_keys file to copy into VM:
@@ -127,11 +128,22 @@ EOF
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
         qm template "${TEMPLATE_ID}"
     )
-    echo "To create a VM based on this template run:"
-    echo " qm clone ${TEMPLATE_ID} 123 --name my-${DISTRO}"
-    echo " qm set 123 --ciuser bob"
-    echo " qm snapshot 123 init"
-    echo " qm start 123"
+}
+
+clone() {
+    set -e
+    qm clone "${TEMPLATE_ID}" "${VM_ID}"
+    USER_DATA=${SNIPPETS_DIR}/vm-template-${VM_ID}-user-data.yaml
+    cp ${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml ${USER_DATA}
+    sed -i "s/^fqdn:.*/fqdn: ${VM_HOSTNAME}/" ${USER_DATA}
+    qm set "${VM_ID}" \
+       --name "${VM_HOSTNAME}" \
+       --sockets "${NUM_CORES}" \
+       --memory "${MEMORY}" \
+       --cicustom "user=local:snippets/vm-template-${VM_ID}-user-data.yaml"
+    qm snapshot "${VM_ID}" init
+    echo "Cloned VM ${VM_ID} from template ${TEMPLATE_ID}. To start it, run:"
+    echo "  qm start ${VM_ID}"
 }
 
 destroy() {
