@@ -66,25 +66,25 @@ You can create templates for every Operating System you wish to run:
 ### Arch Linux
 
 ```bash
-DISTRO=arch VM_ID=9000 ./proxmox_kvm.sh template
+DISTRO=arch TEMPLATE_ID=9000 ./proxmox_kvm.sh template
 ```
 
 ### Debian (bullseye)
 
 ```bash
-DISTRO=debian VM_ID=9001 ./proxmox_kvm.sh template
+DISTRO=debian TEMPLATE_ID=9001 ./proxmox_kvm.sh template
 ```
 
 ### Ubuntu (20.04 LTS)
 
 ```bash
-DISTRO=ubuntu VM_ID=9002 ./proxmox_kvm.sh template
+DISTRO=ubuntu TEMPLATE_ID=9002 ./proxmox_kvm.sh template
 ```
 
 ### Fedora (35)
 
 ```bash
-DISTRO=fedora VM_ID=9003 ./proxmox_kvm.sh template
+DISTRO=fedora TEMPLATE_ID=9003 ./proxmox_kvm.sh template
 ```
 
 ### Docker
@@ -97,7 +97,7 @@ cloud-init:
 ```bash
 VM_HOSTNAME=docker \
 DISTRO=debian \
-VM_ID=9998 \
+TEMPLATE_ID=9998 \
 INSTALL_DOCKER=yes \
 ./proxmox_kvm.sh template
 ```
@@ -107,7 +107,7 @@ INSTALL_DOCKER=yes \
 FreeBSD does not allow root login, so you must choose an alternate `VM_USER`:
 
 ```bash
-DISTRO=freebsd VM_ID=9004 VM_USER=fred ./proxmox_kvm.sh template
+DISTRO=freebsd TEMPLATE_ID=9004 VM_USER=fred ./proxmox_kvm.sh template
 ```
 
 ### Any other cloud image
@@ -120,7 +120,7 @@ with this script:
 
 ```bash
 DISTRO=OpenBSD \
-VM_ID=9999 \
+TEMPLATE_ID=9999 \
 VM_USER=fred \
 IMAGE_URL=https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/openbsd/7.0/2021-12-11/openbsd-7.0.qcow2 \
 ./proxmox_kvm.sh template

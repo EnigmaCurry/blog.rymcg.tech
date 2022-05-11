@@ -10,7 +10,7 @@ DISTRO=${DISTRO:-arch}
 
 ## Set these variables to configure the container:
 ## (All variables can be overriden from the parent environment)
-VM_ID=${VM_ID:-9001}
+TEMPLATE_ID=${TEMPLATE_ID:-9001}
 VM_HOSTNAME=${VM_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 VM_USER=${VM_USER:-root}
 ## Point to the local authorized_keys file to copy into VM:
@@ -26,6 +26,7 @@ FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
+SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
 
 _confirm() {
     set +x
@@ -48,12 +49,18 @@ _confirm() {
 
 template() {
     set -e
-    (set -x; qm create ${VM_ID})
+    USER_DATA_RUNCMD=()
+    (set -x; qm create ${TEMPLATE_ID})
     if [[ -v IMAGE_URL ]]; then
         _template_from_url ${IMAGE_URL}
     else
         if [[ ${DISTRO} == "arch" ]] || [[ ${DISTRO} == "archlinux" ]]; then
             _template_from_url https://mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
+            USER_DATA_RUNCMD+=("rm -rf /etc/pacman.d/gnupg"
+                               "pacman-key --init"
+                               "pacman-key --populate archlinux"
+                               "pacman -Syu --noconfirm"
+                               "pacman -S --noconfirm qemu-guest-agent")
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bullseye" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-genericcloud-amd64.qcow2
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "focal" ]]; then
@@ -63,7 +70,7 @@ template() {
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
             if [[ ${VM_USER} == "root" ]]; then
                 echo "For FreeBSD, VM_USER cannot be root. Use another username."
-                qm destroy ${VM_ID}
+                qm destroy ${TEMPLATE_ID}
                 exit 1
             fi
             # There's a lot more images to try here:  https://bsd-cloud-image.org/
@@ -75,13 +82,13 @@ template() {
     fi
     (
         set -ex
-        qm set "${VM_ID}" \
+        qm set "${TEMPLATE_ID}" \
            --name "${VM_HOSTNAME}" \
            --sockets "${NUM_CORES}" \
            --memory "${MEMORY}" \
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
-           --scsi0 "local-lvm:vm-${VM_ID}-disk-0" \
+           --scsi0 "local-lvm:vm-${TEMPLATE_ID}-disk-0" \
            --ide0 none,media=cdrom \
            --ide2 local-lvm:cloudinit \
            --sshkey "${SSH_KEYS}" \
@@ -92,32 +99,17 @@ template() {
            --vga serial0 \
            --ciuser ${VM_USER}
 
+        ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
-            _install_docker
+            ## Attach the Docker install script as Cloud-Init User Data so
+            ## that it is installed automatically on first boot:
+            USER_DATA_RUNCMD+=("sh -c 'curl -sSL https://get.docker.com | sh'")
         fi
-
-        qm resize "${VM_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
-        qm template "${VM_ID}"
-    )
-    echo "To create a VM based on this template run:"
-    echo " qm clone ${VM_ID} 123 --name my-${DISTRO}"
-    echo " qm set 123 --ciuser bob"
-    echo " qm snapshot 123 init"
-    echo " qm start 123"
-}
-
-destroy() {
-    _confirm yes "This will destroy VM ${VM_ID} ($(qm config ${VM_ID} | grep name))"
-    set -ex
-    qm destroy ${VM_ID}
-}
-
-_install_docker() {
-    ## Attach the Docker install script as Cloud-Init User Data so
-    ## that it is installed automatically on first boot:
-    mkdir -p /var/lib/vz/snippets
-    cat <<EOF > /var/lib/vz/snippets/vm-template-${VM_ID}-user-data.yaml
+        mkdir -p ${SNIPPETS_DIR}
+        USER_DATA=${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml
+        cat <<EOF > ${USER_DATA}
 #cloud-config
+fqdn: ${VM_HOSTNAME}
 users:
  - name: ${VM_USER}
    gecos: ${VM_USER}
@@ -125,9 +117,27 @@ users:
    ssh_authorized_keys:
 $(cat ${SSH_KEYS} | grep -E "^ssh" | xargs -iXX echo "     - XX")
 runcmd:
- - sh -c "curl -sSL https://get.docker.com | sh"
 EOF
-    qm set "${VM_ID}" --cicustom "user=local:snippets/vm-template-${VM_ID}-user-data.yaml"
+        for cmd in "${USER_DATA_RUNCMD[@]}"; do
+            echo " - ${cmd}" >> ${USER_DATA}
+        done
+        qm set "${TEMPLATE_ID}" --cicustom "user=local:snippets/vm-template-${TEMPLATE_ID}-user-data.yaml"
+
+        ## Resize filesystem and turn into a template:
+        qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
+        qm template "${TEMPLATE_ID}"
+    )
+    echo "To create a VM based on this template run:"
+    echo " qm clone ${TEMPLATE_ID} 123 --name my-${DISTRO}"
+    echo " qm set 123 --ciuser bob"
+    echo " qm snapshot 123 init"
+    echo " qm start 123"
+}
+
+destroy() {
+    _confirm yes "This will destroy VM ${TEMPLATE_ID} ($(qm config ${TEMPLATE_ID} | grep name))"
+    set -ex
+    qm destroy ${TEMPLATE_ID}
 }
 
 _template_from_url() {
@@ -138,7 +148,7 @@ _template_from_url() {
     mkdir -p ${TMP}
     cd ${TMP}
     test -f ${IMAGE} || wget ${IMAGE_URL}
-    qm importdisk ${VM_ID} ${IMAGE} local-lvm
+    qm importdisk ${TEMPLATE_ID} ${IMAGE} local-lvm
 }
 
 if [[ $# == 0 ]]; then
