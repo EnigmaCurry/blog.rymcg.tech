@@ -128,10 +128,11 @@ IMAGE_URL=https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4
 
 ## Creating new virtual machines by cloning these templates
 
-This script uses a custom cloud-init User Data section, which means
-you cannot use the Proxmox GUI to edit cloud-init data. Therefore, the
-script encapsulates this logic for you, and makes it easy to clone the
-template:
+This script uses a custom cloud-init User Data template that is copied
+to `/var/lib/vz/snippets/vm-${VM_ID}-user-data.yml` which means that
+you cannot use the Proxmox GUI to edit cloud-init data. Therefore,
+this script encapsulates this logic for you, and makes it easy to
+clone the template:
 
 ```bash
 TEMPLATE_ID=9000 \
@@ -139,6 +140,23 @@ VM_ID=100 \
 VM_HOSTNAME=my_arch \
 ./proxmox_kvm.sh clone
 ```
+
+Start the VM whenever you're ready:
+
+```bash
+qm start 100
+```
+
+cloud-init will run the first time the VM boots. This will install the
+Qemu guest agent, which may take a few minutes.
+
+Wait a bit for the boot to finish, then find out what the IP address
+is:
+
+```bash
+VM_ID=100 ./proxmox_kvm.sh get_ip
+```
+
 
 ## The script
 

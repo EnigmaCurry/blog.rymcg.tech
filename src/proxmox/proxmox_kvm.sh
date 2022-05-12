@@ -61,7 +61,8 @@ template() {
                                "pacman-key --init"
                                "pacman-key --populate archlinux"
                                "pacman -Syu --noconfirm"
-                               "pacman -S --noconfirm qemu-guest-agent")
+                               "pacman -S --noconfirm qemu-guest-agent"
+                               "systemctl start qemu-guest-agent")
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bullseye" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-genericcloud-amd64.qcow2
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "focal" ]]; then
@@ -134,23 +135,24 @@ EOF
 clone() {
     set -e
     qm clone "${TEMPLATE_ID}" "${VM_ID}"
-    USER_DATA=${SNIPPETS_DIR}/vm-template-${VM_ID}-user-data.yaml
-    cp ${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml ${USER_DATA}
-    sed -i "s/^fqdn:.*/fqdn: ${VM_HOSTNAME}/" ${USER_DATA}
+    USER_DATA=vm-${VM_ID}-user-data.yaml
+    cp ${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml ${SNIPPETS_DIR}/${USER_DATA}
+    sed -i "s/^fqdn:.*/fqdn: ${VM_HOSTNAME}/" ${SNIPPETS_DIR}/${USER_DATA}
     qm set "${VM_ID}" \
        --name "${VM_HOSTNAME}" \
        --sockets "${NUM_CORES}" \
        --memory "${MEMORY}" \
-       --cicustom "user=local:snippets/vm-template-${VM_ID}-user-data.yaml"
+       --cicustom "user=local:snippets/${USER_DATA}"
     qm snapshot "${VM_ID}" init
     echo "Cloned VM ${VM_ID} from template ${TEMPLATE_ID}. To start it, run:"
     echo "  qm start ${VM_ID}"
 }
 
-destroy() {
-    _confirm yes "This will destroy VM ${TEMPLATE_ID} ($(qm config ${TEMPLATE_ID} | grep name))"
-    set -ex
-    qm destroy ${TEMPLATE_ID}
+get_ip() {
+    set -eo pipefail
+    ## Get the IP address through the guest agent
+    if ! command -v jq >/dev/null; then apt install -y jq; fi
+    pvesh get nodes/${HOSTNAME}/qemu/100/agent/network-get-interfaces --output-format=json | jq -r '.result[] | select(.name | test("eth0")) | ."ip-addresses"[] | select(."ip-address-type" | test("ipv4")) | ."ip-address"'
 }
 
 _template_from_url() {
@@ -168,7 +170,8 @@ if [[ $# == 0 ]]; then
     echo "# Documentation: https://blog.rymcg.tech/blog/proxmox/05-kvm-templates/"
     echo "Commands:"
     echo " template"
-    echo " destroy"
+    echo " clone"
+    echo " get_ip"
     exit 1
 elif [[ $# > 1 ]]; then
     shift
