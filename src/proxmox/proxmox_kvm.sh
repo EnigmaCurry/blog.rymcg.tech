@@ -62,7 +62,11 @@ template() {
                                "pacman-key --populate archlinux"
                                "pacman -Syu --noconfirm"
                                "pacman -S --noconfirm qemu-guest-agent"
-                               "systemctl start qemu-guest-agent")
+                               "systemctl start qemu-guest-agent"
+                               "sed -i -e 's/^#\?GRUB_TERMINAL_INPUT=.*/GRUB_TERMINAL_INPUT=\"console serial\"/' -e 's/^#\?GRUB_TERMINAL_OUTPUT=.*/GRUB_TERMINAL_OUTPUT=\"console serial\"/' -e 's/^#\?GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=compress-force=zstd console=tty0 console=ttyS0,115200\"/' /etc/default/grub"
+                               "sh -c \"echo 'GRUB_SERIAL_COMMAND=\\\"serial --unit=0 --speed=115200\\\"' >> /etc/default/grub\""
+                               "grub-mkconfig -o /boot/grub/grub.cfg"
+                              )
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bullseye" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-genericcloud-amd64.qcow2
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "focal" ]]; then
