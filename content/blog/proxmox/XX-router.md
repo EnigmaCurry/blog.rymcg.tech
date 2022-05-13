@@ -228,6 +228,7 @@ for all of the network devices (and removing `cloud-init` and
 
 ```bash
 ## Run this inside the router VM:
+(set -e
 # Rename all devices:
 (for i in vm0,${VM0_MAC} vm1,${VM1_MAC} wan,${WAN_MAC} lan,${LAN_MAC} opt1,${OPT1_MAC} opt2,${OPT2_MAC};
     do IFS=","; set -- $i; interface=$1; mac=$2;
@@ -242,21 +243,6 @@ EOF
 
 ## Configure each interface for DHCP or static IP addresses:
 
-cat <<EOF > /etc/systemd/network/20-vm0.network
-[Match]
-Name=vm0
-[Network]
-DHCP=yes
-EOF
-
-cat <<EOF > /etc/systemd/network/20-vm1.network
-[Match]
-Name=vm1
-[Network]
-Address=192.168.1.1/24
-Gateway=192.168.1.1
-EOF
-
 cat <<EOF > /etc/systemd/network/20-wan.network
 [Match]
 Name=wan
@@ -269,21 +255,39 @@ cat <<EOF > /etc/systemd/network/20-lan.network
 Name=lan
 [Network]
 Address=192.168.100.1/24
-Gateway=192.168.1.1
 EOF
 
-## Ignore as yet unconfigured devices on boot:
-sed -i \
-  's|^ExecStart=.*|ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --ignore=opt1 --ignore=opt2|' \
-  /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service
+cat <<EOF > /etc/systemd/network/20-vm0.network
+[Match]
+Name=vm0
+[Network]
+DHCP=yes
+[DHCP]
+# Throw away any gateway this dhcp server gives us.
+# Only the wan interface should have a gateway.
+UseRoutes=false
+EOF
+
+cat <<EOF > /etc/systemd/network/20-vm1.network
+[Match]
+Name=vm1
+[Network]
+Address=192.168.1.1/24
+EOF
 
 ## Enable systemd-networkd:
 systemctl enable --now systemd-networkd.service
+
+## Ignore as yet unconfigured devices on boot (OPT1 and OPT2):
+sed -i \
+  's|^ExecStart=.*|ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --ignore=opt1 --ignore=opt2|' \
+  /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service
 
 ## Remove cloud-init and netplan (you did your job admirably!)
 rm -rf /etc/netplan
 pacman -R --noconfirm cloud-init netplan
 systemctl mask --now cloud-init
+)
 ```
 
 Reboot the VM for the new device names to take effect:
