@@ -143,7 +143,7 @@ clone() {
        --sockets "${NUM_CORES}" \
        --memory "${MEMORY}" \
        --cicustom "user=local:snippets/${USER_DATA}"
-    qm snapshot "${VM_ID}" init
+    #qm snapshot "${VM_ID}" init
     echo "Cloned VM ${VM_ID} from template ${TEMPLATE_ID}. To start it, run:"
     echo "  qm start ${VM_ID}"
 }
