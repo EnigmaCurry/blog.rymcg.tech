@@ -1,8 +1,7 @@
 ---
-title: "Proxmox part XX: virtualized nftables router"
+title: "Proxmox part 6: Virtualized nftables router"
 date: 2022-05-10T00:02:00-06:00
 tags: ['proxmox']
-draft: true
 ---
 
 Let's make a network router/firewall for the home LAN, with nftables,
@@ -18,14 +17,13 @@ i350-T4 (Dell OEM) network adapater with four physical ethernet jacks.
 There is also one on-motherboard ethernet jack (Realtek) for a total
 of five NICs.
 
-Proxmox is installed using the on-board Realtek NIC as the only
+Proxmox is installed with the on-board Realtek NIC as the only
 interface bonded to `vmbr0` (the default public network bridge in
-Proxmox). Instead, the four ports on the i350-T4 are passed directly
-to the VM via IOMMU. This means the VM is totally in control of these
-four physical NICs, and Proxmox is hands off. The Realtek NIC
-(`enp2s0f0` bonded to `vmbr0`) will only be used to access the Proxmox
-admin GUI and API. The i350 ports will be used as the new router (WAN,
-LAN, OPT1, OPT2).
+Proxmox) and this port is used only for administrative purposes. The
+four ports on the i350-T4 are passed directly to the VM via IOMMU.
+This means the VM is totally in control of these four physical NICs,
+and Proxmox is hands off. The i350 ports will be used as the new
+router (WAN, LAN, OPT1, OPT2).
 
 Technically, the i350-T4 should be capable of SRIOV, which would allow
 the four ports to be split into several virtual interfaces (called
