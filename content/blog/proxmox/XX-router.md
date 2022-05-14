@@ -44,17 +44,21 @@ using the router for VMs and containers inside Proxmox only. (Maybe
 you could technically make a router using VLANs with only one NIC, but
 this is outside the scope of this post.)
 
-## Create the VM
+## Create the router VM
+
+This post begins with the assumption that you have installed Proxmox
+and are starting fresh with no VMs defined as of yet. The first VM we
+will create will be the virtual router (`VM_ID=100`).
 
 Arch Linux seems like a good choice for a router because it has the
 latest kernel, and therefore the latest nftables version. Use the Arch
 Linux template created in [part 5](05-kvm-templates)
-(`TEMPLATE_ID=9000`):
+(`TEMPLATE_ID=9000`).
 
 ```env
 ## export the variables needed by proxmox_kvm.sh:
-export TEMPLATE_ID=9000
 export VM_ID=100
+export TEMPLATE_ID=9000
 export VM_HOSTNAME=router
 VM1_BRIDGE=vmbr1
 VM1_IP=192.168.1.1
@@ -290,21 +294,26 @@ systemctl mask --now cloud-init
 )
 ```
 
+Plug in the ethernet cables for `WAN` and `LAN`. `OPT1` and `OPT2`
+will remain vacant for now.
+
 Reboot the VM for the new device names to take effect:
 
 ```bash
 reboot
 ```
 
-SSH back in again once it reboots, and double check the new
-network devices: `ip addr`
+SSH back in again once it reboots, and double check the new network
+devices: `ip addr` should show each device in `state UP` and have an
+IPv4 address (`inet x.x.x.x`). `ip route` should show a single default gateway
+(`default via` on `dev wan`).
 
+## Install DHCP server
 
-## Install dnsmasq DHCP server
+You will need a DHCP server for the `lan` and `vm1` interfaces.
 
-You will need a DHCP server for the `lan` and `vm0` interfaces.
-
-Install dnsmasq, and create the config files:
+Install dnsmasq, and create two separate config files for two DHCP
+servers listening on exclusive interfaces:
 
 ```bash
 # Run this inside the router VM:
@@ -320,6 +329,17 @@ port=0
 dhcp-range=192.168.1.10,192.168.1.250,255.255.255.0,1h
 dhcp-option=3,192.168.1.1
 dhcp-option=6,192.168.1.1
+EOF
+
+cat <<EOF > /etc/dnsmasq-lan.conf
+interface=lan
+domain=lan
+bind-interfaces
+listen-address=192.168.100.1
+port=0
+dhcp-range=192.168.100.10,192.168.100.250,255.255.255.0,1h
+dhcp-option=3,192.168.100.1
+dhcp-option=6,192.168.100.1
 EOF
 
 cat <<'EOF' > /etc/systemd/system/dnsmasq@.service
@@ -345,18 +365,35 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now dnsmasq@vm1.service
+systemctl enable --now dnsmasq@lan.service
 )
 ```
+
+(Note: dnsmasq is only serving as a DHCP server. Its own DNS has been disabled
+via `port=0`.)
 
 ## Install dnscrypt-proxy DNS server
 
 ```bash
 # Run this inside the router VM:
+(set -ex
 if ! command -v dnscrypt-proxy >/dev/null; then pacman -S --noconfirm dnscrypt-proxy; fi
 sed -i \
   -e "s/^listen_addresses =.*/listen_addresses = ['127.0.0.1:53','[::1]:53','192.168.1.1:53','192.168.100.1:53']/" \
   -e "s/^# server_names =.*/server_names = ['cloudflare']/" \
   /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+
+systemctl enable --now dnscrypt-proxy
+
+chattr -i /etc/resolv.conf
+rm -f /etc/resolv.conf
+cat <<EOF > /etc/resolv.conf
+nameserver ::1
+nameserver 127.0.0.1
+options edns0
+EOF
+chattr +i /etc/resolv.conf
+)
 ```
 
 ## Install nftables
@@ -402,7 +439,7 @@ define LAN_CIDR = 192.168.100.1/24
 define OPT1_CIDR = 192.168.101.1/24
 define OPT2_CIDR = 192.168.102.1/24
 
-define WAN_INTERFACE = { vm0 }
+define WAN_INTERFACE = { wan }
 define PRIVATE_INTERFACES = { vm1, lan, opt1, opt2 }
 
 define VM0_ACCEPTED_TCP = { 22 }
@@ -509,3 +546,70 @@ debug the errors by running:
 ## This won't reload the firewall, but will simply check the syntax:
 nft -f /etc/nftables.conf -c
 ```
+
+## Create a test VM on vmbr1
+
+In order to test the router, DHCP, and DNS servers, you can create a
+test VM that will connect to the `vmbr1` bridge, automatically
+retrieve an IP address from the DHCP server, and connect to the
+internet through the router.
+
+Run this on the Proxmox host:
+
+```env
+## export the variables needed by proxmox_kvm.sh:
+export VM_ID=199
+export TEMPLATE_ID=9001
+export VM_HOSTNAME=test1
+export TEMP_PASSWORD=root
+```
+
+```bash
+./proxmox_kvm.sh clone
+```
+
+Configure the networking for `vmbr1` and set a temporary console
+password:
+
+```bash
+qm set ${VM_ID} \
+   --net0 "virtio,bridge=vmbr1" \
+   --ipconfig1 ip=dhcp \
+   --nameserver 192.168.1.1 \
+   --searchdomain vm1 \
+   --cipassword ${TEMP_PASSWORD}
+```
+
+Start the test VM:
+
+```bash
+qm start ${VM_ID}
+```
+
+Connect to the console:
+
+```bash
+qm terminal ${VM_ID}
+```
+
+(`Ctrl-o` to quit.)
+
+Wait for the VM to boot and login as `root` using the temporary
+password (also `root`). (If you don't see the login prompt, press
+Enter a few times.)
+
+Check that everything is working from inside the test VM:
+
+ * Check `ip addr`, `eth0` should have receieved an active IP address
+   in the range `192.168.1.x`.
+ * Check `ip route` should show only one default gateway (`default via
+   192.168.1.1 dev eth0 `).
+ * Check that `/etc/resolv.conf` shows only one nameserver
+   (`192.168.1.1`) with a search domain of `vm1`. (If you see more
+   than one nameserver, you may have forgot to set the cloud-init
+   `--nameserver` and `--searchdomain` in the VM settings.)
+ * Check that you can `ping 192.168.1.1` to test connectivity to the router.
+ * Check that you can `ping 1.1.1.1` to test connectivity to the internet.
+ * Check that you can `ping one.one.one.one` to test DNS.
+ * Check that `ssh 192.168.1.1` shows `No route to host` (SSH to the
+   router should be blocked from `vmbr1`.)
