@@ -166,6 +166,38 @@ cloud-init status -w
 You can also find the full cloud-init log in
 `/var/log/cloud-init-output.log` (inside the VM).
 
+## Install etckeeper to track configuration changes
+
+[etckeeper](https://wiki.archlinux.org/title/Etckeeper) is a tool to
+track all of the changes you make to the files in `/etc/` inside of a
+git repository that you can optionally push to a remote server for
+backup.
+
+
+```env
+GIT_EMAIL=root@${HOSTNAME}
+GIT_USER=root
+GIT_BRANCH=master
+```
+
+```bash
+# Run this inside the router VM:
+(set -ex
+pacman -S --noconfirm etckeeper
+systemctl enable --now etckeeper.timer
+git config --global init.defaultBranch "${GIT_BRANCH}"
+git config --global user.email "${GIT_EMAIL}"
+git config --global user.name "${GIT_USER}"
+etckeeper init
+etckeeper commit -m init
+)
+```
+
+The above setup will only keep a local git repository. If you wish to
+automatically push to a remote git server, see [etckepeer: Automatic
+push to remote
+repo](https://wiki.archlinux.org/title/Etckeeper#Automatic_push_to_remote_repo)
+
 ## Rename network interfaces
 
 In the newly created VM you will find six ethernet devices via `ip
