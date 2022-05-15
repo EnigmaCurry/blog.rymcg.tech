@@ -528,6 +528,8 @@ define PRIVATE_INTERFACES = { vm1, lan, opt1, opt2 }
 define VM0_ACCEPTED_TCP = { 22 }
 define VM1_ACCEPTED_TCP = { 53 }
 define VM1_ACCEPTED_UDP = { 53, 67 }
+define LAN_ACCEPTED_TCP = { 53 }
+define LAN_ACCEPTED_UDP = { 53, 67 }
 
 define PUBLIC_ACCEPTED_ICMP = {
     destination-unreachable,
@@ -555,6 +557,8 @@ table inet filter {
   set vm0_accepted_tcp { type inet_service; flags interval; elements = $VM0_ACCEPTED_TCP }
   set vm1_accepted_tcp { type inet_service; flags interval; elements = $VM1_ACCEPTED_TCP }
   set vm1_accepted_udp { type inet_service; flags interval; elements = $VM1_ACCEPTED_UDP }
+  set lan_accepted_tcp { type inet_service; flags interval; elements = $VM1_ACCEPTED_TCP }
+  set lan_accepted_udp { type inet_service; flags interval; elements = $VM1_ACCEPTED_UDP }
 
   ## To ban a host for one day: nft add element ip filter blackhole { 10.0.0.1 }
   set blackhole { type ipv4_addr; flags timeout; timeout 1d; }
@@ -581,6 +585,8 @@ table inet filter {
     tcp dport @vm0_accepted_tcp iifname vm0 ct state new log prefix "Admin connection on VM0:" accept
     tcp dport @vm1_accepted_tcp iifname vm1 ct state new accept
     udp dport @vm1_accepted_udp iifname vm1 ct state new accept
+    tcp dport @lan_accepted_tcp iifname lan ct state new accept
+    udp dport @lan_accepted_udp iifname lan ct state new accept
 
     iif $WAN_INTERFACE drop comment "drop all other packets from WAN"
     pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited comment "Reject all other packets with rate limit"
