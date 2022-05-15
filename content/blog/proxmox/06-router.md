@@ -23,7 +23,7 @@ which at this point contains some non-sequitors. For the purpose of
 creating a router, you can probably skip posts 1->3. If you have
 already installed Proxmox, then the only required reading is the
 immediately previous post: [KVM
-Templates](http://localhost:1313/blog/proxmox/05-kvm-templates/), so
+Templates](05-kvm-templates/), so
 you should start there.
 
 This blog is subject to constant revision, experimentation, and
