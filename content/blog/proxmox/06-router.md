@@ -1,14 +1,42 @@
 ---
-title: "Proxmox part 6: Virtualized nftables router"
+title: "Proxmox part 6: Virtualized nftables home LAN router"
 date: 2022-05-10T00:02:00-06:00
 tags: ['proxmox']
 ---
 
-Let's make a network router/firewall for the home LAN, with nftables,
-inside of a Proxmox KVM virtual machine, with four physical ethernet
-jacks passed into the VM's control.
+Let's make a network router/firewall/dhcp/dns server for the home LAN,
+with nftables, dnsmasq, and dnscrypt-proxy, all inside of a Proxmox
+KVM virtual machine, and a physical four port network interface using
+PCI passthrough.
+
+## Notice
+
+This blog is written in a [Literate
+Programming](https://en.wikipedia.org/wiki/Literate_programming)
+style, if you are new here, please read the section called [Running
+Commands](http://localhost:1313/blog/k3s/k3s-01-setup/#running-commands)
+from a previous blog series I wrote (you only need to read that one
+section and then come back here.)
+
+This is the sixth post in the [proxmox](/tags/proxmox/) blog series,
+which at this point contains some non-sequitors. For the purpose of
+creating a router, you can probably skip posts 1->3. If you have
+already installed Proxmox, then the only required reading is the
+immediately previous post: [KVM
+Templates](http://localhost:1313/blog/proxmox/05-kvm-templates/), so
+you should start there.
+
+This blog is subject to constant revision, experimentation, and
+hopefully improvements. If you need a stable set of instructions for
+your own production router, please refer to [the git repository
+containing this blog](https://github.com/EnigmaCurry/blog.rymcg.tech)
+and take note of which version you are following, or fork it to make
+it your own.
 
 ## Hardware
+
+{{<img src="/img/hpt740.jpg" alt="HP t740 with i350-T4">}}
+
 
 The Proxmox server hardware used for testing is the [HP thin client
 t740](https://www.servethehome.com/hp-t740-thin-client-review-tinyminimicro-with-pcie-slot-amd-ryzen).
@@ -20,27 +48,36 @@ of five NICs.
 Proxmox is installed with the on-board Realtek NIC as the only
 interface bonded to `vmbr0` (the default public network bridge in
 Proxmox) and this port is used only for administrative purposes. The
-four ports on the i350-T4 are passed directly to the VM via IOMMU.
-This means the VM is totally in control of these four physical NICs,
-and Proxmox is hands off. The i350 ports will be used as the new
-router (WAN, LAN, OPT1, OPT2).
+four ports on the i350-T4 are passed directly to a KVM virutal machine
+via IOMMU. This means that the VM is totally in control of these four
+physical NICs, and Proxmox is hands off.
 
-Technically, the i350-T4 should be capable of SRIOV, which would allow
-the four ports to be split into several virtual interfaces (called
-"functions") mapped to more than four VMs at the same time. However, I
-could not get this to work, as it appears that the Dell variety of
-this NIC disables SRIOV (doh! double check it when you buy it if you
-want this feature!). However, for this project, SRIOV is unnecessary
-and overkill, as the entire card will only need to be passed to one VM
-(the router), and this is fully supported.
+The VM that uses the i350 ports will become the new router, with the
+ports `WAN`, `LAN`, `OPT1`, `OPT2`, top to bottom as pictured above.
+The white cable is WAN (internet), the red cable is LAN (local area),
+and the blue cable is in `VM0` the on-board admin port which is bonded
+to `vbmr0`.
+
+Technically, the i350-T4 network interface should be capable of SRIOV,
+which would allow the four ports to be split into several virtual
+interfaces (called "functions") mapped to more than four VMs at the
+same time. However, I could not get this to work, as it appears that
+the [Dell variety of this NIC disables
+SRIOV](https://community.intel.com/t5/Ethernet-Products/Sr-IOV-Server-2012-I350-T4/m-p/218191#M644)
+(doh! double check it when you buy it if you want this feature!).
+However, for this project, SRIOV is unnecessary and overkill, as the
+entire card will only need to be passed into this one VM, and this is
+fully supported.
 
 In addition to the physical network ports, a second virtual bridge
 (`vmbr1`) is used to test routing to other virtual machines in the
-VM_ID 100->199 block. If you don't have a machine with extra NICs (or
-if it does not support IOMMU), you can still play along here, but
-using the router for VMs and containers inside Proxmox only. (Maybe
-you could technically make a router using VLANs with only one NIC, but
-this is outside the scope of this post.)
+VM_ID 100->199 block, and this is assigned a virtual interface inside
+the router named `VM1`. If you don't have a machine with extra NICs
+(or if it does not support IOMMU), you can still play along using this
+virtual interface, but you will only be able to use this router for
+VMs and containers inside Proxmox. (Maybe you could technically make a
+router using VLANs with only one NIC, but this is outside the scope of
+this post.)
 
 ## Create the router VM
 
@@ -232,7 +269,7 @@ easier to remember what they will be used for:
 
 Find the MAC addresses for each of the cards. *Run all of the
 following from inside the router VM*. Gather the four MAC addresses
-into the temporary variables `MAC1`->`MAC4`:
+into temporary variables:
 
 ```env
 # Run this inside the router VM:
@@ -251,18 +288,18 @@ echo "OPT1 (physical)       : ${OPT1_MAC}"
 echo "OPT2 (physical)       : ${OPT2_MAC}"
 ```
 
-Double check that the printed variables contain the correct MAC
-addresses.
+For each interface, double check that the correct MAC addresses are
+printed.
 
-The initial network was bootstrapped by `cloud-init`. We will replace
-this configuration with
+The initial network configuration was bootstrapped by `cloud-init`.
+Now we will replace this configuration with
 [systemd-networkd](https://wiki.archlinux.org/title/Systemd-networkd)
-for all of the network devices (and removing `cloud-init` and
-`netplan` in the process):
+to manager all of the network devices (and removing netplan to not
+conflict):
 
 ```bash
 ## Run this inside the router VM:
-(set -e
+(set -ex
 # Rename all devices:
 (for i in vm0,${VM0_MAC} vm1,${VM1_MAC} wan,${WAN_MAC} lan,${LAN_MAC} opt1,${OPT1_MAC} opt2,${OPT2_MAC};
     do IFS=","; set -- $i; interface=$1; mac=$2;
@@ -317,11 +354,14 @@ sed -i \
   's|^ExecStart=.*|ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --ignore=opt1 --ignore=opt2|' \
   /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service
 
-## Remove cloud-init and netplan (you did your job admirably!)
+## Disable the original cloud-init networking (netplan)
 rm -rf /etc/netplan
-pacman -R --noconfirm cloud-init netplan
-systemctl mask --now cloud-init
+cat <<EOF > /etc/cloud/cloud.cfg.d/disable-netplan.cfg
+network:
+  config: disabled
+EOF
 )
+echo done
 ```
 
 Plug in the ethernet cables for `WAN` and `LAN`. `OPT1` and `OPT2`
@@ -334,13 +374,18 @@ reboot
 ```
 
 SSH back in again once it reboots, and double check the new network
-devices: `ip addr` should show each device in `state UP` and have an
-IPv4 address (`inet x.x.x.x`). `ip route` should show a single default gateway
-(`default via` on `dev wan`).
+devices: 
 
-## Install DHCP server
+ * `ip addr` should show each device in `state UP` and have an IPv4
+   address (`inet x.x.x.x`). (all except for opt1 and opt2 which are
+   not used yet.)
+ * `ip route` should show ONLY ONE single default gateway on the `WAN`
+   device (`default via x.x.x.x dev wan ...`) in addition to several `link`
+   level routes for each configured device.
 
-You will need a DHCP server for the `lan` and `vm1` interfaces.
+## Install dnsmasq
+
+You will need a DHCP server and DNS server for the `lan` and `vm1` interfaces.
 
 Install dnsmasq, and create two separate config files for two DHCP
 servers listening on exclusive interfaces:
@@ -355,7 +400,8 @@ interface=vm1
 domain=vm1
 bind-interfaces
 listen-address=192.168.1.1
-port=0
+server=::1
+server=127.0.0.1
 dhcp-range=192.168.1.10,192.168.1.250,255.255.255.0,1h
 dhcp-option=3,192.168.1.1
 dhcp-option=6,192.168.1.1
@@ -366,7 +412,8 @@ interface=lan
 domain=lan
 bind-interfaces
 listen-address=192.168.100.1
-port=0
+server=::1
+server=127.0.0.1
 dhcp-range=192.168.100.10,192.168.100.250,255.255.255.0,1h
 dhcp-option=3,192.168.100.1
 dhcp-option=6,192.168.100.1
@@ -399,8 +446,9 @@ systemctl enable --now dnsmasq@lan.service
 )
 ```
 
-(Note: dnsmasq is only serving as a DHCP server. Its own DNS has been disabled
-via `port=0`.)
+`dnsmasq` will serve as a DHCP server and a caching DNS resolver that
+forwards queries to `dnscrypt-proxy`, which will be setup in the next
+section.
 
 ## Install dnscrypt-proxy DNS server
 
@@ -409,13 +457,13 @@ via `port=0`.)
 (set -ex
 if ! command -v dnscrypt-proxy >/dev/null; then pacman -S --noconfirm dnscrypt-proxy; fi
 sed -i \
-  -e "s/^listen_addresses =.*/listen_addresses = ['127.0.0.1:53','[::1]:53','192.168.1.1:53','192.168.100.1:53']/" \
+  -e "s/^listen_addresses =.*/listen_addresses = ['127.0.0.1:53','[::1]:53']/" \
   -e "s/^# server_names =.*/server_names = ['cloudflare']/" \
   /etc/dnscrypt-proxy/dnscrypt-proxy.toml
 
 systemctl enable --now dnscrypt-proxy
 
-chattr -i /etc/resolv.conf
+chattr -i /etc/resolv.conf || true
 rm -f /etc/resolv.conf
 cat <<EOF > /etc/resolv.conf
 nameserver ::1
@@ -425,6 +473,9 @@ EOF
 chattr +i /etc/resolv.conf
 )
 ```
+
+`dnscrypt-proxy` only listens on localhost port 53. `dnsmasq` is
+running a small caching DNS server that forwards to `dnscrypt-proxy`.
 
 ## Install nftables
 
@@ -584,7 +635,8 @@ test VM that will connect to the `vmbr1` bridge, automatically
 retrieve an IP address from the DHCP server, and connect to the
 internet through the router.
 
-Run this on the Proxmox host:
+For temporary testing purposes, create a debian host (using
+`TEMPLATE_ID=9001` created previously in [part 5](05-kvm-templates)):
 
 ```env
 ## export the variables needed by proxmox_kvm.sh:

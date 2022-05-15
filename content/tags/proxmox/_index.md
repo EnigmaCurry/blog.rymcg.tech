@@ -55,4 +55,9 @@ use a shell script to generate several KVM virtual machine templates
 from various distributions, including Arch Linux, Debian, Ubuntu,
 Fedora, and even FreeBSD (can't do that one with a container!)
 
+In [part six: nftables home LAN router](/blog/proxmox/06-router) we
+build a network router for the home LAN inside a KVM virtual machine using PCI passthrough for a
+four port network interface, and install a nftables firewall, dnsmasq
+DHCP server, and dnscrypt-proxy DNS server.
+
 {{< about_footer >}}
