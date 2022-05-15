@@ -34,7 +34,7 @@ params:
   #telegram: '?'
   #twitter: '?'
   #mastodon_url: 'https://mastodon.url/?'
-  email: 'ryan@rymcg.tech'
+  email: 'ryan-blog@rymcg.tech'
   # best_posts:
   #   - title: Migrate to Hugo from Jekyll
   #     url: /blog/migrate-from-jekyll/
