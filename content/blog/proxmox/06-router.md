@@ -397,6 +397,7 @@ if ! command -v dnsmasq >/dev/null; then pacman -S --noconfirm dnsmasq; fi
 
 cat <<EOF > /etc/dnsmasq-vm1.conf
 interface=vm1
+except-interface=lo
 domain=vm1
 bind-interfaces
 listen-address=192.168.1.1
@@ -409,6 +410,7 @@ EOF
 
 cat <<EOF > /etc/dnsmasq-lan.conf
 interface=lan
+except-interface=lo
 domain=lan
 bind-interfaces
 listen-address=192.168.100.1
