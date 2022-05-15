@@ -557,8 +557,8 @@ table inet filter {
   set vm0_accepted_tcp { type inet_service; flags interval; elements = $VM0_ACCEPTED_TCP }
   set vm1_accepted_tcp { type inet_service; flags interval; elements = $VM1_ACCEPTED_TCP }
   set vm1_accepted_udp { type inet_service; flags interval; elements = $VM1_ACCEPTED_UDP }
-  set lan_accepted_tcp { type inet_service; flags interval; elements = $VM1_ACCEPTED_TCP }
-  set lan_accepted_udp { type inet_service; flags interval; elements = $VM1_ACCEPTED_UDP }
+  set lan_accepted_tcp { type inet_service; flags interval; elements = $LAN_ACCEPTED_TCP }
+  set lan_accepted_udp { type inet_service; flags interval; elements = $LAN_ACCEPTED_UDP }
 
   ## To ban a host for one day: nft add element ip filter blackhole { 10.0.0.1 }
   set blackhole { type ipv4_addr; flags timeout; timeout 1d; }
