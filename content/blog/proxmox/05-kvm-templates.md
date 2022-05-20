@@ -61,7 +61,11 @@ chmod a+x proxmox_kvm.sh
 
 ## Creating KVM templates
 
-You can create templates for every Operating System you wish to run:
+You can create templates for every Operating System you wish to run.
+In order to follow along with this blog series, you should create all
+of the following templates with the same `TEMPLATE_ID` shown, as these
+templates will be used in subsequent posts (you'll need at least the
+ones for Arch Linux (`9000`), Debian (`9001`), and Docker (`9998`)).
 
 ### Arch Linux
 

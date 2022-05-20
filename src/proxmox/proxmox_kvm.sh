@@ -14,6 +14,7 @@ TEMPLATE_ID=${TEMPLATE_ID:-9001}
 VM_ID=${VM_ID:-100}
 VM_HOSTNAME=${VM_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 VM_USER=${VM_USER:-root}
+VM_PASSWORD=${VM_PASSWORD:-""}
 ## Point to the local authorized_keys file to copy into VM:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 # Container CPUs:
@@ -69,6 +70,10 @@ template() {
                               )
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bullseye" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-genericcloud-amd64.qcow2
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "focal" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
         elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-35" ]]; then
@@ -103,8 +108,7 @@ template() {
            --bootdisk scsi0 \
            --serial0 socket \
            --vga serial0 \
-           --agent 1 \
-           --ciuser ${VM_USER}
+           --agent 1
 
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
@@ -117,6 +121,7 @@ template() {
         cat <<EOF > ${USER_DATA}
 #cloud-config
 fqdn: ${VM_HOSTNAME}
+ssh_pwauth: false
 users:
  - name: ${VM_USER}
    gecos: ${VM_USER}
@@ -142,6 +147,15 @@ clone() {
     USER_DATA=vm-${VM_ID}-user-data.yaml
     cp ${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml ${SNIPPETS_DIR}/${USER_DATA}
     sed -i "s/^fqdn:.*/fqdn: ${VM_HOSTNAME}/" ${SNIPPETS_DIR}/${USER_DATA}
+    if [[ -v VM_PASSWORD ]]; then
+        cat <<EOF >> ${SNIPPETS_DIR}/${USER_DATA}
+chpasswd:
+  expire: false
+  list:
+    - ${VM_USER}:${VM_PASSWORD}
+EOF
+    fi
+
     qm set "${VM_ID}" \
        --name "${VM_HOSTNAME}" \
        --sockets "${NUM_CORES}" \

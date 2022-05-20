@@ -644,30 +644,29 @@ retrieve an IP address from the DHCP server, and connect to the
 internet through the router.
 
 For temporary testing purposes, create a debian host (using
-`TEMPLATE_ID=9001` created previously in [part 5](05-kvm-templates)):
+`TEMPLATE_ID=9001` created previously in [KVM
+Templates](../05-kvm-templates/#debian-bullseye)):
 
 ```env
 ## export the variables needed by proxmox_kvm.sh:
 export VM_ID=199
 export TEMPLATE_ID=9001
 export VM_HOSTNAME=test1
-export TEMP_PASSWORD=root
+export VM_PASSWORD=root
 ```
 
 ```bash
 ./proxmox_kvm.sh clone
 ```
 
-Configure the networking for `vmbr1` and set a temporary console
-password:
+Configure the networking for `vmbr1`:
 
 ```bash
 qm set ${VM_ID} \
    --net0 "virtio,bridge=vmbr1" \
    --ipconfig1 ip=dhcp \
    --nameserver 192.168.1.1 \
-   --searchdomain vm1 \
-   --cipassword ${TEMP_PASSWORD}
+   --searchdomain vm1
 ```
 
 Start the test VM:
