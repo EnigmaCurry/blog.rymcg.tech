@@ -10,7 +10,7 @@ params:
   copyright: '© 2020-2022 EnigmaCurry'
   copyrightUrl: 'https://blog.rymcg.tech'
   description: 'Self-hosted, Open Source, Freedom'
-  faviconfile: 'https://blog.rymcg.tech/img/favicon.png'
+  faviconfile: '/img/favicon.png'
   latestpostcount: 1000
   logofile: 'img/logo.jpg'
   highlightjs: true
