@@ -605,15 +605,11 @@ table inet filter {
     ip saddr @blackhole drop comment "drop banned hosts"
     ct state {established, related} accept comment "allow tracked connections"
 
-    ### Allow all ICMP (testing):
-    ip protocol icmp accept comment "allow all icmp ipv4"
-    meta l4proto ipv6-icmp accept comment "allow all icmp ipv6"
-
-    ### TODO: Allow only a subset of ICMP messages:
-    #iif @private_interfaces ip protocol icmp accept comment "Allow private unrestricted ICMP"
-    #iif @private_interfaces ip6 nexthdr icmpv6 accept comment "Allow private unrestricted ICMPv6"
-    #iif $WAN_INTERFACE ip protocol icmp icmp type @public_accepted_icmp limit rate 100/second accept comment "Allow some ICMP"
-    #iif $WAN_INTERFACE ip6 nexthdr icmpv6 icmpv6 type @public_accepted_icmpv6 limit rate 100/second accept comment "Allow some ICMPv6"
+    ### Allow only a subset of ICMP messages:
+    iif @private_interfaces ip protocol icmp accept comment "Allow private unrestricted ICMP"
+    iif @private_interfaces ip6 nexthdr icmpv6 accept comment "Allow private unrestricted ICMPv6"
+    iif $WAN_INTERFACE ip protocol icmp icmp type @public_accepted_icmp limit rate 100/second accept comment "Allow some ICMP"
+    iif $WAN_INTERFACE ip6 nexthdr icmpv6 icmpv6 type @public_accepted_icmpv6 limit rate 100/second accept comment "Allow some ICMPv6"
 
     tcp dport @vm0_accepted_tcp iifname vm0 ct state new log prefix "Admin connection on VM0:" accept
     tcp dport @vm1_accepted_tcp iifname vm1 ct state new accept
@@ -621,10 +617,8 @@ table inet filter {
     tcp dport @lan_accepted_tcp iifname lan ct state new accept
     udp dport @lan_accepted_udp iifname lan ct state new accept
 
-    iif vm1 log prefix "drop all other packets from VM1" drop
     iif $WAN_INTERFACE drop comment "drop all other packets from WAN"
-    # TODO:
-    #pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited comment "Reject all other packets with rate limit"
+    pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited comment "Reject all other packets with rate limit"
     counter
   }
   chain forward {
