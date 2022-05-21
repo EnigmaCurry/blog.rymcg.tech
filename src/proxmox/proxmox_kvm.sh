@@ -170,7 +170,7 @@ get_ip() {
     set -eo pipefail
     ## Get the IP address through the guest agent
     if ! command -v jq >/dev/null; then apt install -y jq; fi
-    pvesh get nodes/${HOSTNAME}/qemu/100/agent/network-get-interfaces --output-format=json | jq -r '.result[] | select(.name | test("eth0")) | ."ip-addresses"[] | select(."ip-address-type" | test("ipv4")) | ."ip-address"'
+    pvesh get nodes/${HOSTNAME}/qemu/${VM_ID}/agent/network-get-interfaces --output-format=json | jq -r '.result[] | select(.name | test("eth0")) | ."ip-addresses"[] | select(."ip-address-type" | test("ipv4")) | ."ip-address"'
 }
 
 _template_from_url() {

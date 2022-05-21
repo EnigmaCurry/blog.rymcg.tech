@@ -4,10 +4,16 @@ date: 2022-05-10T00:02:00-06:00
 tags: ['proxmox']
 ---
 
-Let's make a network router/firewall/dhcp/dns server for the home LAN,
-with nftables, dnsmasq, and dnscrypt-proxy, all inside of a Proxmox
-KVM virtual machine, and a physical four port network interface using
-PCI passthrough.
+Let's make a network router/firewall/DHCP/DNS server for the home LAN,
+with [nftables](https://nftables.org/projects/nftables/index.html),
+[dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html), and
+[dnscrypt-proxy](https://github.com/DNSCrypt/dnscrypt-proxy), all
+inside of a Proxmox KVM virtual machine, and a physical four port
+network interface using PCI passthrough. We'll use nftables counters
+on a per-route basis to collect traffic statistics, and export these
+to a separate
+[prometheus](https://github.com/prometheus/prometheus#readme)/[grafana](https://github.com/grafana/)
+VM in order to monitor bandwidth usage.
 
 ## Notice
 
@@ -49,20 +55,20 @@ Proxmox is installed with the on-board Realtek NIC as the only
 interface bonded to `vmbr0` (the default public network bridge in
 Proxmox) and this port is used only for administrative purposes. The
 four ports on the i350-T4 are passed directly to a KVM virutal machine
-via IOMMU. This means that the VM is totally in control of these four
-physical NICs, and Proxmox is hands off.
+via IOMMU (PCI passthrough). This means that the VM is totally in
+control of these four physical NICs, and Proxmox is hands off.
 
 The VM that uses the i350 ports will become the new router, with the
 ports `WAN`, `LAN`, `OPT1`, `OPT2`, top to bottom as pictured above.
-The white cable is WAN (internet), the red cable is LAN (local area),
-and the blue cable is in `VM0` the on-board admin port which is bonded
-to `vbmr0`.
+The white cable is `WAN` (internet), the red cable is `LAN` (local
+area), and the blue cable is `VM0`, the on-board admin port which
+is bonded to `vbmr0`.
 
-Technically, the i350-T4 network interface should be capable of SRIOV,
-which would allow the four ports to be split into several virtual
-interfaces (called "functions") mapped to more than four VMs at the
-same time. However, I could not get this to work, as it appears that
-the [Dell variety of this NIC disables
+Technically, the i350-T4 network interface should be capable of SRIOV
+(PCI multiplexing), which would allow the four ports to be split into
+several virtual interfaces (called "functions") mapped to more than
+four VMs at the same time. However, I could not get this to work, as
+it appears that the [Dell variety of this NIC disables
 SRIOV](https://community.intel.com/t5/Ethernet-Products/Sr-IOV-Server-2012-I350-T4/m-p/218191#M644)
 (doh! double check it when you buy it if you want this feature!).
 However, for this project, SRIOV is unnecessary and overkill, as the
@@ -76,8 +82,31 @@ the router named `VM1`. If you don't have a machine with extra NICs
 (or if it does not support IOMMU), you can still play along using this
 virtual interface, but you will only be able to use this router for
 VMs and containers inside Proxmox. (Maybe you could technically make a
-router using VLANs with only one NIC, but this is outside the scope of
-this post.)
+router using VLANs with only one NIC, or you could bond additional
+interfaces to a bridge on the Proxmox host without PCI passthrough,
+and use additional virtual interfaces in router VM bonded to the same
+bridge, but these alternative topics are outside the scope of this
+post.)
+
+## Create the vmbr1 bridge
+
+By default, Proxmox comes installed with only one bridge defined:
+`vmbr0`, since this bridge is reserved for our administration port, we
+need a separate bridge just for the `VM_ID` 100->199 block of machines
+named `vmbr1`:
+
+```bash
+pvesh create /nodes/${HOSTNAME}/network \
+  --iface vmbr1 \
+  --type bridge \
+  --cidr 192.168.1.2/24 \
+  --autostart 1 && \
+pvesh set /nodes/${HOSTNAME}/network
+```
+
+The proxmox host needs its own IP address on this network, so we will
+choose the IP address `192.168.1.2`, reserving the honor of
+`192.168.1.1` for the router VM itself.
 
 ## Create the router VM
 
@@ -183,8 +212,8 @@ IP address is:
 minutes and try again. You can also find the IP address on the VM
 summary page in the GUI once the guest agent is installed.)
 
-Test that SSH works to the public WAN IP address (replace `x.x.x.x`
-with the discovered IP address):
+Test that SSH works (replace `x.x.x.x` with the discovered IP
+address):
 
 ```bash
 ssh root@x.x.x.x
@@ -576,11 +605,15 @@ table inet filter {
     ip saddr @blackhole drop comment "drop banned hosts"
     ct state {established, related} accept comment "allow tracked connections"
 
-    # Allow only a subset of ICMP messages:
-    iif @private_interfaces ip protocol icmp accept comment "Allow private unrestricted ICMP"
-    iif @private_interfaces ip6 nexthdr icmpv6 accept comment "Allow private unrestricted ICMPv6"
-    iif $WAN_INTERFACE ip protocol icmp icmp type @public_accepted_icmp limit rate 100/second accept comment "Allow some ICMP"
-    iif $WAN_INTERFACE ip6 nexthdr icmpv6 icmpv6 type @public_accepted_icmpv6 limit rate 100/second accept comment "Allow some ICMPv6"
+    ### Allow all ICMP (testing):
+    ip protocol icmp accept comment "allow all icmp ipv4"
+    meta l4proto ipv6-icmp accept comment "allow all icmp ipv6"
+
+    ### TODO: Allow only a subset of ICMP messages:
+    #iif @private_interfaces ip protocol icmp accept comment "Allow private unrestricted ICMP"
+    #iif @private_interfaces ip6 nexthdr icmpv6 accept comment "Allow private unrestricted ICMPv6"
+    #iif $WAN_INTERFACE ip protocol icmp icmp type @public_accepted_icmp limit rate 100/second accept comment "Allow some ICMP"
+    #iif $WAN_INTERFACE ip6 nexthdr icmpv6 icmpv6 type @public_accepted_icmpv6 limit rate 100/second accept comment "Allow some ICMPv6"
 
     tcp dport @vm0_accepted_tcp iifname vm0 ct state new log prefix "Admin connection on VM0:" accept
     tcp dport @vm1_accepted_tcp iifname vm1 ct state new accept
@@ -588,8 +621,10 @@ table inet filter {
     tcp dport @lan_accepted_tcp iifname lan ct state new accept
     udp dport @lan_accepted_udp iifname lan ct state new accept
 
+    iif vm1 log prefix "drop all other packets from VM1" drop
     iif $WAN_INTERFACE drop comment "drop all other packets from WAN"
-    pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited comment "Reject all other packets with rate limit"
+    # TODO:
+    #pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited comment "Reject all other packets with rate limit"
     counter
   }
   chain forward {
@@ -627,14 +662,15 @@ Verify the new ruleset:
 nft list ruleset
 ```
 
-If you run into problems where the configuration is invalid, you can
-debug the errors by running:
+To check the `nftables.conf` syntax run:
 
 ```bash
 # Run this inside the router VM:
 ## This won't reload the firewall, but will simply check the syntax:
 nft -f /etc/nftables.conf -c
 ```
+
+(If the syntax is 100% correct, this won't print anything.)
 
 ## Create a test VM on vmbr1
 
@@ -690,15 +726,68 @@ Enter a few times.)
 Check that everything is working from inside the test VM:
 
  * Check `ip addr`, `eth0` should have receieved an active IP address
-   in the range `192.168.1.x`.
+   in the range `192.168.1.x`. (I have observed that `eth0`
+   erroneously receives TWO ip addresses on the first boot, but only
+   one on subsequent reboots.)
  * Check `ip route` should show only one default gateway (`default via
    192.168.1.1 dev eth0 `).
  * Check that `/etc/resolv.conf` shows only one nameserver
    (`192.168.1.1`) with a search domain of `vm1`. (If you see more
    than one nameserver, you may have forgot to set the cloud-init
-   `--nameserver` and `--searchdomain` in the VM settings.)
+   `--nameserver` and `--searchdomain` in the VM settings as shown
+   above.)
  * Check that you can `ping 192.168.1.1` to test connectivity to the router.
  * Check that you can `ping 1.1.1.1` to test connectivity to the internet.
  * Check that you can `ping one.one.one.one` to test DNS.
  * Check that `ssh 192.168.1.1` shows `No route to host` (SSH to the
    router should be blocked from `vmbr1`.)
+
+## Create Prometheus VM
+
+Let's create a
+[Prometheus](https://github.com/prometheus/prometheus#readme) powered
+dashboard to monitor network bandwidth per interface/client. Create a
+new Docker VM (use the Docker `TEMPLATE_ID=9998` introduced in [KVM
+Templates](../05-kvm-templates/#docker)) and configure it for the
+`vmbr1` network:
+
+```env
+## export the variables needed by proxmox_kvm.sh:
+export TEMPLATE_ID=9998
+export VM_ID=101
+export VM_HOSTNAME=prometheus
+```
+
+```bash
+# Run this on the proxmox host:
+./proxmox_kvm.sh clone && \
+qm set ${VM_ID} \
+   --net0 "virtio,bridge=vmbr1" \
+   --ipconfig1 ip=dhcp \
+   --nameserver 192.168.1.1 \
+   --searchdomain vm1 && \
+qm start ${VM_ID}
+```
+
+Wait for the Docker VM to boot, and get the IP address:
+
+```bash
+./proxmox_kvm.sh get_ip
+```
+
+SSH to the Prometheus VM using the discovered IP address:
+
+```bash
+ssh root@x.x.x.x
+```
+
+Docker is preinstalled and running, you can verify it is working:
+
+```bash
+# Run this inside the prometheus VM:
+docker run hello-world
+```
+
+This will print `Hello from Docker!` and some additional information.
+
+TODO: install prometheus and grafana
