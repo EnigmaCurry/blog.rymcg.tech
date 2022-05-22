@@ -132,7 +132,7 @@ VM1_IP=192.168.1.1
 ./proxmox_kvm.sh clone
 ```
 
-## Add a virtual network interface to VM bridge vmbr1
+### Add a virtual network interface to VM bridge vmbr1
 
 Add a second network interface to act as the gateway for the VM_ID
 100->199 block on the vmbr1 network bridge:
@@ -143,7 +143,7 @@ qm set ${VM_ID} \
    --ipconfig1 ip=${VM1_IP}/24
 ```
 
-## Add the four physical NICs to the VM
+### Add the four physical NICs to the VM
 
 On the Proxmox host, the i350-T4 shows up as a single PCI device
 divided into four separate PCI device functions in the output of
@@ -181,7 +181,7 @@ Once you turn on the VM, you will find that `ip link` no longer shows
 these devices on the Proxmox host, because they have been transferred
 into the VM's control.
 
-## Make an initial snapshot
+### Make an initial snapshot
 
 You're about to start the router VM for the first time, but before you
 do, make a snapshot. This way you will be able to rollback to a
@@ -192,7 +192,7 @@ reclone and reconfigure the VM:
 qm snapshot ${VM_ID} init
 ```
 
-## Start the VM
+### Start the VM
 
 ```bash
 qm start ${VM_ID}
@@ -232,7 +232,7 @@ cloud-init status -w
 You can also find the full cloud-init log in
 `/var/log/cloud-init-output.log` (inside the VM).
 
-## Install etckeeper to track configuration changes
+### Install etckeeper to track configuration changes
 
 [etckeeper](https://wiki.archlinux.org/title/Etckeeper) is a tool to
 track all of the changes you make to the files in `/etc/` inside of a
@@ -264,7 +264,7 @@ automatically push to a remote git server, see [etckepeer: Automatic
 push to remote
 repo](https://wiki.archlinux.org/title/Etckeeper#Automatic_push_to_remote_repo)
 
-## Rename network interfaces
+### Rename network interfaces
 
 In the newly created VM you will find six ethernet devices via `ip
 link` (`eth0`->`eth5`). Let's rename these interfaces to make it
@@ -412,7 +412,7 @@ devices:
    device (`default via x.x.x.x dev wan ...`) in addition to several `link`
    level routes for each configured device.
 
-## Install dnsmasq
+### Install dnsmasq
 
 You will need a DHCP server and DNS server for the `lan` and `vm1` interfaces.
 
@@ -481,7 +481,7 @@ systemctl enable --now dnsmasq@lan.service
 forwards queries to `dnscrypt-proxy`, which will be setup in the next
 section.
 
-## Install dnscrypt-proxy DNS server
+### Install dnscrypt-proxy DNS server
 
 ```bash
 # Run this inside the router VM:
@@ -508,7 +508,7 @@ chattr +i /etc/resolv.conf
 `dnscrypt-proxy` only listens on localhost port 53. `dnsmasq` is
 running a small caching DNS server that forwards to `dnscrypt-proxy`.
 
-## Install nftables
+### Install nftables
 
 Install and enable nftables:
 
@@ -531,7 +531,7 @@ packets except for SSH and ICMP for ping. This configuration is not
 yet suitable for a router, but provides a reasonble place to start.
 
 
-## Create nftables rules
+### Create nftables rules
 
 Overwrite the `/etc/nftables.conf` and provide the new nftables
 configuration:
