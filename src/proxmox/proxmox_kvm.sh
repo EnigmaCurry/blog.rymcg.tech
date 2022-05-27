@@ -26,6 +26,7 @@ SWAP_SIZE=${SWAP_SIZE:-${MEMORY}}
 # Container root filesystem size in GB:
 FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 INSTALL_DOCKER=${INSTALL_DOCKER:-no}
+START_ON_BOOT=${START_ON_BOOT:-1}
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
@@ -160,7 +161,9 @@ EOF
        --name "${VM_HOSTNAME}" \
        --sockets "${NUM_CORES}" \
        --memory "${MEMORY}" \
+       --onboot "${START_ON_BOOT}" \
        --cicustom "user=local:snippets/${USER_DATA}"
+
     #qm snapshot "${VM_ID}" init
     echo "Cloned VM ${VM_ID} from template ${TEMPLATE_ID}. To start it, run:"
     echo "  qm start ${VM_ID}"

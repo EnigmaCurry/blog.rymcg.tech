@@ -750,6 +750,7 @@ Templates](../05-kvm-templates/#docker)) and configure it for the
 export TEMPLATE_ID=9998
 export VM_ID=101
 export VM_HOSTNAME=prometheus
+unset VM_PASSWORD
 ```
 
 ```bash
