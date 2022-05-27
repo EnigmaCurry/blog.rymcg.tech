@@ -555,7 +555,7 @@ define WAN_INTERFACE = { wan }
 define PRIVATE_INTERFACES = { vm1, lan, opt1, opt2 }
 
 define VM0_ACCEPTED_TCP = { 22 }
-define VM1_ACCEPTED_TCP = { 53 }
+define VM1_ACCEPTED_TCP = { 53, 9100 }
 define VM1_ACCEPTED_UDP = { 53, 67 }
 define LAN_ACCEPTED_TCP = { 53 }
 define LAN_ACCEPTED_UDP = { 53, 67 }
@@ -785,4 +785,65 @@ docker run hello-world
 
 This will print `Hello from Docker!` and some additional information.
 
-TODO: install prometheus and grafana
+### Install node-exporter on each VM
+
+You can install
+[node-exporter](https://github.com/prometheus/node_exporter) on all
+the VMs and other hosts you wish to monitor with prometheus. Let's
+start by installing node-exporter inside the prometheus VM itself:
+
+```bash
+# Run inside the prometheus VM:
+apt-get install -y prometheus-node-exporter
+```
+
+(On debian, the `prometheus-node-exporter` service is started
+automatically.)
+
+Also install this in the router VM:
+
+```bash
+# Run inside the router VM:
+pacman -S --noconfirm prometheus-node-exporter
+systemctl enable --now prometheus-node-exporter
+```
+
+### Create prometheus config file
+
+```bash
+# Run this inside the prometheus VM:
+mkdir -p /etc/prometheus
+cat <<EOF > /etc/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: 'codelab-monitor'
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'node'
+    static_configs:
+      - targets: ['prometheus:9100']
+        labels:
+          group: 'prometheus'
+      - targets: ['192.168.1.1:9100']
+        labels:
+          group: 'router'
+EOF
+```
+
+### Install prometheus container
+
+```bash
+# Run this inside the prometheus VM:
+docker run --name prometheus --restart=always -d \
+  -v /etc/prometheus:/etc/prometheus \
+  -p 9090:9090 prom/prometheus
+```
+
+
+### TODO: Install Grafana
+
+### TODO: setup nftables metrics exporter
