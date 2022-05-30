@@ -736,7 +736,7 @@ Check that everything is working from inside the test VM:
  * Check that `ssh 192.168.1.1` shows `No route to host` (SSH to the
    router should be blocked from `vmbr1`.)
 
-## Create Prometheus VM
+## Install Prometheus
 
 Let's create a
 [Prometheus](https://github.com/prometheus/prometheus#readme) powered
@@ -818,11 +818,15 @@ global:
   scrape_interval: 15s
   external_labels:
     monitor: 'codelab-monitor'
+rule_files:
+  - /etc/prometheus/node-exporter.rules.yml
 scrape_configs:
   - job_name: 'prometheus'
     scrape_interval: 5s
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          group: 'prometheus'
   - job_name: 'node'
     static_configs:
       - targets: ['prometheus:9100']
@@ -834,16 +838,75 @@ scrape_configs:
 EOF
 ```
 
+### Create prometheus node-exporter recording rules
+
+Copied from the [grafana node-exporeter
+documentation](https://grafana.com/oss/prometheus/exporters/node-exporter/?tab=recording-rules):
+
+```bash
+# Run this inside the prometheus VM:
+wget https://grafana.com/oss/prometheus/exporters/node-exporter/assets/node_rules.yaml \
+ -O /etc/prometheus/node-exporter.rules.yml
+```
+
 ### Install prometheus container
 
 ```bash
 # Run this inside the prometheus VM:
 docker run --name prometheus --restart=always -d \
   -v /etc/prometheus:/etc/prometheus \
-  -p 9090:9090 prom/prometheus
+  -p 9090:9090 \
+  prom/prometheus
 ```
 
+## Install Grafana
 
-### TODO: Install Grafana
+### Create datasources configuration
+
+```bash
+# Run this inside the prometheus VM:
+mkdir -p /etc/grafana/datasources
+cat <<EOF > /etc/grafana/datasources/datasources.yml
+apiVersion: 1
+datasources:
+ - name: Prometheus
+   type: prometheus
+   uid: prometheus
+   url: http://prometheus:9090
+EOF
+```
+
+### Create dashboards configuration
+
+```bash
+mkdir -p /etc/grafana/dashboards /var/lib/grafana/dashboards
+cat <<EOF > /etc/grafana/dashboards/dashboards.yml
+apiVersion: 1
+providers:
+  - name: 'local dashboards'
+    disableDeletion: true
+    updateIntervalSeconds: 60
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true
+EOF
+
+# https://grafana.com/grafana/dashboards/13978
+wget https://grafana.com/api/dashboards/13978/revisions/2/download \
+  -O /var/lib/grafana/dashboards/node-exporter.dashboard.json
+```
+
+### Install Grafana
+
+```bash
+docker run --name=grafana --restart=always -d \
+  -e "GF_INSTALL_PLUGINS=" \
+  -v /etc/grafana/datasources:/etc/grafana/provisioning/datasources \
+  -v /etc/grafana/dashboards:/etc/grafana/provisioning/dashboards \
+  -v /var/lib/grafana/dashboards:/var/lib/grafana/dashboards \
+  -p 3000:3000 \
+  grafana/grafana-oss
+```
 
 ### TODO: setup nftables metrics exporter
