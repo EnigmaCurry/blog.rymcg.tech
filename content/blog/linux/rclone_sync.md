@@ -13,12 +13,14 @@ rclone in a cron job, but this means that your files will only be synchronized
 as often as the cron job runs.
 
 We can improve this, with a script that uses
-[inotifywait](https://linux.die.net/man/1/inotifywait) to run immediately
-whenever files are changed. Furthermore, we can run the script in a User systemd
-unit so that syncrhonizations occur all of the time, even after a system reboot.
-Optional Desktop notifications, will give you extra confidence that the script
-is functional. (Otherwise you can check the systemd log for the verbose rclone
-output.)
+[inotifywait](https://linux.die.net/man/1/inotifywait) to run
+immediately whenever files are changed. Furthermore, we can run the
+script in a [User systemd
+unit](https://wiki.archlinux.org/title/Systemd/User) so that
+syncrhonizations occur all of the time, even after a system reboot.
+Optional Desktop notifications, will give you extra confidence that
+the script is functional. (Otherwise you can check the systemd log for
+the verbose rclone output.)
 
 All of the documentation is included in the script itself, just copy and save
 this script as `sync.sh` anywhere on your system, read it, then edit:
@@ -34,20 +36,24 @@ this script as `sync.sh` anywhere on your system, read it, then edit:
 ## Think use-case: Synchronize Keepass (.kdbx) database file immediately on save.
 ## Think use-case: Live edit source code and push to remote server
 
-## This is NOT a backup tool! 
+## This is NOT a backup tool!
 ## It will not help you if you delete your files or if they become corrupted.
+## If you need a backup tool, check out https://blog.rymcg.tech/blog/linux/restic_backup
 
 ## Setup: Install `rclone` from package manager.
 ## Run: `rclone config` to setup the remote, including the full remote
 ##   subdirectory path to sync to.
 ## MAKE SURE that the remote (sub)directory is EMPTY
 ##   or else ALL CONTENTS WILL BE DELETED by rclone when it syncs.
-## If unsure, add `--dry-run` to the RCLONE_CMD variable below, 
-##   to simulate what would be copied/deleted. 
-## Copy this script any place, and make it executable: `chown +x sync.sh`
+## If unsure, add `--dry-run` to the RCLONE_CMD variable below,
+##   to simulate what would be copied/deleted.
+## Enable your user for Systemd Linger: sudo loginctl enable-linger $USER
+## (Reference https://wiki.archlinux.org/title/Systemd/User#Automatic_start-up_of_systemd_user_instances)
+## Copy this script any place on your filesystem, and make it executable: `chown +x sync.sh`
 ## Edit all the variables below, before running the script.
 ## Run: `./sync.sh systemd_setup` to create and enable systemd service.
 ## Run: `journalctl --user --unit rclone_sync.${RCLONE_REMOTE}` to view the logs.
+## For desktop notifications, make sure you have installed a notification daemon (eg. dunst)
 
 ## Edit the variables below, according to your own environment:
 
