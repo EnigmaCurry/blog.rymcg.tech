@@ -69,6 +69,8 @@ RCLONE_SYNC_PATH="/home/user/dav-sync"
 RCLONE_REMOTE="my-webdav-remote:"
 
 # RCLONE_CMD: The sync command and arguments:
+## (This example is for one-way sync):
+## (Consider using other modes like `bisync` or `move` [see `man rclone` for details]):
 RCLONE_CMD="rclone -v sync ${RCLONE_SYNC_PATH} ${RCLONE_REMOTE}"
 
 # WATCH_EVENTS: The file events that inotifywait should watch for:
