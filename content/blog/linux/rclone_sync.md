@@ -40,7 +40,7 @@ this script as `sync.sh` anywhere on your system, read it, then edit:
 ## It will not help you if you delete your files or if they become corrupted.
 ## If you need a backup tool, check out https://blog.rymcg.tech/blog/linux/restic_backup
 
-## Setup: Install `rclone` from package manager.
+## Setup: Install `rclone` and `inotify-tools` from package manager.
 ## Run: `rclone config` to setup the remote, including the full remote
 ##   subdirectory path to sync to.
 ## MAKE SURE that the remote (sub)directory is EMPTY
