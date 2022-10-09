@@ -305,7 +305,7 @@ cat <<EOF > ${FLUX_INFRA_DIR}/${CLUSTER}/kube-system/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- https://raw.githubusercontent.com/traefik/traefik/${TRAEFIK_VERSION}/docs/content/reference/dynamic-configuration/kubernetes-crd-definition.yml
+- https://raw.githubusercontent.com/traefik/traefik/${TRAEFIK_VERSION}/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
 - traefik.rbac.yaml
 - traefik.pvc.yaml
 - traefik.yaml
