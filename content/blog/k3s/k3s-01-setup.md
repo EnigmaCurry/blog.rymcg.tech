@@ -278,14 +278,14 @@ cat <<'EOF' | podman build -t kube-toolbox -f -
 FROM alpine:latest
 
 ARG GIT_TEA_VERSION=0.6.0
-ARG KUSTOMIZE_VERSION=v3.9.1
+ARG KUSTOMIZE_VERSION=3.9.1
 ARG PODMAN_REMOTE_VERSION=v2.2.1
 
 ## Packages and upstream Kubernetes tools:
 RUN cd /usr/local/bin && \
  apk add --no-cache bash curl openssh git bash-completion jq docker-cli && \
  echo "## Arkade installer" && \
-   curl -sLS https://dl.get-arkade.dev | sh && \
+   curl -sLS https://get.arkade.dev | sh && \
    arkade get kubectl && \
    arkade get kubeseal && \
    arkade get hugo && \
@@ -293,11 +293,8 @@ RUN cd /usr/local/bin && \
    arkade get faas-cli && \
    arkade get helm && \
    arkade get k9s && \
+   arkade get kustomize --version=${KUSTOMIZE_VERSION} && \
    mv /root/.arkade/bin/* /usr/local/bin && \
- echo "### Kustomize (direct URL because arkade is broken see #299): " && \
-   curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
-   tar xfvz kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
-   rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz && \
  echo "### Flux: " && \
    curl -sL https://toolkit.fluxcd.io/install.sh | bash && \
  echo "### cdk8s / pyenv" && \
