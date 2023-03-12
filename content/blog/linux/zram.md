@@ -175,9 +175,9 @@ preferred before using the slower disk based swap file:
 
 ```
 $ cat /proc/swaps
-Filename                                Type            Size            Used            Priority
-/swapfile                               file            8388604         0               -2
-/dev/zram0                              partition       7615484         0               100
+Filename    Type            Size            Used            Priority
+/swapfile   file            8388604         0               -2
+/dev/zram0  partition       7615484         0               100
 ```
 
 Ideally the `/swapfile` will never be needed, but in the very worst
