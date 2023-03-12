@@ -82,8 +82,13 @@ Mem:            7437        7348          36           8          52          17
 Swap:           7436          35        7401
 ```
 
-One hard reboot later... So lets fill up the memory with zeros (should
-be infinitely compressable) and see how far it goes.
+Because the data is random, it can't store any more than you have
+physical space for. The OOM killer didn't do its job, and the system
+crashes. 
+
+So one hard reboot later... lets fill up the memory with zeros (which
+should be somewhat less than infinitely compressable) and see how far
+it goes:
 
 ```
 $ ipython
@@ -217,16 +222,13 @@ watch cat /proc/swaps
 ```
 
 ```
-$ ipython
-
-In [1]: import time
+In [1]: import random
 
 In [2]: eat_ram = []
 
-In [3]: for gigabyte in range(17):
-   ...:     eat_ram.append([bytearray(1024*1024*1000)])
+In [3]: for gigabyte in range(24):
+   ...:     eat_ram.append([random.randbytes(1024*1024) for _ in range(1000)])
    ...:     print(f"I ate {len(eat_ram)} GBs of random data")
-   ...:     time.sleep(1)
    ...:
 I ate 1 GBs of random data
 I ate 2 GBs of random data
@@ -243,37 +245,29 @@ I ate 12 GBs of random data
 I ate 13 GBs of random data
 I ate 14 GBs of random data
 I ate 15 GBs of random data
-I ate 16 GBs of random data
-I ate 17 GBs of random data
-
-## OK it ate all that and exhasuted all the zram,
-## Lets eat some more to exhaust all of the swapfile too:
-In [4]: for gigabyte in range(17,23):
-   ...:     eat_ram.append([bytearray(1024*1024*1000)])
-   ...:     print(f"I ate {len(eat_ram)} GBs of random data")
-   ...:     time.sleep(1)
-   ...:
-I ate 18 GBs of random data
-I ate 19 GBs of random data
-I ate 20 GBs of random data
-I ate 21 GBs of random data
-I ate 22 GBs of random data
 Killed
 ```
 
 It ate all the RAM, in this order:
 
   * Until all the physical RAM was exhausted, at ~8G.
-  * After 8G, zram started to be used, and a brief pause was observed
-    between 7GB and 8GB as it starts to swap.
+  * After 8G, zram started to be used, and a (not so) brief pause was
+    observed (<1 minute) between 7GB and 8GB as it starts to swap.
   * As zram is used, a bit of free physical ram was made available
     (even random data can get compressed sometimes), and so that was
     eaten too.
   * After all the zram was exhausted, then the `/swapfile` was used.
   * After almost all of the swap was used, the Kernel OOM killer
     killed python, and all the RAM was freed.
+  * 8GB physical RAM + 8GB of disk based swap = 16GB. So in the worst
+    case of completely random data, 16GB is the stopping point.
+  * In the best case scneario, where you store all zeros, the size is
+    not quite infinite, but is actually capped by the `zram-size`.
+    Assuming `zram-size = ram`, 8GB (physical) + 8GB (zram) + 8GB
+    (disk swap) = 24GB total memory. One more trial with storing all
+    zeros and the OOM killer caught it after it read 22GB.
 
-The critical  point to creating  the secondary `/swapfile` is  so that
+The critical point to creating  the secondary `/swapfile` is  so that
 the OOM killer functioned correctly, and killed the process before the
 system froze.
 
