@@ -181,8 +181,9 @@ Filename    Type            Size            Used            Priority
 ```
 
 Ideally the `/swapfile` will never be needed, but in the very worst
-case, it needs to be the same size as the physical RAM in order to
-prevent a potential hard lock up.
+case, it needs to exist as a backstop to prevent a potential hard lock
+up (perhaps the `/swapfile` can be created smaller than the physical
+ram size, I have not tested this).
 
 There's one more setting that needs to be tweaked before we can run
 the test again. Even with the second swap file, the system will still
