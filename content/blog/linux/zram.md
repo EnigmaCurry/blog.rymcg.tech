@@ -5,11 +5,13 @@ tags: ['linux']
 ---
 
 I remember in the days of MS-DOS you could use a "RAM doubler" to
-compress your memory storage and get "more" RAM. Well it's still a
-thing in Linux, called [Zram](https://wiki.archlinux.org/title/Zram)
+compress your memory storage and get "more" RAM, and then a bit later
+on there was a joke website where you could "download" more RAM. Well
+both of these are a reality in Linux (no joke), called
+[Zram](https://wiki.archlinux.org/title/Zram)
 
-On the odroid-m1 before without zram - I have 8GB of physical RAM and
-no swap:
+On my test system, the Odroid-m1, without zram - I have 8GB of
+physical RAM, and no swap:
 
 ```
 $ free -m
@@ -40,8 +42,8 @@ Swap:           7436           0        7436
 
 So now I have "double" the RAM, but its not filled with anything yet,
 so it doesn't know how much it can compress, but obviously I cannot
-use more than the physical RAM if the contents are fully random. But
-at least its _free_ RAM right? 😎
+use more than the physical RAM if the contents are statistically
+random. But at least its _free_ RAM right? 😎
 
 So lets fill the ram with random data and see how far it goes.
 
@@ -107,7 +109,8 @@ I ate 14 GBs of zeros
 Killed
 ```
 
-Final free report:
+Final free report after filling the memory with all zeros, moments
+before the process was killed:
 
 ```
                total        used        free      shared  buff/cache   available
@@ -117,12 +120,14 @@ Swap:           7436        7258         178
 
 Notably, when storing zeros it uses virtually all of the available ram
 and swap space, and then it is Killed by the linux kernel OutOfMemory
-killer. The machine did _not_ crash. I suspect the earlier crash was
-likely because the OOM killer didn't want to kill the process because
-it thought there was another 8GB of available swap (but of course
-there wasn't)
+(OOM) killer. The machine did _not_ crash. I suspect the earlier crash
+was likely because the OOM killer didn't want to kill the process
+because it thought there was another 8GB of available swap (but of
+course there wasn't any, because the data was random, and couldn't be
+compressed further.)
 
-Check out the man page for `zram-generator.conf`, especially regarding `zram-size`:
+Check out the man page for `zram-generator.conf`, especially regarding
+`zram-size`:
 
 ```
        O   zram-size=
@@ -137,10 +142,10 @@ Check out the man page for `zram-generator.conf`, especially regarding `zram-siz
            Defaults to min(ram / 2, 4096)
 ```
 
-In the test above, this setting was set to `ram` which uses the same
-size as the physical RAM. A more appropriate setting might be `ram/2`
-or `ram/3` depending on how high of a compression ratio you can expect
-for your workloads.
+In the test above, this setting was set to `ram` which makes the zram
+size the same size as the physical RAM. A more appropriate setting
+might be `ram/2` or `ram/3` depending on how high of a compression
+ratio you can expect for your workloads.
 
 To prevent the hard crash, you can add another swap file on your solid
 state disk. This swap file will only be necessary in the worst case
@@ -270,3 +275,11 @@ It ate all the RAM, in this order:
 The critical  point to creating  the secondary `/swapfile` is  so that
 the OOM killer functioned correctly, and killed the process before the
 system froze.
+
+## Further reading
+
+There's a good three part series all about swap and zram from haydenjames.io:
+
+ * [Linux Performance: Why You Should Almost Always Add Swap Space](https://haydenjames.io/linux-performance-almost-always-add-swap-space/)
+ * [Linux Performance: Almost Always Add Swap. Part 2: ZRAM](https://haydenjames.io/linux-performance-almost-always-add-swap-part2-zram/)
+ * [Raspberry Pi ZRAM and Kernel Parameters](https://haydenjames.io/raspberry-pi-performance-add-zram-kernel-parameters/)
