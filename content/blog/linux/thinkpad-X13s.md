@@ -13,10 +13,12 @@ the Linux kernel.
 
 This tutorial will install [Arch Linux ARM](https://archlinuxarm.org/)
 ("alarm") on the Thinkpad X13s, however as of March 2023 this is not
-officially supported yet. This tutorial will use the [Generic AArch64
+yet officially supported. This tutorial will use the [Generic AArch64
 installation](https://archlinuxarm.org/platforms/armv8/generic) and a
 custom kernel package from
-[ironrobin/x13s-alarm](https://github.com/ironrobin/x13s-alarm)
+[ironrobin/x13s-alarm](https://github.com/ironrobin/x13s-alarm) and
+the bootable archiso (.iso) image from
+[ironrobin/archiso-x13s](https://github.com/ironrobin/archiso-x13s#readme).
 
 I have only finished the install, and have not tested a lot of things
 on the X13s yet, but I am encouraged by the [reported features from
@@ -52,7 +54,12 @@ The Thinkpad X13s is replacing my aging Thinkpad T440s.
 ## Requirements
 
  * A Thinkpad X13s.
- * Two USB thumb drives.
+ * Two USB thumb drives. (One for the archiso, and another for the
+   UEFI shell. You really only need one USB drive if you just
+   overwrite the drive again, but having two drives lets you boot
+   either tool, which you might need to do several times if you make
+   any mistakes. Sidenote: the official X86 Arch Linux iso has UEFI
+   shell, but for some reason it was left out of ironrobin's iso.)
  * Another computer to prepare the thumb drives.
  * Wireless internet access.
 
@@ -117,8 +124,9 @@ dd if=archlinuxarm-2022.09.11-aarch64.iso of=/dev/sdX
    choose the USB drive to boot from.
 
  * The boot menu of the USB drive has two options, one to boot
-   straight from the USB drive, and one to copy the contents to RAM.
-   The only one that worked was the one that copies itself into RAM.
+   straight from the USB drive, and the other to copy the contents to
+   RAM. The only one that worked was the one that copies itself into
+   RAM.
 
 The system should now be booted and logged into the Bash terminal as
 root.
@@ -268,7 +276,14 @@ pacman-key --add public.asc
 pacman-key --lsign 9FD0B48BBBD974B80A3310AB6462EE0B8E382F3F
 ```
 
-Remove the default kernel and install the custom one instead:
+(Note: this repositry seems to be out of date, but it is only required
+temporarily, in order to get the intial kernel installed. You will
+most likely want to compile your own kernel and other packages to get
+new updates, at which point you can then remove this repository. See
+[Post Install](#post-install).)
+
+Remove the default kernel, and install the custom one from the `x13s`
+repository:
 
 ```
 pacman -Sy
@@ -397,12 +412,6 @@ here](https://github.com/ironrobin/x13s-alarm/tree/trunk/linux-x13s)
 but the package in the repository is old, and not based on this code.
 So you will need to compile the source code yourself.
 
-Install build dependencies:
-
-```
-pacman -S base-devel xmlto docbook-xsl inetutils bc uboot-tools vboot-utils dtc
-```
-
 Clone the x13s-alarm PKGBUILD repository:
 
 ```
@@ -413,16 +422,26 @@ Build and install the kernel:
 
 ```
 cd ~/git/vendor/x13s-alarm/linux-x13s
-time makepkg
-sudo pacman -U linux-x13s-6.3-3-aarch64.pkg.tar.xz linux-x13s-headers-6.3-3-aarch64.pkg.tar.xz
+time makepkg -s
+sudo pacman -U *.pkg.tar.xz
 ```
 
 Build and install the firmware (including wifi):
 
 ```
 cd ~/git/vendor/x13s-alarm/x13s-firmware
-time makepkg
-sudo pacman -U x13s-firmware-20230310-1-any.pkg.tar.xz
+time makepkg -s
+sudo pacman -U *.pkg.tar.xz
+```
+
+Build and install the GPU driver / Mesa packages (Adreno A690):
+
+```
+gpg --recv-key 4c95faab3eb073ec
+cd ~/git/vendor/x13s-alarm/mesa-a690
+time makepkg -s
+# After some time it will display a `Core options` screen, just press `q` to proceed.
+sudo pacman -U *.pkg.tar.xz
 ```
 
 Reboot, and check that the kernel is updated and that your wifi works:
@@ -432,7 +451,11 @@ Reboot, and check that the kernel is updated and that your wifi works:
 6.3.0-rc2-3-x13s
 ```
 
-After this, you can go ahead and install a graphical environment, like
+You can now remove the `x13s` pacman repository in `/etc/pacman.conf`,
+since you are now using your own compiled versions of the same
+packages.
+
+Now you can go ahead and install a graphical environment, like
 [Sway](https://wiki.archlinux.org/title/Sway).
 
 ### Generate Locale
@@ -444,3 +467,35 @@ echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
 localectl set-locale LANG=en_US.UTF-8
 ```
+
+## Issues
+
+The x13s-alarm repository does not allow opening issues, so I will
+document and try to update any issues I find here:
+
+### Screen Flickering
+
+I have observed brief, infrequent flickering of the screen in Wayland
+using wayland native applications (Firefox). There is also constant
+flickering in Emacs X11 using XWayland. For the time being, I have
+switched to using `emacs-nox` in the terminal console (using `foot`,
+which is wayland native terminal application) and `wl-clipboard` with
+this [emacs
+integration](https://www.emacswiki.org/emacs/CopyAndPaste#h5o-4) for
+copy and paste functions. I could apparently [compile my own
+emacs](https://aur.archlinux.org/packages/emacs-pgtk-native-comp-git)
+using GTK and it would become wayland native.
+
+(Self-compiled [`linux-x13s-6.3-3-aarch64 and mesa-a690 SHA
+d6248f4bf`](https://github.com/ironrobin/x13s-alarm/commit/d6248f4bf451736269881f784d0fb326b6683086))
+
+### Crash when switching between virtual consoles
+
+I have intermittently experienced a complete system lockup when
+switching from Wayland on console #1, to the tty console on tty2, and
+then switching back to Wayland on console #1. (Using `Ctrl-Alt-1` and
+`Ctrl-Alt-2`).
+
+(Self-compiled [`linux-x13s-6.3-3-aarch64 SHA
+d6248f4bf`](https://github.com/ironrobin/x13s-alarm/commit/d6248f4bf451736269881f784d0fb326b6683086))
+
