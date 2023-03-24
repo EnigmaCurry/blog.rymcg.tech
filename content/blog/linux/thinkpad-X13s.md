@@ -37,7 +37,9 @@ The Thinkpad X13s is replacing my aging Thinkpad T440s.
  * The T440s is usually quite silent, but the fan kicks on under
    load. The X13s has no fan, so it should stay completly silent.
  * Because of the fan in the T440s, it almost never gets hot. I wonder
-   if the X13s will get hot under load? We'll see..
+   if the X13s will get hot under load? We'll see.. (update: yes, it
+   does get quite hot while compiling the kernel, using all cores; way
+   hotter than you would want on your lap.)
  * I don't have any idea of the performance, but I also don't care, as
    I predominantly only use laptops for development on remote servers.
    Some benchmarks I've seen place this at 75% of the speed of an
@@ -382,3 +384,51 @@ cp efi/boot/bootaa64.efi /boot/shellaa64.efi
 You do not need to create a separate loader entry, `systemd-boot` will
 automatically detect it by convention of the filename being
 `shellaa64.efi`.
+
+## Post-install
+
+### Recompile the Kernel to get the GPU to work
+
+In order to install Wayland, you need the GPU driver to work. The
+[latest working kernel I found for the X13s is
+here](https://github.com/ironrobin/x13s-alarm/tree/trunk/linux-x13s)
+but the package in the repository is old, and not based on this code.
+So you will need to compile the source code yourself.
+
+Install build dependencies:
+
+```
+pacman -S base-devel xmlto docbook-xsl inetutils bc uboot-tools vboot-utils dtc
+```
+
+Clone the x13s-alarm PKGBUILD repository:
+
+```
+git clone https://github.com/ironrobin/x13s-alarm.git ~/git/vendor/x13s-alarm
+```
+
+Build and install the kernel:
+
+```
+cd ~/git/vendor/x13s-alarm/linux-x13s
+time makepkg
+sudo pacman -U linux-x13s-6.3-3-aarch64.pkg.tar.xz linux-x13s-headers-6.3-3-aarch64.pkg.tar.xz
+```
+
+Build and install the firmware (including wifi):
+
+```
+cd ~/git/vendor/x13s-alarm/x13s-firmware
+time makepkg
+sudo pacman -U x13s-firmware-20230310-1-any.pkg.tar.xz
+```
+
+Reboot, and check that the kernel is updated and that your wifi works:
+
+```
+# uname -r
+6.3.0-rc2-3-x13s
+```
+
+After this, you can go ahead and install a graphical environment, like
+[Sway](https://wiki.archlinux.org/title/Sway).
