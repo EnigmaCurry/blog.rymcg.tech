@@ -4,6 +4,8 @@ date: 2023-03-20T00:01:00-06:00
 tags: ['linux']
 ---
 
+{{<img src="/img/x13s.jpg" alt="Thinkpad X13S running Arch Linux ARM">}}
+
 The Thinkpad X13s is the first Lenovo Thinkpad with an ARM processor
 (Qualcomm Snapdragon 8cx Gen 3). This laptop is designed to run
 Microsoft Windows 11 (ARM), but the processor has initial support from
