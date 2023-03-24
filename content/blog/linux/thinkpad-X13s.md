@@ -432,3 +432,13 @@ Reboot, and check that the kernel is updated and that your wifi works:
 
 After this, you can go ahead and install a graphical environment, like
 [Sway](https://wiki.archlinux.org/title/Sway).
+
+### Generate Locale
+
+[Generate your locale settings](https://wiki.archlinux.org/title/LOCALE), for example:
+
+```
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
+localectl set-locale LANG=en_US.UTF-8
+```
