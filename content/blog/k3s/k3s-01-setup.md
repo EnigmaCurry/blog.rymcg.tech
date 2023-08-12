@@ -46,7 +46,7 @@ container](#create-toolbox-container-optional) to use as your virtual
      
  * `kubeseal`:
  
-   * Arch Linux has an [AUR build](https://aur.archlinux.org/packages/kubeseal/)
+   * Arch Linux: `sudo pacman -S kubeseal`
    * Other OS: [see releases](https://github.com/bitnami-labs/sealed-secrets/releases)
    * Note: only install the client side at this point, you will install the
      cluster side later in a different way.
