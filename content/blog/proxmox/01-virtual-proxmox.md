@@ -232,9 +232,10 @@ important to do if you chose to use the `bridge` network selection, in
  * In the `Server View` list, click the line that says `Datacenter`.
  * On the datacenter screen, find the `Firewall` settings.
  * Click the `Add` button to add firewall rules.
- * You don't need rules for SSH (TCP port 22) or for the Proxmox dashboard (TCP
-   port 8006), these rules are already taken care of for you from the base
-   system rules, as an anti-lockout feature.
+ * There are default anti-lockout rules for port 22 and 8006, *but
+   only acessible from the same subnet*. You should create your own
+   rules for these ports so that you don't lock yourself out.
+ * To host websites, you'll want to open ports 80 and 443.
 
 The firewall is turned off by default. To enable the firewall, find the Firewall
 `Options` submenu page, on the new screen double-click `Firewall` (value `No`)
