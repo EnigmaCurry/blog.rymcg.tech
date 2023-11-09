@@ -44,28 +44,6 @@ Each network is in charge of a `/24` address space, and a location-aware sub-dom
 pfsense will act as the DNS, DHCP, and firewall services for each of
 these networks.
 
-## ODroid H3 specfic needs
-
-The ODroid needs a specific realtek driver that is not included on the
-installation media. This driver can be installed from the package
-repository. TODO: document where this is.
-
-PFsense will boot and then immediately shutdown if it doesn't find any
-network cards. That will be the case until you install the realtek
-driver for the card. To get it to boot and not shutdown, I temporarily
-plugged in a USB ethernet adapter which is supported by FreeBSD. After
-the network link to the internet is up, you can install the package
-you need:
-
-```
-pkg install realtek-re-kmod-198.00_3
-```
-
-The name of this package may change as newer versions are released.
-[Check here for updated
-releases](https://ports.freebsd.org/cgi/ports.cgi?query=realtek-re-kmod)
-
-
 ## A managed network switch is required
 
 The ODroid is just a computer with six NICs. With pfsense installed,
@@ -103,6 +81,39 @@ limited by its single 2.5Gb interface).
 
 Download the .iso, `dd` it to a flash drive, plug a keyboard and mouse
 into the router, boot it, and install pfsense.
+
+## ODroid H3 specfic needs
+
+The ODroid needs a specific realtek driver that is not included on the
+installation media. This driver can be installed from the package
+repository.
+
+PFsense will boot and then immediately shutdown if it doesn't find any
+network cards. That will be the case until you install the realtek
+driver for the card. To get it to boot and not shutdown, I temporarily
+plugged in a USB ethernet adapter which is supported by FreeBSD. After
+the network link to the internet is up, you can install the package
+you need:
+
+```
+pkg add https://pkg.freebsd.org/FreeBSD:14:amd64/latest/All/realtek-re-kmod-198.00_3.pkg
+```
+
+The name of this package may change as newer versions are released.
+[Check here for updated
+releases](https://ports.freebsd.org/cgi/ports.cgi?query=realtek-re-kmod)
+
+Create the boot loader config:
+
+```
+cat <<EOF > /boot/loader.conf.local
+if_re_load="YES"
+if_re_name="/boot/modules/if_re.ko"
+EOF
+```
+
+Type `exit` and then choose `5) Reboot system` from the menu. When the
+router reboots, it should find all the interfaces.
 
 ## Reset to factory defaults
 
