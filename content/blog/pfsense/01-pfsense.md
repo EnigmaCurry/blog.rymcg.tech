@@ -50,6 +50,22 @@ The ODroid needs a specific realtek driver that is not included on the
 installation media. This driver can be installed from the package
 repository. TODO: document where this is.
 
+PFsense will boot and then immediately shutdown if it doesn't find any
+network cards. That will be the case until you install the realtek
+driver for the card. To get it to boot and not shutdown, I temporarily
+plugged in a USB ethernet adapter which is supported by FreeBSD. After
+the network link to the internet is up, you can install the package
+you need:
+
+```
+pkg install realtek-re-kmod-198.00_3
+```
+
+The name of this package may change as newer versions are released.
+[Check here for updated
+releases](https://ports.freebsd.org/cgi/ports.cgi?query=realtek-re-kmod)
+
+
 ## A managed network switch is required
 
 The ODroid is just a computer with six NICs. With pfsense installed,
