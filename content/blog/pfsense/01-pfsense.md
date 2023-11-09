@@ -4,8 +4,6 @@ url: "pfsense/pfsense"
 date: 2023-11-08T11:46:03-07:00
 ---
 
-TODO: anonymize the addresses and domains!
-
 This example installation will use the ODroid H3 as the core pfsense
 router for a home installation. This configuration includes an addon
 card for a total of six 2.5Gbps Ethernet network controllers (NICs).
@@ -14,34 +12,30 @@ card for a total of six 2.5Gbps Ethernet network controllers (NICs).
 
 The six NICs on the odroid will be used like this:
 
- * port 1: WAN - wide area network, ie. the internet.
- * port 2: LAN - local area network, ie. family computers and devices.
- * port 3: OPT1 - multiple vlan carrier
- * port 4: OPT2 - multiple vlan carrier
- * port 5: OPT3 - multiple vlan carrier
- * port 6: OPT4 - multiple vlan carrier
+ * port 1: WAN - wide area network, ie. the internet. Connect this to
+   your ISP.
+ * port 2: MGMT - management interface (This will be initially be
+   called `LAN` during setup)
+ * port 3: TRUNK -\___ TRUNK aggregates 5Gb bandwith from ports 3+4
+ * port 4: TRUNK -/
+ * port 5: OPT3 - available for future expansion
+ * port 6: OPT4 - available for future expansion
 
-The physical ports only cover the usage for a simple WAN and LAN type
-network, this configuration also supports segmented networks for
-consumer devices (IOT), a separate homelab network (APPS), and one for
-home assistant (HASS).
+All of the home networks are defined as VLANs accessible from the
+TRUNK aggregate link:
 
-The following VLANs are defined:
-
- * vlan 132: LAN (vlan to access the phyiscal LAN network)
+ * vlan 132: LAN (Home network)
  * vlan 133: IOT (Internet of Things)
  * vlan 134: APPS (Proxmox and Docker)
- * vlan 135: HASS (Home Assistant)
-
-Any of the VLANs may be tagged to any multiple of the OPT vlan carrier
-ports, depending on your needs, and where the wire is going to.
+ * vlan 135: WORK (Office)
 
 Each network is in charge of a `/24` address space :
 
- * LAN  `192.168.132.1/24` (`192.168.132.1` -> `192.168.132.255`)
- * IOT  `192.168.133.1/24` (`192.168.133.1` -> `192.168.133.255`)
- * APPS `192.168.134.1/24` (`192.168.134.1` -> `192.168.134.255`)
- * HAAS `192.168.135.1/24` (`192.168.135.1` -> `192.168.135.255`)
+ * MGMT `10.1.1.1/24` (`10.1.1.1` -> `10.1.1.254`)
+ * LAN  `192.168.132.1/24` (`192.168.132.1` -> `192.168.132.254`)
+ * IOT  `192.168.133.1/24` (`192.168.133.1` -> `192.168.133.254`)
+ * APPS `192.168.134.1/24` (`192.168.134.1` -> `192.168.134.254`)
+ * WORK `192.168.135.1/24` (`192.168.135.1` -> `192.168.135.254`)
 
 pfsense will act as the DNS, DHCP, and firewall services for each of
 these networks.
@@ -52,29 +46,37 @@ The ODroid needs a specific realtek driver that is not included on the
 installation media. This driver can be installed from the package
 repository. TODO: document where this is.
 
-The ODroid is just a computer with six NICs, it is *not* a network
-switch. Without a builtin switch, pfsense will create VLANs on NICs
-that operate as *trunk* ports. This means you cannot attach any client
-without first having configured the VLAN *on the client* NIC. You
-should never allow untrusted devices to conneect to a trunk port, so
-you need to use a managed switch.
+## A managed network switch is required
 
-The first two ports of the ODroid H3 are used for WAN and LAN, and
-these ports are not using any VLANs. The other four ports we will use
-VLANs with, so when you look to buy a switch you need to get one that
-has at least eight ports. Remember that the switch must be a *managed*
-switch, in order to be able to configure the vlans *on the switch
-itself*. 1Gb managed swiches can be found very cheap for about $20 or
-so (eg. Netgear GS305E). 2.5Gb managed switches are bit more rare, but
-check out the "Sodola 9 port 2.5G Managed Ethernet Switch".
+The ODroid is just a computer with six NICs. With pfsense installed,
+it becomes a router, but it is *not* a network switch. Pfsense can
+expose several VLANs per port, configured as a *trunk* port. This just
+means that there is no access control over which VLANs you can access
+from it, all of the ones that have been configured for that port are
+always available to the client. This lack of control is *not* what you
+want for an environment where you might plug random untrusted devices
+in. You need a managed switch to connect the trunk port, and to
+configure the other ports to use exactly which vlans you need per port
+on the switch on a case-by-case basis. The switch therefore becomes an
+integral part of your layered security, and cannot be separated from
+your pfsense router.
 
-You will need to configure the ports on the managed switch in pairs,
-1+2, 3+4, 5+6, 7+8, configuring each pair with the same VLAN ids.
-You'll plug one of each pair into pfsense, and the other one to the
-network leg its going to. A managed switch can configure a port with a
-"Default" vlan, so that any untagged traffic will get tagged
-automatically by the switch, as well as configuring additional allowed
-tagged vlans (blocking any vlans that are not configured).
+So, in addition to the H3, you will need a switch too. The one we will
+be testing is the `Sodola 9 Port 2.5G Smart Web Etherne Switch`, and
+the same underlying hardware is also [available as many vendored
+variants](https://www.youtube.com/watch?v=QgLU-HT1E64).
+
+Among the many favorable features of the Sodola, most notable for our
+application is the support for:
+
+ * VLANs
+ * Link aggregation
+
+VLANs will allow to host several virtual networks through the home,
+while going over the same copper wire. and Link aggregation will allow
+us to combine two 2.5Gb links into one bonded 5Gb link, giving us
+extra speed to route things on the lan side (but the WAN is still
+limited to its single 2.5Gb interface).
 
 ## Install pfsense
 
@@ -114,8 +116,8 @@ Enter `re1` for the LAN device.
 
 `Enter the Optional 1 interface name or 'a' for auto-detection`
 
-You will enter the rest of the interfaces for all the optional ports:
-`re2`, `re3`, `re4`, `re5`.
+Press Enter for none, you do not need to any of the other interfaces
+at this time.
 
 ## Set the LAN address
 
@@ -132,7 +134,7 @@ the LAN DHCP server, and not get its IP from any other DHCP server).
 
 `Enter the new LAN IPv4 address:`
 
-Enter the address: `192.168.132.1`
+Enter the address: `10.1.1.1`
 
 `Enter the new LAN IPv4 subnet bit count (1 to 32):`
 
@@ -158,14 +160,14 @@ Choose `y` (pfsense will *be* the DHCP server)
 
 `Enter the start address of the IPv4 client address range:`
 
-Enter the start address for DHCP range: `192.168.132.50`
+Enter the start address for DHCP range: `10.1.1.50`
 
 This reserves some room at the start from the 1->49 range for static
 ip address assignments.
 
 `Enter the end address of the IPv4 client address range:`
 
-Enter the end address for the DHCP range: `192.168.132.250`
+Enter the end address for the DHCP range: `10.1.1.250`
 
 This too reserves some room at the end for static assignments.
 
@@ -176,7 +178,7 @@ real certificate from ACME Let's Encrypt, and then you can turn on
 HTTPS later on.
 
 Finally the setup should conclude, and print the web configurator url,
-which in the demo case is: `http://192.168.132.1`
+which in the demo case is: `http://10.1.1.1`
 
 You can now unplug the keyboard and monitor from the router as they
 won't be needed again during normal usage.
@@ -186,9 +188,9 @@ won't be needed again during normal usage.
 Connect a client machine into the LAN port of the router, and you
 should easily acquire a IPv4 address via DHCP. Assuming you're the
 first one to connect, the address you receive should be
-`192.168.132.50`.
+`10.1.1.50`.
 
-On the client, open a web browser to `http://192.168.132.1`.
+On the client, open a web browser to `http://10.1.1.1`.
 
 Login with the default credentials:
 
@@ -198,7 +200,7 @@ Login with the default credentials:
 Go through the initial setup wizard:
 
  * Enter the hostname: `router`
- * Enter the domain: `gtown.thewooskeys.com`
+ * Enter the domain: `home.example.com`
  * Enter the primary DNS server: `1.1.1.1` (or whatever you prefer)
  * Enter the secondary DNS server: `1.0.0.1` (or whatever you prefer)
  * Make sure that your browser does not automatically fill any saved
@@ -243,68 +245,146 @@ Add your SSH keys:
  * Paste your ssh pub key into the field `Authorized SSH Keys`.
  * Click `Save`.
 
-## Enable the OPT interfaces
+## Rename LAN interface to MGMT
 
-Click `Interfaces` and then `OPT1`.
+The second NIC (`re1`) was assigned to the `LAN` interface during
+initial setup, which is just the default name that pfsense uses. This
+NIC will actually be used only as a management interface, so let's
+rename it to `MGMT`:
 
- * Click on `Enable Interface`
- * Click `Save`.
- * Click `Apply Changes`.
+ * Click on `Interfaces`
+ * Click on `LAN`
+ * Edit the description and change it to `MGMT`
+ * Click `Save`
+ * Click `Apply Changes`
 
-Do the same thing for interfaces `OPT2`, `OPT3`, `OPT4`.
+## Create the LAGG0 and TRUNK interfaces
 
-## Create IOT VLAN
+To increase the LAN side bandwidth, Link Aggregation can be used to
+double the native link speed. The ODroid H3 has several 2.5Gbps links,
+so we will take `re2` and `re3` and create a bonded LAGG interface
+between them for an aggregate speed of 5Gbps. The network switch also
+must support LACP Link Aggregation and configure the ports you connect
+to be linked.
 
-Click `Interfaces`, then `Assignments`, then click on the `VLANs` tab.
+ * Click `Interfaces`
+ * Click `Assignments`
+ * You should only see two interfaces: `WAN` and `MGMT`. If you see
+   any interfaces named `OPTx` (maybe you accidentally created these
+   during the setup), you must delete them now with the `Delete`
+   button.
 
+Create the new aggregate link:
+
+ * Click on the `LAGGs` tab
+ * Click `Add` to create a new LAGG interface
+ * Select both parent devices: `re2` and `re3`
+ * Choose the LAGG protocol: `LACP`
+ * Enter the description: `VLAN LAGG`
+ * Click `Save`
+ * This will create the `LAGG0` interface
+
+Assign the interface:
+
+ * Go back to the `Interface Assignments` tab
+ * Select the `LAGG0` interface under `Available network ports`.
+ * Click the `Add` button next to the interface selection.
+ * This will recreate the `OPT1` interface, but assigned to the
+   `LAGG0` port.
+
+Configure and rename the interface:
+
+ * Click on `OPT1`
+ * Click on `Enable interface`
+ * Enter the description: `TRUNK`
+ * Click `Save`
+ * Click `Apply Changes`
+
+## Create the LAN VLAN
+
+ * Click `Interfaces`
+ * Click `Assignments`
+ * Click on the `VLANs` tab
  * Click `Add`
 
 Enter the new VLAN configuration:
 
- * Parent Interface: `opt1`
- * VLAN tag: 133
+ * Parent Interface: `lagg0`
+ * VLAN tag: 132
  * VLAN priority: 0 (its the default, you can leave it empty)
- * Description: `IOT`
-
+ * Description: `LAN`
  * Click `Save`
 
 Click on the `Interface Assignments` tab
 
  * Find the line at the bottom `Available network ports`
- * Choose from the list: `VLAN 133 on re2 - opt1 (IOT)`
+ * Choose from the list: `VLAN 132 on lagg0 - opt1 (LAN)`
  * Click on the `Add` button on the right
 
-This will create a new interface named `OPT5`. Rename the interface
-now to `IOT`:
+This will create a new interface named `OPT2`. Rename the interface to
+`LAN` now:
 
- * Click on `OPT5`.
+ * Click on `OPT2`.
  * Click on `Enable interface`
- * Enter the description: `IOT`
+ * Enter the description: `LAN`
  * Enter the IPv4 Configuration Type: `Static IPv4`
- * Enter the IPv4 Address: `192.168.133.1`
+ * Enter the IPv4 Address: `192.168.132.1`
   * Make sure to change the subnet size to `/24` (not `/32`).
  * Click `Save`
  * Click `Apply Changes`
- * Notice that the Interface is automatically renamed `IOT (re2.133)`
-   on its configuration page to denote the physical interface and the
-   vlan id.
+ * Notice that the Interface is automatically renamed `LAN
+   (lagg0.132)` on its configuration page to denote the physical
+   interface(s) and the vlan id.
 
-Turn on the DHCP server for the `IOT` VLAN:
+Turn on the DHCP server for the `LAN` VLAN:
 
  * Click on `Services`
  * Click on `DHCP Server`
- * Click on the `IOT` tab
- * Click `Enable DHCP server on IOT interface`
+ * Click on the `LAN` tab
+ * Click `Enable DHCP server on LAN interface`
  * Enter the IP address pool range:
-   * Start: `192.168.133.10`
-   * End: `192.168.133.250`
- * Enter the domain name: `iot.gtown.thewooskeys.com`
+   * Start: `192.168.132.10`
+   * End: `192.168.132.250`
+ * Enter the domain name: `lan.home.example.com`
  * Click `Save`
 
-## Test the IOT VLAN
+## Configure your switch
 
-Connect a client to the switch port that is connected to pfsense port
-3 (`re2`) (which is now tagged for the `IOT` vlan). You should easily
-connect with DHCP, and be assigned an IP address in the
-`192.168.133.0/24` network.
+You need to read the manual for your switch to connect to the switch
+management interface. TODO: add instructions for the sodola.
 
+You need to configure the link aggregate for two ports on the switch,
+which you will plug into the two linked ports on the router.
+
+You also need to configure individual ports for each default VLAN to
+access, and optional other VLANs allowed per port. (LAN, IOT, APPS,
+WORK, etc.)
+
+## Test the LAN
+
+Connec a client to the port on the switch that you tagged with the
+`LAN (132)` vlan. You should be able to get an IP address with DHCP,
+and assuming you are the first client to connect, it will be
+`192.168.132.10`.
+
+## Create the rest of the VLANs
+
+Now repeat all of the same steps as in the [Create the LAN
+VLAN](#create-the-lan-vlan) section, but do it for the other VLANs,
+customizing the details for these particular networks:
+
+ * `IOT`:
+   * vlan tag: `133`
+   * ipv4 address: `192.168.133.1`
+   * DHCP range: `192.168.133.10` -> `192.168.133.250`
+   * DHCP domain name: `iot.home.example.com`
+ * `APPS`:
+   * vlan tag: `134`
+   * ipv4 address: `192.168.134.1`
+   * DHCP range: `192.168.134.100` -> `192.168.134.250`
+   * DHCP domain name: `apps.home.example.com`
+ * `WORK`:
+   * vlan tag: `135`
+   * ipv4 address: `192.168.135.1`
+   * DHCP range: `192.168.135.10` -> `192.168.135.250`
+   * DHCP domain name: `work.home.example.com`
