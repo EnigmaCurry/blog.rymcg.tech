@@ -14,9 +14,8 @@ The six NICs on the odroid will be used like this:
 
  * port 1: WAN - wide area network, ie. the internet. Connect this to
    your ISP.
- * port 2: MGMT - management interface (This will be initially be
-   called `LAN` during setup)
- * port 3: TRUNK -\___ TRUNK aggregates 5Gb bandwith from ports 3+4
+ * port 2: MGMT - management interface (This will be initially called `LAN` during setup)
+ * port 3: TRUNK -\___ TRUNK aggregates 5Gb bandwidth from ports 3+4
  * port 4: TRUNK -/
  * port 5: OPT3 - available for future expansion
  * port 6: OPT4 - available for future expansion
@@ -62,21 +61,22 @@ integral part of your layered security, and cannot be separated from
 your pfsense router.
 
 So, in addition to the H3, you will need a switch too. The one we will
-be testing is the `Sodola 9 Port 2.5G Smart Web Etherne Switch`, and
+be testing is the `Sodola 9 Port 2.5G Smart Web Ethernet Switch`, and
 the same underlying hardware is also [available as many vendored
 variants](https://www.youtube.com/watch?v=QgLU-HT1E64).
 
 Among the many favorable features of the Sodola, most notable for our
 application is the support for:
 
- * VLANs
- * Link aggregation
+ * Eight 2.5Gb ethernet ports
+ * VLAN support
+ * Dual-port link aggregation, for 5Gb toal bandwidth back to pfsense
 
 VLANs will allow to host several virtual networks through the home,
-while going over the same copper wire. and Link aggregation will allow
-us to combine two 2.5Gb links into one bonded 5Gb link, giving us
+while going over the same copper wire. Link aggregation will allow
+us to combine two 2.5Gb links into one bigger 5Gb link, giving us
 extra speed to route things on the lan side (but the WAN is still
-limited to its single 2.5Gb interface).
+limited by its single 2.5Gb interface).
 
 ## Install pfsense
 
@@ -351,18 +351,23 @@ Turn on the DHCP server for the `LAN` VLAN:
 ## Configure your switch
 
 You need to read the manual for your switch to connect to the switch
-management interface. TODO: add instructions for the sodola.
+management interface. [The manual for the Sodola 9-port switch is
+here](https://m.media-amazon.com/images/I/A1Qy+FUUTeL.pdf)
 
-You need to configure the link aggregate for two ports on the switch,
-which you will plug into the two linked ports on the router.
+You need to configure the link aggregate for two ports ("Balance XOR")
+on the switch, which you will plug into the two linked ports on the
+router.
 
-You also need to configure individual ports for each default VLAN to
-access, and optional other VLANs allowed per port. (LAN, IOT, APPS,
-WORK, etc.)
+You also need to configure individual ports for each default VLAN
+(PVID, Preferred Vlan ID) to access, and optional other VLANs allowed
+per port. (LAN, IOT, APPS, WORK, etc.) If you plan to plug another
+managed switch into this, you can safely tag multiple vlans on that
+port, otherwise you should only create one PVID for single vlan
+allowed on that port.
 
 ## Test the LAN
 
-Connec a client to the port on the switch that you tagged with the
+Connect a client to the port on the switch that you tagged with the
 `LAN (132)` vlan. You should be able to get an IP address with DHCP,
 and assuming you are the first client to connect, it will be
 `192.168.132.10`.
@@ -388,3 +393,9 @@ customizing the details for these particular networks:
    * ipv4 address: `192.168.135.1`
    * DHCP range: `192.168.135.10` -> `192.168.135.250`
    * DHCP domain name: `work.home.example.com`
+
+## Create firewall rules per VLAN
+
+Newly created VLANs have no firewall rules by default, and so the DENY
+catch-all rule applies to everything. In order to get any traffic at
+all going in or out of the vlan, you need to create some ALLOW rules.
