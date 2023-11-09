@@ -28,13 +28,18 @@ TRUNK aggregate link:
  * vlan 134: APPS (Proxmox and Docker)
  * vlan 135: WORK (Office)
 
-Each network is in charge of a `/24` address space :
+Each network is in charge of a `/24` address space, and a location-aware sub-domain name :
 
- * MGMT `10.1.1.1/24` (`10.1.1.1` -> `10.1.1.254`)
- * LAN  `192.168.132.1/24` (`192.168.132.1` -> `192.168.132.254`)
- * IOT  `192.168.133.1/24` (`192.168.133.1` -> `192.168.133.254`)
- * APPS `192.168.134.1/24` (`192.168.134.1` -> `192.168.134.254`)
- * WORK `192.168.135.1/24` (`192.168.135.1` -> `192.168.135.254`)
+ * MGMT `10.1.1.1/24`
+   * mgmt.home.example.com
+ * LAN  `192.168.132.1/24`
+   * lan.home.example.com
+ * IOT  `192.168.133.1/24`
+   * iot.home.example.com
+ * APPS `192.168.134.1/24`
+   * apps.home.example.com
+ * WORK `192.168.135.1/24`
+   * work.home.example.com
 
 pfsense will act as the DNS, DHCP, and firewall services for each of
 these networks.
