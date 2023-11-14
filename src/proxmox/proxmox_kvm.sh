@@ -77,7 +77,11 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "focal" ]]; then
+        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "noble" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+        elif [[ ${DISTRO} == "jammy" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+        elif [[ ${DISTRO} == "focal" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
         elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-35" ]]; then
             _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.qcow2
@@ -88,7 +92,7 @@ template() {
                 exit 1
             fi
             # There's a lot more images to try here:  https://bsd-cloud-image.org/
-            _template_from_url https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/freebsd/13.0/freebsd-13.0-zfs.qcow2
+            _template_from_url https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/freebsd/13.2/2023-04-21/zfs/freebsd-13.2-zfs-2023-04-21.qcow2
         else
             echo "DISTRO '${DISTRO}' is not supported by this script yet."
             exit 1
