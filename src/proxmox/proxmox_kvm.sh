@@ -7,6 +7,7 @@ DISTRO=${DISTRO:-arch}
 ## Alternatively, specify IMAGE_URL to the full URL of the cloud image:
 #IMAGE_URL=https://mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
 
+STORAGE=${STORAGE:-local-lvm}
 
 ## Set these variables to configure the container:
 ## (All variables can be overriden from the parent environment)
@@ -30,6 +31,7 @@ START_ON_BOOT=${START_ON_BOOT:-1}
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
+
 
 _confirm() {
     set +x
@@ -100,9 +102,9 @@ template() {
            --memory "${MEMORY}" \
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
-           --scsi0 "local-lvm:vm-${TEMPLATE_ID}-disk-0" \
+           --scsi0 "${STORAGE}:vm-${TEMPLATE_ID}-disk-0" \
            --ide0 none,media=cdrom \
-           --ide2 local-lvm:cloudinit \
+           --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
            --ipconfig0 ip=dhcp \
            --boot c \
@@ -184,7 +186,7 @@ _template_from_url() {
     mkdir -p ${TMP}
     cd ${TMP}
     test -f ${IMAGE} || wget ${IMAGE_URL}
-    qm importdisk ${TEMPLATE_ID} ${IMAGE} local-lvm
+    qm importdisk ${TEMPLATE_ID} ${IMAGE} ${STORAGE}
 }
 
 if [[ $# == 0 ]]; then
