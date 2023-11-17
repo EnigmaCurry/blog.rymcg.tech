@@ -462,3 +462,80 @@ customizing the details for these particular networks:
 Newly created VLANs have no firewall rules by default, and so the DENY
 catch-all rule applies to everything. In order to get any traffic at
 all going in or out of the vlan, you need to create some ALLOW rules.
+
+### Create a firewall alias for private networks
+
+To simplify the firewall rules, create an alias to match all private
+networks:
+
+ * Click `Firewall`
+ * Click `Aliases`
+ * On the `IP` tab, Click `Add`
+ * Enter the name: `private_networks`
+ * Enter the description: `Private Networks`
+ * Select the type: `Network(s)`
+ * Enter the networks:
+   * `192.168.0.0/16`
+   * `10.0.0.0/8`
+   * `172.16.0.0/12`
+   * etc.
+ * Click `Save`
+ * Click `Apply Changes`
+
+This assumes that the pfsense WAN is not itself behind a private
+network, if it is, you will need to carve out any private ranges that
+live on the WAN side to *not* be included in this alias.
+
+### Create default firewall rules for the LAN
+
+ * Click `Firewall`
+ * Click `Rules`
+ * Click on the `LAN` tab
+ * Click the `Add` button (the one with the down arrow) to create a
+   rule at the bottom of the list:
+   * Select the action: `Pass`
+   * Select the interface: `LAN`
+   * Select the address family: `IPv4`
+   * Select the protocol: `Any`
+   * Select the source: `LAN net`
+   * Select the destination:
+     * Choose `This firewall (self)`
+   * Enter the description: `Allow access to the router`
+   * Click `Save`
+   * Click `Apply Changes`
+ * Click the `Add` button (the one with the down arrow) to create a
+   rule at the bottom of the list:
+   * Select the action: `Block`
+   * Select the interface: `LAN`
+   * Select the address family: `IPv4+IPv6`
+   * Select the protocol: `Any`
+   * Select the source: `any`
+   * Select the destination:
+     * Choose `Single host or alias`
+     * Enter the destination alias: `private_networks` (this should
+       auto-complete, using the alias you created above)
+   * Enter the description: `Default block private networks`
+   * Click `Save`
+   * Click `Apply Changes`
+ * Click the `Add` button (the one with the down arrow) to create a
+   rule at the bottom of the list:
+   * Select the action: `Pass`
+   * Select the interface: `LAN`
+   * Select the protocol: `Any`
+   * Select the source: `LAN net`
+   * Enter the description: `Default allow egress`
+   * Click `Save`
+   * Click `Apply Changes`
+
+You can copy these default rule to each of the other VLANs:
+
+ * Select all of the new rules by clicking on the checkboxes.
+ * Click the `Copy` button.
+ * Select the destination interface: (do this once for `IOT`, `APPS`,
+   and `WORK`)
+ * Click `Enable Interface Address/Net conversion`.
+ * Click `Paste`
+
+You can now add any other custom rules per network that you need,
+these should go *above* the default rules, and *below* the `Allow
+access to the router` rule.
