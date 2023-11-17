@@ -1,6 +1,6 @@
 ---
 title: "How to configure a pfsense router with split VLANs"
-url: "pfsense/pfsense"
+url: "pfsense/router-vlans"
 date: 2023-11-08T11:46:03-07:00
 ---
 
