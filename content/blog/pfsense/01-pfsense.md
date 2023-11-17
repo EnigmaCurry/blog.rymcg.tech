@@ -410,9 +410,19 @@ allowed on that port.
  * Click `Save`
  * Click `Apply Changes`
 
+## Set the default gateway
+
+ * Click `System`
+ * Click `Routing`
+ * Select the `Default gateway IPv4`: `WAN_DHCP`
+
+(There's only the one gateway, so I would have thought the setting
+`Automatic` should have worked, but it did not. Without setting it to
+`WAN_DHCP` the DHCP client receives no default gateway.)
+
 ## Reboot pfsense
 
-After configuring all the interfaces, it is important to reboot
+After configuring all the interfaces etc., it is important to reboot
 pfsense to ensure everything is reconfigured properly. I have
 encountered a situation several times where the config *looked* right,
 but was not actually applied, and a reboot corrected it. When in
