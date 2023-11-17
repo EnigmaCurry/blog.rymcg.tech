@@ -397,6 +397,27 @@ managed switch into this, you can safely tag multiple vlans on that
 port, otherwise you should only create one PVID for single vlan
 allowed on that port.
 
+## Create DNS resolver Access Lists
+
+ * Click `Services`
+ * Click `DNS Resolver`
+ * Click on the `Access Lists` tab
+ * Click `Add` to create a new access list
+ * Enter the `Access List name`: `allow from local networks`
+ * Enter the networks:
+   * `192.168.0.0/16`
+   * `10.1.1.0/24`
+ * Click `Save`
+ * Click `Apply Changes`
+
+## Reboot pfsense
+
+After configuring all the interfaces, it is important to reboot
+pfsense to ensure everything is reconfigured properly. I have
+encountered a situation several times where the config *looked* right,
+but was not actually applied, and a reboot corrected it. When in
+doubt, reboot.
+
 ## Test the LAN
 
 Connect a client to the port on the switch that you tagged with the
