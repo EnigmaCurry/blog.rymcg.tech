@@ -292,6 +292,11 @@ rename it to `MGMT`:
 
 ## Create the LAGG0 and TRUNK interfaces
 
+(Note: These instructions do work on an older 1Gb unifi switch, but I
+could not get the link aggregation to work on the Sodola switch. So
+you may want to skip creating the LAGG device, and simply create the
+TRUNK interface using a single physical NIC instead.)
+
 To increase the LAN side bandwidth, Link Aggregation can be used to
 double the native link speed. The ODroid H3 has several 2.5Gbps links,
 so we will take `re2` and `re3` and create a bonded LAGG interface
@@ -386,16 +391,33 @@ You need to read the manual for your switch to connect to the switch
 management interface. [The manual for the Sodola 9-port switch is
 here](https://m.media-amazon.com/images/I/A1Qy+FUUTeL.pdf)
 
-You need to configure the link aggregate for two ports ("Balance XOR")
-on the switch, which you will plug into the two linked ports on the
-router.
+Note: I could not get link aggregation working on the Sodola switch,
+so the TRUNK interface is only using a single port.
 
-You also need to configure individual ports for each default VLAN
-(PVID, Preferred Vlan ID) to access, and optional other VLANs allowed
-per port. (LAN, IOT, APPS, WORK, etc.) If you plan to plug another
-managed switch into this, you can safely tag multiple vlans on that
-port, otherwise you should only create one PVID for single vlan
-allowed on that port.
+The Sodola switch is configured with these ports configured from left
+to right:
+
+  * Port 1: `TRUNK` (all tagged VLANs)
+  * Port 2: `LAN` (untagged)
+  * Port 3: `LAN` (untagged; secondary)
+  * Port 4: `IOT` (untagged)
+  * Port 5: `APPS` (untagged)
+  * Port 6: `TRUNK2` (all tagged VLANs, and goes to another switch)
+  * Port 7: unused
+  * Port 8: reserved for switch management
+  * Port 9 (SFP+): unused
+
+Connect a laptop to port 8, and configure the IP address:
+`192.168.2.2` and connect to the management interface in your browser
+at `192.168.2.1`. Enter the default username and password: `admin` /
+`admin`
+
+Create all the VLANs and PVID settings on the sodola switch via the
+management interface:
+
+{{<img src="/img/sodola-802.1q.VLANs.png" alt="Sodola Switch 802.1Q VLANs">}}
+
+{{<img src="/img/sodola-VLAN-port-settings.png" alt="Sodola Switch VLAN port settings">}}
 
 ## Create DNS resolver Access Lists
 
@@ -527,6 +549,8 @@ live on the WAN side to *not* be included in this alias.
    * Click `Save`
    * Click `Apply Changes`
 
+{{<img src="/img/pfsense-default-firewall-rules.png" alt="Pfsense default firewall rules">}}
+
 You can copy these default rule to each of the other VLANs:
 
  * Select all of the new rules by clicking on the checkboxes.
@@ -535,6 +559,7 @@ You can copy these default rule to each of the other VLANs:
    and `WORK`)
  * Click `Enable Interface Address/Net conversion`.
  * Click `Paste`
+
 
 You can now add any other custom rules per network that you need,
 these should go *above* the default rules, and *below* the `Allow
