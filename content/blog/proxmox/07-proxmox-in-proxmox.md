@@ -11,7 +11,9 @@ Virtual Machine). In this post, we will do something similar, but this
 time we will install a virtual Proxmox inside of an existing Proxmox
 server. This endeavour serves no practical production purpose, but may
 be very useful for testing and/or documentation, both of which are
-germane to this blog.
+germane to this blog. This post also explores creating a Proxmox
+cluster, which allows you to manage several Proxmox instances from a
+single dashboard.
 
 ## Upload the proxmox iso image
 
