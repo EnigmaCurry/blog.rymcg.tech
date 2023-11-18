@@ -7,6 +7,9 @@ date: 2023-11-08T11:46:03-07:00
 This example installation will use the [ODroid
 H3](https://www.hardkernel.com/shop/odroid-h3-plus/) as the core
 [pfsense](https://www.pfsense.org/) router for a home installation.
+
+{{<img src="/img/odroid-h3-case-type-6.png" alt="ODroid H3+ with 6 NICs">}}
+
 This configuration includes an addon card for a total of six 2.5Gbps
 Ethernet network controllers (NICs).
 
