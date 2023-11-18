@@ -54,7 +54,7 @@ these networks.
 ## Why use VLANs?
 
 You might be wondering, why use VLANs at all? The ODroid H3 has *six
-physical NICs!* Why not just use a separate phyisical port per
+physical NICs!* Why not just use a separate physical port per
 network? Well, that totally works as long as you will only use it
 inside of a server rack, or if each room in your house only needs to
 access one network. When I bought the odroid I hadn't planned on doing
