@@ -2,7 +2,7 @@
 title: proxmox
 ---
 
-# Proxmox and virtualized Kubernetes
+# Proxmox
 
 [Proxmox VE](https://www.proxmox.com/en/proxmox-ve) is an open source
 Virtual Machine hypervisor Operating System, built on top of Debian
