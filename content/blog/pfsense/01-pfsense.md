@@ -79,8 +79,9 @@ limited by its single 2.5Gb interface).
 
 ## Install pfsense
 
-Download the .iso, `dd` it to a flash drive, plug a keyboard and mouse
-into the router, boot it, and install pfsense.
+[Download the .iso](https://www.pfsense.org/download/), `dd` it to a
+flash drive, plug a keyboard and mouse into the router, boot it, and
+install pfsense.
 
 ## ODroid H3 specfic needs
 
