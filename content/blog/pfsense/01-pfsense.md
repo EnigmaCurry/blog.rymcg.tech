@@ -4,9 +4,13 @@ url: "pfsense/router-vlans"
 date: 2023-11-08T11:46:03-07:00
 ---
 
-This example installation will use the ODroid H3 as the core pfsense
-router for a home installation. This configuration includes an addon
-card for a total of six 2.5Gbps Ethernet network controllers (NICs).
+This example installation will use the [ODroid
+H3](https://www.hardkernel.com/shop/odroid-h3-plus/) as the core
+pfsense router for a home installation. This configuration includes an
+addon card for a total of six 2.5Gbps Ethernet network controllers
+(NICs).
+
+{{<img src="/img/odroid-h3-parts-list.png" alt="ODroid H3+ parts list">}}
 
 ## Network design
 
