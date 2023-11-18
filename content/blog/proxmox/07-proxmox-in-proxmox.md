@@ -17,7 +17,7 @@ single dashboard.
 
 ## Upload the proxmox iso image
 
-On your existing Proxmox server, and open the dashboard:
+On your existing Proxmox server, open the dashboard:
 
  * Click on the `local` storage (by default, or whatever storage you
    have that is tagged for ISO image use).
