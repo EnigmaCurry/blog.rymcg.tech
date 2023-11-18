@@ -51,6 +51,23 @@ Each network is in charge of a `/24` address space, and a location-aware sub-dom
 pfsense will act as the DNS, DHCP, and firewall services for each of
 these networks.
 
+## Why use VLANs?
+
+You might be wondering, why use VLANs at all? The ODroid H3 has *six
+physical NICs!* Why not just use a separate phyisical port per
+network? Well, that totally works as long as you will only use it
+inside of a server rack, or if each room in your house only needs to
+access one network. When I bought the odroid I hadn't planned on doing
+any VLANs with it at all. Name one other device at this price point
+that has six NICs!
+
+The limitation though is the wiring in the home. You're lucky if you
+even have wired ethernet, but how much rarer is it still to have *two
+or more* network cables going to a single room? If you want to access
+more than one network (wired) in a room that only has one wire coming
+to it, you're going to need to implement VLANs, and managed switches
+in each room.
+
 ## A managed network switch is required
 
 The ODroid is just a computer with six NICs. With pfsense installed,
