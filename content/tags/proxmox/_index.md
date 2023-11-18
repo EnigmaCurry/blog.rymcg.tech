@@ -60,4 +60,12 @@ build a network router for the home LAN inside a KVM virtual machine using PCI p
 four port network interface, and install a nftables firewall, dnsmasq
 DHCP server, and dnscrypt-proxy DNS server.
 
+In [part seven: proxmox in
+proxmox](/blog/proxmox/07-proxmox-in-proxmox) we install a virtual
+proxmox inside of a native proxmox host. This is very useful for
+testing purposes, where you can add a bunch of virtual disks and play
+around with different ZFS pool configurations. Use the snapshot
+feature to create restore points, especially helpful when writing
+documentation about proxmox itself.
+
 {{< about_footer >}}
