@@ -362,7 +362,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on quiet"
 
 (if you are using an AMD system, use `amd_iommu=on` instead)
 
-Now reboot the proxmox host to enable the setting.
+Run `update-grub`, then reboot the proxmox host to enable the setting.
 
 Once rebooted, open the dashboard:
 
