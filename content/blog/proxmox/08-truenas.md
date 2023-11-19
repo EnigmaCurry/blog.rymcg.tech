@@ -16,7 +16,7 @@ for your homelab. It can serve many different roles:
 Proxmox has great ZFS support all by itself, and if you only need to
 create VMs, you should probably stick with that. If you want to create
 a Samba share, or do any of the other things listed above, Proxmox
-can't do things alone.
+can't do those things alone.
 
 [TrueNAS Core](https://www.truenas.com/) is a FreeBSD distribution
 that is custom built to serve the role of a NAS appliance and can do
