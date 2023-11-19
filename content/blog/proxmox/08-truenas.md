@@ -143,7 +143,7 @@ server).
  * Click `System`
  * Click `Email`
  * Enter the `Outgoing Mail Server` address
- * Verify the corrent port, TLS setting, and authentication settings (if applicable)
+ * Verify the correct port, TLS setting, and authentication settings (if applicable)
  * Send a test mail to ensure mail is functional. It will send it to
    the email address you set for the `root` user.
  * Click `Save`
@@ -381,7 +381,7 @@ If your system does not support PCI passthrough, or if you are using a
 JBOD sata controller, you may alternatively passthrough each block
 device individually. This must be configured through the terminal
 following the [Passthrough Physical Disk to Virtual Machine
-guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)
+guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM))
 
 
 ## Add serial numbers to the physical drives
