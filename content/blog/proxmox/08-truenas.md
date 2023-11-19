@@ -69,9 +69,9 @@ file by hand:
  * Login to the Proxmox console, either by SSH, or through the `Console` tab.
  * Use a text editor (`nano`) to edit the VM configuration file:
    `/etc/pve/nodes/{host}/qemu-server/{vm_id}.conf`
- * Find the line that starts with `scsi0`, add append the following text: `,serial=0000`
- * Find the line that starts with `scsi1`, add append the following text: `,serial=0001`
- * Find the line that starts with `scsi2`, add append the following text: `,serial=0002`
+ * Find the line that starts with `scsi0`, and append the following text: `,serial=0000`
+ * Find the line that starts with `scsi1`, and append the following text: `,serial=0001`
+ * Find the line that starts with `scsi2`, and append the following text: `,serial=0002`
  * In the dashboard navigate to the VM's `Hardware` page and verify the serials have been added.
 
 ## Install TrueNAS Core
@@ -395,7 +395,7 @@ configuration file by hand:
  * Login to the Proxmox console, either by SSH, or through the `Console` tab.
  * Use a text editor (`nano`) to edit the VM configuration file:
    `/etc/pve/nodes/{host}/qemu-server/{vm_id}.conf`
- * Find each line that starts with `scsi0`, add append the following
+ * Find each line that starts with `scsi0`, and append the following
    text: `,serial=0000` where `0000` should match the physical serial
    number of the device. Confirm the serial number with `lshw`
  * In the dashboard navigate to the VM's `Hardware` page and verify
