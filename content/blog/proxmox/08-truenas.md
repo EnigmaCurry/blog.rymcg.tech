@@ -20,7 +20,7 @@ can't do those things alone.
 
 [TrueNAS Core](https://www.truenas.com/) is a FreeBSD distribution
 that is custom built to serve the role of a NAS appliance and can do
-all the things listed above. By creating a a TrueNAS VM on Proxmox,
+all the things listed above. By creating a TrueNAS VM on Proxmox,
 you can dedicate all of your storage devices (except the proxmox boot
 device) to the TrueNAS VM, and then re-mount those disks back on
 Proxmox over NFS, available to use as a storage pool for other VMs on
