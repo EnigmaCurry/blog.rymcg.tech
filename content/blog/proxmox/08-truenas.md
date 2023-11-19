@@ -16,11 +16,11 @@ for your homelab. It can serve many different roles:
 Proxmox has great ZFS support all by itself, and if you only need to
 create VMs, you should probably stick with that. If you want to create
 a Samba share, or do any of the other things listed above, Proxmox
-can't do things alone.
+can't do those things alone.
 
 [TrueNAS Core](https://www.truenas.com/) is a FreeBSD distribution
 that is custom built to serve the role of a NAS appliance and can do
-all the things listed above. By creating a a TrueNAS VM on Proxmox,
+all the things listed above. By creating a TrueNAS VM on Proxmox,
 you can dedicate all of your storage devices (except the proxmox boot
 device) to the TrueNAS VM, and then re-mount those disks back on
 Proxmox over NFS, available to use as a storage pool for other VMs on
@@ -69,9 +69,9 @@ file by hand:
  * Login to the Proxmox console, either by SSH, or through the `Console` tab.
  * Use a text editor (`nano`) to edit the VM configuration file:
    `/etc/pve/nodes/{host}/qemu-server/{vm_id}.conf`
- * Find the line that starts with `scsi0`, add append the following text: `,serial=0000`
- * Find the line that starts with `scsi1`, add append the following text: `,serial=0001`
- * Find the line that starts with `scsi2`, add append the following text: `,serial=0002`
+ * Find the line that starts with `scsi0`, and append the following text: `,serial=0000`
+ * Find the line that starts with `scsi1`, and append the following text: `,serial=0001`
+ * Find the line that starts with `scsi2`, and append the following text: `,serial=0002`
  * In the dashboard navigate to the VM's `Hardware` page and verify the serials have been added.
 
 ## Install TrueNAS Core
@@ -143,7 +143,7 @@ server).
  * Click `System`
  * Click `Email`
  * Enter the `Outgoing Mail Server` address
- * Verify the corrent port, TLS setting, and authentication settings (if applicable)
+ * Verify the correct port, TLS setting, and authentication settings (if applicable)
  * Send a test mail to ensure mail is functional. It will send it to
    the email address you set for the `root` user.
  * Click `Save`
@@ -381,7 +381,7 @@ If your system does not support PCI passthrough, or if you are using a
 JBOD sata controller, you may alternatively passthrough each block
 device individually. This must be configured through the terminal
 following the [Passthrough Physical Disk to Virtual Machine
-guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)
+guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM))
 
 
 ## Add serial numbers to the physical drives
@@ -395,7 +395,7 @@ configuration file by hand:
  * Login to the Proxmox console, either by SSH, or through the `Console` tab.
  * Use a text editor (`nano`) to edit the VM configuration file:
    `/etc/pve/nodes/{host}/qemu-server/{vm_id}.conf`
- * Find each line that starts with `scsi0`, add append the following
+ * Find each line that starts with `scsi0`, and append the following
    text: `,serial=0000` where `0000` should match the physical serial
    number of the device. Confirm the serial number with `lshw`
  * In the dashboard navigate to the VM's `Hardware` page and verify
