@@ -245,7 +245,7 @@ Create the private bridge:
  * Enter the IPv4/CIDR: `10.50.0.1/24`
  * Enter the description: `Local TrueNAS access only`
  * Click `Create`
- * Click `Network Device`
+ * Click `Apply Configuration`
 
 Create the private network link:
 
