@@ -68,4 +68,9 @@ around with different ZFS pool configurations. Use the snapshot
 feature to create restore points, especially helpful when writing
 documentation about proxmox itself.
 
+In [part eight: TrueNAS Core](/blog/proxmox/07-proxmox-in-proxmox) we
+install TrueNAS Core as a Network Attached Storage service, useful for
+sharing files, and for remounting via NFS to provision other VM disks
+on the same proxmox host.
+
 {{< about_footer >}}
