@@ -84,8 +84,16 @@ template() {
                               )
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "jammy" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
         elif [[ ${DISTRO} == "focal" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
         elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-39" ]]; then
             _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
