@@ -28,7 +28,7 @@ to running under the exact same Linux kernel as the host.)
 
 Proxmox supports both KVM virtual machines and LXC containers.
 [Containers were covered in part 4](./04-containers). This post will
-cover building KVM templates. 
+cover building KVM templates.
 
 ## Cloud-Init?
 
@@ -70,25 +70,25 @@ ones for Arch Linux (`9000`), Debian (`9001`), and Docker (`9998`)).
 ### Arch Linux
 
 ```bash
-DISTRO=arch TEMPLATE_ID=9000 ./proxmox_kvm.sh template
+DISTRO=arch TEMPLATE_ID=9000 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Debian (bullseye)
 
 ```bash
-DISTRO=debian TEMPLATE_ID=9001 ./proxmox_kvm.sh template
+DISTRO=debian TEMPLATE_ID=9001 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Ubuntu (20.04 LTS)
 
 ```bash
-DISTRO=ubuntu TEMPLATE_ID=9002 ./proxmox_kvm.sh template
+DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Fedora (35)
 
 ```bash
-DISTRO=fedora TEMPLATE_ID=9003 ./proxmox_kvm.sh template
+DISTRO=fedora TEMPLATE_ID=9003 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Docker
@@ -103,6 +103,7 @@ VM_HOSTNAME=docker \
 DISTRO=debian \
 TEMPLATE_ID=9998 \
 INSTALL_DOCKER=yes \
+STORAGE=local-lvm \
 ./proxmox_kvm.sh template
 ```
 
@@ -111,7 +112,7 @@ INSTALL_DOCKER=yes \
 FreeBSD does not allow root login, so you must choose an alternate `VM_USER`:
 
 ```bash
-DISTRO=freebsd TEMPLATE_ID=9004 VM_USER=fred ./proxmox_kvm.sh template
+DISTRO=freebsd TEMPLATE_ID=9004 STORAGE=local-lvm VM_USER=fred ./proxmox_kvm.sh template
 ```
 
 ### Any other cloud image
@@ -126,6 +127,7 @@ with this script:
 DISTRO=OpenBSD \
 TEMPLATE_ID=9999 \
 VM_USER=fred \
+STORAGE=local-lvm \
 IMAGE_URL=https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/openbsd/7.0/2021-12-11/openbsd-7.0.qcow2 \
 ./proxmox_kvm.sh template
 ```
