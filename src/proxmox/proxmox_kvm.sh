@@ -32,7 +32,6 @@ START_ON_BOOT=${START_ON_BOOT:-1}
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
 
-
 _confirm() {
     set +x
     test ${YES:-no} == "yes" && return 0
@@ -71,20 +70,24 @@ template() {
                                "sh -c \"echo 'GRUB_SERIAL_COMMAND=\\\"serial --unit=0 --speed=115200\\\"' >> /etc/default/grub\""
                                "grub-mkconfig -o /boot/grub/grub.cfg"
                               )
-        elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bullseye" ]]; then
+        elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bookworm" ]]; then
+            _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
+        elif [[ ${DISTRO} == "bullseye" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-genericcloud-amd64.qcow2
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "noble" ]]; then
-            _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-        elif [[ ${DISTRO} == "jammy" ]]; then
+        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "jammy" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
         elif [[ ${DISTRO} == "focal" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
-        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-35" ]]; then
-            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.qcow2
+        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-39" ]]; then
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
             if [[ ${VM_USER} == "root" ]]; then
                 echo "For FreeBSD, VM_USER cannot be root. Use another username."
@@ -144,8 +147,8 @@ EOF
 
         ## Resize filesystem and turn into a template:
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
-        ## chattr +i will fail on NFS so allow this to fail sometimes:
-        qm template "${TEMPLATE_ID}" || true
+        ## chattr +i will fail on NFS but don't worry about it:
+        qm template "${TEMPLATE_ID}"
     )
 }
 

@@ -59,6 +59,25 @@ Make the script executable:
 chmod a+x proxmox_kvm.sh
 ```
 
+## Note about Proxmox storage backends
+
+You can store KVM templates on any storage pool that is tagged for the
+`Disk Image` content type (by default, only `local-lvm` is set this
+way). If you have added an NFS storage backend, you may encounter this
+error when creating the template (`qm template {TEMPLATE_ID}`):
+
+
+```
+/usr/bin/chattr: Operation not supported while reading flags on /mnt/pve/{STORAGE}/images/{TEMPLATE_ID}/base-{TEMPLATE_ID}-disk-0.raw
+```
+
+This is because NFS does not support immutable files, but this is not
+especially important as long as Proxmox is the only client of this
+storage pool. So, this error may be ignored.
+
+The examples below assume that you are using `STORAGE=local-lvm`, but
+you may change this to any other compatible storage pool name.
+
 ## Creating KVM templates
 
 You can create templates for every Operating System you wish to run.
@@ -73,19 +92,19 @@ ones for Arch Linux (`9000`), Debian (`9001`), and Docker (`9998`)).
 DISTRO=arch TEMPLATE_ID=9000 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Debian (bullseye)
+### Debian (12; bookworm)
 
 ```bash
 DISTRO=debian TEMPLATE_ID=9001 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Ubuntu (20.04 LTS)
+### Ubuntu (jammy; 22.04 LTS)
 
 ```bash
 DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Fedora (35)
+### Fedora (39)
 
 ```bash
 DISTRO=fedora TEMPLATE_ID=9003 STORAGE=local-lvm ./proxmox_kvm.sh template
