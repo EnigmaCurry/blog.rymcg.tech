@@ -106,7 +106,7 @@ template() {
            --memory "${MEMORY}" \
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
-           --scsi0 "${STORAGE}:vm-${TEMPLATE_ID}-disk-0" \
+           --scsi0 "${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw" \
            --ide0 none,media=cdrom \
            --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
@@ -144,7 +144,8 @@ EOF
 
         ## Resize filesystem and turn into a template:
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
-        qm template "${TEMPLATE_ID}"
+        ## chattr +i will fail on NFS so allow this to fail sometimes:
+        qm template "${TEMPLATE_ID}" || true
     )
 }
 
