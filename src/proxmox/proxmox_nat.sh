@@ -1,5 +1,10 @@
 #!/bin/bash
 
+SYSTEMD_UNIT="my-iptables-rules"
+SYSTEMD_SERVICE="/etc/systemd/system/${SYSTEMD_UNIT}.service"
+IPTABLES_RULES_SCRIPT="/etc/network/${SYSTEMD_UNIT}.sh"
+
+set -eo pipefail
 stderr(){ echo "$@" >/dev/stderr; }
 error(){ echo "Error: $@" >/dev/stderr; }
 cancel(){ echo "Canceled." >/dev/stderr; exit 2; }
@@ -86,11 +91,11 @@ debug_var() {
 }
 
 new_interface() {
-    local INTERFACE IP_CIDR IP_ADDRESS NETMASK COMMENT OTHER_BRIDGE SYSTEMD_UNIT SYSTEMD_SERVICE
+    local INTERFACE IP_CIDR IP_ADDRESS NETMASK COMMENT OTHER_BRIDGE
     get_bridges
     set -e
     echo
-    confirm yes "Do you want to create a new NAT bridge" "?"  || return 1
+    confirm no "Do you want to create a new NAT bridge" "?"  || return 1
     echo
     ask "Enter the existing bridge to NAT from" OTHER_BRIDGE vmbr0
     if ! element_in_array "$OTHER_BRIDGE" "${INTERFACES[@]}"; then
@@ -143,31 +148,19 @@ EOF
 }
 
 activate_iptables_rules() {
-    IPTABLES_RULES=/etc/network/my-iptables-rules.sh
-    if [[ ! -f ${IPTABLES_RULES} ]]; then
-        cat <<EOF > ${IPTABLES_RULES}
-#!/bin/sh
-## Create your DNAT port forwarding rules here:
-## Example: forward incoming TCP port 2222 from vmbr0 to a VM with ip 10.51.0.2 on port 22
-#iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 2222 -j DNAT --to 10.51.0.2:22
-EOF
-        chmod a+x ${IPTABLES_RULES}
-        echo "Wrote iptables rules file with commented examples: ${IPTABLES_RULES}"
-    else
-        echo "Found existing iptables rules file: ${IPTABLES_RULES}"
+    if [[ ! -f ${IPTABLES_RULES_SCRIPT} ]]; then
+        fault "iptables script not found: ${IPTABLES_RULES_SCRIPT}"
     fi
-    SYSTEMD_UNIT="my-iptables-rules"
-    SYSTEMD_SERVICE="/etc/systemd/system/${SYSTEMD_UNIT}.service"
     if [[ ! -f ${SYSTEMD_SERVICE} ]]; then
         cat <<EOF > ${SYSTEMD_SERVICE}
 [Unit]
-Description=Load iptables ruleset from ${IPTABLES_RULES}
-ConditionFileIsExecutable=${IPTABLES_RULES}
+Description=Load iptables ruleset from ${IPTABLES_RULES_SCRIPT}
+ConditionFileIsExecutable=${IPTABLES_RULES_SCRIPT}
 After=network-online.target
 
 [Service]
 Type=forking
-ExecStart=${IPTABLES_RULES}
+ExecStart=${IPTABLES_RULES_SCRIPT}
 TimeoutSec=0
 RemainAfterExit=yes
 GuessMainPID=no
@@ -177,15 +170,166 @@ WantedBy=network-online.target
 EOF
     fi
     systemctl daemon-reload
-    if [[ "$(systemctl is-enabled my-iptables-rules)" != "enabled" ]]; then
-        confirm yes "Would you like to enable the iptables rules in ${IPTABLES_RULES} now and on boot" "?" && systemctl enable --now ${SYSTEMD_SERVICE}
-        echo "Remember: no rules are defined by default! You need to manually edit the rules file and/or uncomment the examples."
+    if [[ "$(systemctl is-enabled ${SYSTEMD_UNIT})" != "enabled" ]]; then
+        confirm yes "Would you like to enable the iptables rules in ${IPTABLES_RULES_SCRIPT} now and on boot" "?" && systemctl enable ${SYSTEMD_UNIT} && echo "Systemd unit enabled: ${SYSTEMD_UNIT}" && systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
+    else
+        echo "Systemd unit already enabled: ${SYSTEMD_UNIT}"
+        systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
     fi
+}
+
+get_port_forward_rules() {
+    # Retrieve the PORT_FORWARD_RULES array from the iptables script:
+    if [[ ! -f "${IPTABLES_RULES_SCRIPT}" ]]; then
+        return
+    fi
+    IFS=' ' read -ra rule_parts < <(grep -P -o "^PORT_FORWARD_RULES=\(\K(.*)\)$" ${IPTABLES_RULES_SCRIPT} | tr -d '()' | tail -1)
+    for part in "${rule_parts[@]}"; do
+        echo "${part}"
+    done
+}
+
+create_iptables_rules() {
+    readarray -t PORT_FORWARD_RULES <<< "$@"
+    if [[ "${#PORT_FORWARD_RULES[@]}" -eq "0" ]]; then
+        fault "PORT_FORWARD_RULES array is empty!"
+    fi
+    cat <<'EOF' > ${IPTABLES_RULES_SCRIPT}
+#!/bin/bash
+## Script to configure the DNAT port forwarding rules:
+## This script should not be edited by hand, it is generated from proxmox_nat.sh
+
+error(){ echo "Error: $@"; }
+fault(){ test -n "$1" && error $1; echo "Exiting." >/dev/stderr; exit 1; }
+check_var(){
+    local __missing=false
+    local __vars="$@"
+    for __var in ${__vars}; do
+        if [[ -z "${!__var}" ]]; then
+            error "${__var} variable is missing."
+            __missing=true
+        fi
+    done
+    if [[ ${__missing} == true ]]; then
+        fault
+    fi
+}
+purge_port_forward_rules() {
+    iptables-save | grep -v "Added by proxmox_nat.sh" | iptables-restore
+}
+apply_port_forward_rules() {
+    ## Validate all the rules:
+    set -e
+    if [[ "${#PORT_FORWARD_RULES[@]}" -le 1 ]] && [[ "${PORT_FORWARD_RULES[0]}" == "" ]]; then
+        error "PORT_FORWARD_RULES array is empty!"
+        exit 0
+    fi
+    for rule in "${PORT_FORWARD_RULES[@]}"; do
+        echo "debug: ${rule}"
+        IFS=':' read -ra rule_parts <<< "$rule"
+        if [[ "${#rule_parts[@]}" != "5" ]]; then
+            fault "Invalid rule (there should be 5 parts): ${rule}"
+        fi
+    done
+    ## Apply all the rules:
+    for rule in "${PORT_FORWARD_RULES[@]}"; do
+        IFS=':' read -ra rule_parts <<< "$rule"
+        local INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
+        INTERFACE="${rule_parts[0]}"
+        PROTOCOL="${rule_parts[1]}"
+        IN_PORT="${rule_parts[2]}"
+        DEST_IP="${rule_parts[3]}"
+        DEST_PORT="${rule_parts[4]}"
+        check_var INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
+        iptables -t nat -A PREROUTING -i ${INTERFACE} -p ${PROTOCOL} \
+            --dport ${IN_PORT} -j DNAT --to ${DEST_IP}:${DEST_PORT} \
+            -m comment --comment "Added by proxmox_nat.sh"
+    done
+}
+EOF
+    cat <<EOF >> ${IPTABLES_RULES_SCRIPT}
+## PORT_FORWARD_RULES is an array of port forwarding rules,
+## each item in the array contains five elements separated by colon:
+## INTERFACE:PROTOCOL:OUTSIDE_PORT:IP_ADDRESS:DEST_PORT
+
+## * IMPORTANT: PORT_FORWARD_RULES should all be on ONE LINE with no line breaks.
+
+## Here is an example with two rules (commented out), and explained:
+##  * For any TCP packet on port 2222 coming from vmbr0, forward to 10.15.0.2 on port 22
+##  * For any TCP or UDP packet on port 5353 coming from vmbr0, forward to 10.15.0.3 on port 53
+## PORT_FORWARD_RULES=(vmbr0:tcp:2222:10.15.0.2:22 vmbr0:any:5353:10.15.0.3:53)
+
+PORT_FORWARD_RULES=(${PORT_FORWARD_RULES[@]})
+
+### Apply all the rules:
+purge_port_forward_rules
+apply_port_forward_rules
+EOF
+    chmod a+x "${IPTABLES_RULES_SCRIPT}"
+    echo "Wrote ${IPTABLES_RULES_SCRIPT}"
+}
+
+print_port_forward_rule() {
+    IFS=':' read -ra rule_parts <<< "$@"
+    local INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
+    INTERFACE="${rule_parts[0]}"
+    PROTOCOL="${rule_parts[1]}"
+    IN_PORT="${rule_parts[2]}"
+    DEST_IP="${rule_parts[3]}"
+    DEST_PORT="${rule_parts[4]}"
+    check_var INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
+    echo "${INTERFACE} ${PROTOCOL} ${IN_PORT} ${DEST_IP} ${DEST_PORT}"
+}
+
+print_port_forward_rules() {
+    readarray -t PORT_FORWARD_RULES < <(get_port_forward_rules)
+    if [[ "${#PORT_FORWARD_RULES[@]}" -le 1 ]] && [[ "${PORT_FORWARD_RULES[0]}" == "" ]]; then
+        echo "No inbound port forwarding (DNAT) rules have been created yet."
+    else
+        echo "## Existing inbound port forwarding (DNAT) rules:"
+        (
+            echo "INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT"
+            for rule in "${PORT_FORWARD_RULES[@]}"; do
+                print_port_forward_rule "${rule}"
+            done
+        ) | column -t
+    fi
+}
+
+define_port_forwarding_rules() {
+    readarray -t PORT_FORWARD_RULES < <(get_port_forward_rules)
+    while true; do
+        confirm no "Would you like to define new port forwarding rules" "?" || break
+        ask "Enter the inbound interface" INTERFACE vmbr0
+        ask "Enter the protocol (tcp, udp, any)" PROTOCOL tcp
+        ask "Enter the inbound Port number" IN_PORT
+        check_num IN_PORT
+        ask "Enter the destination IP address" DEST_IP
+        validate_ip_address "${DEST_IP}" || fault "Invalid ip address: ${DEST_IP}"
+        ask "Enter the destination Port number" DEST_PORT
+        check_num DEST_PORT
+        check_var INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
+        local RULE="${INTERFACE}:${PROTOCOL}:${IN_PORT}:${DEST_IP}:${DEST_PORT}"
+        (
+            echo "INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT"
+            print_port_forward_rule "${RULE}"
+        ) | column -t
+        confirm yes "Is this rule correct" "?" || return
+        PORT_FORWARD_RULES+=("$RULE")
+    done
+    create_iptables_rules "${PORT_FORWARD_RULES[@]}"
+    activate_iptables_rules
+    echo
+    print_port_forward_rules
+    echo
 }
 
 main() {
     new_interface || true
-    activate_iptables_rules
+    echo
+    print_port_forward_rules
+    echo
+    define_port_forwarding_rules
 }
 
 main
