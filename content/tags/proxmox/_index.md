@@ -29,13 +29,21 @@ rather than using Proxmox. However, if you still need to use VMs, you
 can still achieve High Availability with Proxmox by installing several
 nodes, and forming a cluster.
 
-Parts 1-3 of this series are as yet, unwritten, but will cover the
-basic installation and setup of Proxmox. (there was an older series,
-but I have moved it to the [virtual-proxmox](/tags/virtual-proxmox/)
-tag, as it is not useful for the majority of bare-metal proxmox
-installs.) For now, just reference [the main Proxmox docs for getting
-started with
-installation](https://pve.proxmox.com/pve-docs/chapter-pve-installation.html).
+Parts 1-3 of this series have recently been re-written. (There was an
+older series focusing on a virtual proxmox installation, but I have
+moved it to the [virtual-proxmox](/tags/virtual-proxmox/) tag, as it
+is not useful for the majority of bare-metal proxmox installs.)
+
+In [part one: Installation and Setup](/blog/proxmox/01-install/), we
+discuss the steps to install and configure Proxmox on your own
+hardware.
+
+In [part two: Networking](/blog/proxmox/02-networking/), we discuss
+the difference between bridge networking and NAT, and when to use one
+over the other. A script to help you setup NAT is included.
+
+Part 3 has yet to be written, but will cover installing Postfix for
+sending email notifications.
 
 In [part four: Containers](/blog/proxmox/04-containers/) we discuss
 Proxmox support for LXC containers, which are a lightweight

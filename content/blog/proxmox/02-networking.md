@@ -199,6 +199,12 @@ Systemd unit enabled: my-iptables-rules
 NAT rules applied: /etc/network/my-iptables-rules.sh
  ```
 
+## The script
+
+ * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_nat.sh)
+
+{{< code file="/src/proxmox/proxmox_nat.sh" language="shell" >}}
+
 ## Manage bridges from the dashboard
 
 Although you cannot manage the NAT rules from the dashboard, you can
