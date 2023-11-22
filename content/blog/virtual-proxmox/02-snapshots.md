@@ -1,7 +1,8 @@
 ---
-title: "Proxmox part 2: Snapshots"
+title: "Virtual Proxmox part 2: Snapshots"
 date: 2021-07-31T00:01:00-06:00
-tags: ['proxmox']
+tags: ['virtual-proxmox']
+aliases: ['/blog/proxmox/02-snapshots/']
 ---
 
 ## Introduction

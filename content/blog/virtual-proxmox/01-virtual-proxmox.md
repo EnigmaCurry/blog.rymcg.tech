@@ -1,7 +1,8 @@
 ---
-title: "Proxmox part 1: Virtual Proxmox and K3s"
+title: "Virtual Proxmox part 1: Virtual Proxmox and K3s"
 date: 2021-07-21T00:01:00-06:00
-tags: ['proxmox']
+tags: ['virtual-proxmox']
+aliases: ['/blog/proxmox/01-virtual-proxmox/']
 ---
 
 This is the first post in the proxmox series, [read the introduction

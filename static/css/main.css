@@ -231,6 +231,7 @@ pre {
     padding-top: 1rem;
     padding-left: 1rem;
     padding-bottom: 1rem;
+    overflow: revert;
 }
 
 .content .markdown pre .hljs {

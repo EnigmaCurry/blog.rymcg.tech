@@ -1,0 +1,12 @@
+<p class="h4">
+  All tags: {{ range $name, $taxonomy := .Site.Taxonomies.tags }} {{ with
+  $.Site.GetPage (printf "/tags/%s" $name) }}
+  <a
+    style="margin-right: 0.25em"
+    class="badge badge-light text-monospace"
+    href="{{ .Permalink }}"
+    >{{ $name }}</a
+  >
+  {{ end }} {{ end }}
+</p>
+<hr />

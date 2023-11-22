@@ -1,7 +1,8 @@
 ---
-title: "Proxmox part 3: Port Forwarding to a Virtual Proxmox KVM"
+title: "Virtual Proxmox part 3: Port Forwarding to a Virtual Proxmox KVM"
 date: 2021-07-31T00:02:00-06:00
-tags: ['proxmox']
+tags: ['virtual-proxmox']
+aliases: ['/blog/proxmox/03-port-forwarding']
 ---
 
 ## Introduction

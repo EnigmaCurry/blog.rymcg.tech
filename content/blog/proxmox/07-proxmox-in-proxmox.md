@@ -1,11 +1,11 @@
 ---
 title: "Proxmox part 7: Proxmox in Proxmox"
 date: 2023-11-18T00:01:00-06:00
-tags: ['proxmox']
+tags: ['proxmox', 'virtual-proxmox']
 ---
 
-In part 1 of this series, we installed proxmox on on a regular Linux
-desktop computer [inside of
+In part 1 of the [virtual-proxmox](/tags/virtual-proxmox) series, we
+installed proxmox on on a regular Linux desktop computer [inside of
 KVM](https://blog.rymcg.tech/blog/proxmox/01-virtual-proxmox/) (Kernel
 Virtual Machine). In this post, we will do something similar, but this
 time we will install a virtual Proxmox inside of an existing Proxmox
