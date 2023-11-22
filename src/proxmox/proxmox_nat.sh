@@ -76,7 +76,7 @@ get_bridges() {
 "
         for i in "${INTERFACES[@]}"; do
             local COMMENT="$(get_interface_comment ${i})"
-            echo "${i}|x.x.x.x|$(get_interface_comment ${i})"
+            echo "${i}|$(get_interface_network ${i})|$(get_interface_comment ${i})"
         done
     ) | column -t -s '|' | trim_trailing_whitespace
 }
@@ -106,7 +106,7 @@ debug_var() {
 }
 
 new_interface() {
-    local INTERFACE IP_CIDR IP_ADDRESS NETMASK COMMENT OTHER_BRIDGE DEFAULT_IP_CIDR
+    local INTERFACE IP_CIDR IP_ADDRESS COMMENT OTHER_BRIDGE DEFAULT_IP_CIDR
     set -e
     echo
     echo "Configuring new NAT bridge ..."
@@ -137,12 +137,9 @@ new_interface() {
     echo
     debug_var IP_CIDR
     IP_ADDRESS=$(echo "$IP_CIDR" | cut -d "/" -f 1)
-    NETMASK="$(prefix_to_netmask $(echo "$IP_CIDR" | cut -d "/" -f 2))"
+    NET_PREFIX="$(echo "$IP_CIDR" | cut -d "/" -f 2)"
     if ! validate_ip_address "${IP_ADDRESS}"; then
         fault "Bad IP address: ${IP_ADDRESS}"
-    fi
-    if ! validate_ip_address "${NETMASK}"; then
-        fault "Bad netmask: ${NETMASK}"
     fi
     debug_var IP_ADDRESS
     debug_var NETMASK
@@ -152,8 +149,7 @@ new_interface() {
 
 auto ${INTERFACE}
 iface ${INTERFACE} inet static
-        address  ${IP_ADDRESS}
-        netmask  ${NETMASK}
+        address  ${IP_ADDRESS}/${NET_PREFIX}
         bridge_ports none
         bridge_stp off
         bridge_fd 0
@@ -168,9 +164,10 @@ EOF
     echo "Activated ${INTERFACE}"
 }
 
-get_interface_comment() {
-    awk "/^iface ${1} /,/^$/" /etc/network/interfaces | grep -v -e '^$' | grep -e '^#' | tail -1 | tr -d '#'
-}
+get_interface_comment() { awk "/^iface ${1} /,/^$/" /etc/network/interfaces | grep -v -e '^$' | grep -e '^#' | tail -1 | tr -d '#'; }
+
+get_interface_network() { awk "/^iface ${1} /,/^$/" /etc/network/interfaces | grep -o -P "^\W+address \K(.*)"; }
+
 
 activate_iptables_rules() {
     if [[ ! -f ${IPTABLES_RULES_SCRIPT} ]]; then
@@ -196,7 +193,7 @@ EOF
     fi
     systemctl daemon-reload
     if [[ "$(systemctl is-enabled ${SYSTEMD_UNIT})" != "enabled" ]]; then
-        confirm yes "Would you like to enable the iptables rules in ${IPTABLES_RULES_SCRIPT} now and on boot" "?" && systemctl enable ${SYSTEMD_UNIT} && echo "Systemd unit enabled: ${SYSTEMD_UNIT}" && systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
+        enable_service
     else
         echo "Systemd unit already enabled: ${SYSTEMD_UNIT}"
         systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
@@ -381,6 +378,12 @@ delete_port_forwarding_rules() {
     echo
 }
 
+enable_service() {
+    echo "The systemd unit is named: ${SYSTEMD_UNIT}"
+    echo "The systemd unit is currently: $(systemctl is-enabled ${SYSTEMD_UNIT})"
+    confirm yes "Would you like to enable the systemd unit on boot" "?" && systemctl enable ${SYSTEMD_UNIT} && echo "Systemd unit enabled: ${SYSTEMD_UNIT}" && systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
+}
+
 print_help() {
     echo "NAT bridge tool:"
     echo ' * Type `i` or `interfaces` to list the bridge interfaces.'
@@ -388,6 +391,7 @@ print_help() {
     echo ' * Type `l` or `list` to list the NAT rules.'
     echo ' * Type `n` or `new` to create some new NAT rules.'
     echo ' * Type `d` or `delete` to delete some existing NAT rules.'
+    echo ' * Type `e` or `enable` to enable or disable adding the rules on boot.'
     echo ' * Type `?` or `help` to see this help message again.'
     echo ' * Type `q` or `quit` to quit.'
 }
@@ -411,6 +415,9 @@ main() {
         ask_allow_blank 'Enter command (for help, enter `?`)' COMMAND
         echo
         if [[ "$COMMAND" == 'q' ]] || [[ "$COMMAND" == 'quit' ]]; then
+            if [[ "$(systemctl is-enabled ${SYSTEMD_UNIT})" != "enabled" ]]; then
+                enable_service
+            fi
             echo "goodbye"
             exit 0
         elif [[ $COMMAND == '?' || $COMMAND == "help" ]]; then
@@ -426,6 +433,8 @@ main() {
             define_port_forwarding_rules
         elif [[ $COMMAND == "d" || $COMMAND == "delete" ]]; then
             delete_port_forwarding_rules
+        elif [[ $COMMAND == "e" || $COMMAND == "enable" ]]; then
+            enable_service
         fi
         echo
     done
