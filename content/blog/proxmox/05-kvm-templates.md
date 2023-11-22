@@ -59,7 +59,7 @@ Make the script executable:
 chmod a+x proxmox_kvm.sh
 ```
 
-## Warnings for alternative proxmox storage backends
+## Warnings for alternative proxmox storage backends (NFS)
 
 This script is setup by default for the `local-lvm` storage pool. If
 that's what you want, skip reading this section. You can also use
