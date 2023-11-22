@@ -72,6 +72,47 @@ Now you will find the virtual instance has been populated on the
 native host's dashboard. Find `pve-test` in the list under
 `Datacenter`.
 
+## Remove the virtual proxmox from the cluster
+
+Log into the pve shell, and run:
+
+```
+pvecm nodes
+```
+
+You should see two nodes, 1) your native proxmox host 2) the virtual
+proxmox host.
+
+[According to the
+documentation](https://pve.proxmox.com/wiki/Cluster_Manager#_remove_a_cluster_node),
+here's how you remove the node:
+
+ * Backup / Move all the VMs and data (although you probably haven't
+   put anything important in there yet, so whatever).
+ * Shutdown and disable the `pve-test` VM from starting on boot.
+ * With one node missing from a two node cluster, you no longer have
+   quruom to do most tasks. To regain quorum on the primary node, you
+   must set the expected # of votes to 1, run:
+
+```
+pvecm expected 1
+```
+
+ * Remove the node from the cluster, run:
+
+```
+pvecm delnode pve-test
+```
+
+It should say `Killing node 2`. The docs also say that you can safely
+ignore any error about `Could not kill node (error =
+CS_ERR_NOT_EXIST)`, it is not really a failure.
+
+ * Refresh the dashboard, and the `pve-test` node should be now be
+   gone.
+ * Click on `Datacenter`, and then `Cluster`, and you should see the
+   cluster no longer shows the `pve-test` node.
+
 ## Add additional storage to the virtual instance
 
 Virtual hard drives are hot swappable, so you can simply create and
