@@ -59,15 +59,25 @@ Make the script executable:
 chmod a+x proxmox_kvm.sh
 ```
 
-## Note about Proxmox storage backends
+## Warnings for alternative proxmox storage backends
+
+This script is setup by default for the `local-lvm` storage pool. If
+that's what you want, skip reading this section. You can also use
+`local-zfs`, by setting `STORAGE=local-zfs`. NFS storage can be used,
+with caveats. Other filesystems like ceph or gluster have not been
+tested. Finally, the Proxmox OS drive (`local`) should never be used
+for storing VMs. If you want to use anything other than `local-lvm`,
+you must change the `STORAGE` variable, as shown in all examples.
 
 You can store KVM templates on any storage pool that is tagged for the
 `Disk Image` content type (by default, only `local-lvm` is set this
-way). If you have added an NFS storage backend, you may encounter this
-error when creating the template (`qm template {TEMPLATE_ID}`):
+way). If you have added an NFS storage backend (and tagged it for the
+`Disk Image` content type), you may encounter this error when creating
+the final VM template (with `qm template {TEMPLATE_ID}`):
 
 
 ```
+## Error you may see if using NFS or another alternative storage backend:
 /usr/bin/chattr: Operation not supported while reading flags on /mnt/pve/{STORAGE}/images/{TEMPLATE_ID}/base-{TEMPLATE_ID}-disk-0.raw
 ```
 
@@ -77,6 +87,26 @@ storage pool. So, this error may be ignored.
 
 The examples below assume that you are using `STORAGE=local-lvm`, but
 you may change this to any other compatible storage pool name.
+
+If you do change the default `STORAGE`, please note that the `DISK`
+parameter might need slight tweaking as well, as shown in the script:
+
+```
+## Depending on the storage backend, the DISK path may differ slightly:
+# lvm or zfs path (this is the default):
+DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
+# nfs path:
+#DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+```
+
+The default is correct for the default proxmox storage `local-lvm`
+and/or `local-zfs`. If you're using NFS, the path format is different
+(?), so you need to uncomment the second example as shown above. I
+don't know why the naming is different (if you do, [please file an
+issue](https://github.com/EnigmaCurry/blog.rymcg.tech/issues)), but
+what I do know is that it's very annoying. I don't have a good
+solution here other than to comment/uncomment these lines and to
+document the issue here.
 
 ## Creating KVM templates
 
