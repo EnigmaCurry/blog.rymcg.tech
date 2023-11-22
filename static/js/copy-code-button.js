@@ -22,7 +22,7 @@ function addCopyButtons(clipboard) {
       title.innerText=" # Set permanent environment in ~/.bashrc or ~/.bash_profile";
     } else if (lang === 'bash') {
       header.classList.add('lang-bash');
-      title.innerText=" $> # Run in BASH shell";
+      title.innerText=" $> # Run in Bash shell";
     } 
 
     header.appendChild(title);
