@@ -29,6 +29,12 @@ FILESYSTEM_SIZE=${FILESYSTEM_SIZE:-50}
 INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 START_ON_BOOT=${START_ON_BOOT:-1}
 
+## Depending on the storage backend, the DISK path may differ slightly:
+# lvm path:
+DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
+# nfs path:
+#DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
 
@@ -117,7 +123,7 @@ template() {
            --memory "${MEMORY}" \
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
-           --scsi0 "${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw" \
+           --scsi0 "${DISK}" \
            --ide0 none,media=cdrom \
            --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
