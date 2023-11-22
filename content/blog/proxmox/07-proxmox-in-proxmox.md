@@ -100,7 +100,7 @@ Find the new disk automatically recognized on the `pve-test` instance:
 
 Log into the pve shell, run:
 
-```
+```bash
 ## List all the cluster nodes:
 pvecm nodes
 ```
@@ -119,14 +119,14 @@ here's how you remove the node from the cluster:
    quruom to do most tasks. To regain quorum on the primary node, you
    must set the expected # of votes to 1, run:
 
-```
+```bash
 ## Regain quorum:
 pvecm expected 1
 ```
 
  * Remove the node from the cluster, run:
 
-```
+```bash
 ## Remove the node from the cluster:
 pvecm delnode pve-test
 ```
