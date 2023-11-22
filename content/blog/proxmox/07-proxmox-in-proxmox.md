@@ -5,15 +5,14 @@ tags: ['proxmox', 'virtual-proxmox']
 ---
 
 In part 1 of the [virtual-proxmox](/tags/virtual-proxmox) series, we
-installed proxmox on on a regular Linux desktop computer [inside of
+installed Proxmox on on a regular Linux desktop computer [inside of
 KVM](https://blog.rymcg.tech/blog/proxmox/01-virtual-proxmox/) (Kernel
 Virtual Machine). In this post, we will do something similar, but this
 time we will install a virtual Proxmox inside of an existing Proxmox
-server. This endeavour serves no practical production purpose, but may
-be very useful for testing and/or documentation, both of which are
-germane to this blog. This post also explores creating a Proxmox
-cluster, which allows you to manage several Proxmox instances from a
-single dashboard.
+server, and then make a cluster of virtual Proxmoxen, all managed from
+one dashboard. This endeavour serves no practical production purpose,
+but may be very useful for testing and/or documentation, both of which
+are germane to this blog.
 
 ## Upload the proxmox iso image
 
@@ -72,47 +71,6 @@ Now you will find the virtual instance has been populated on the
 native host's dashboard. Find `pve-test` in the list under
 `Datacenter`.
 
-## Remove the virtual proxmox from the cluster
-
-Log into the pve shell, and run:
-
-```
-pvecm nodes
-```
-
-You should see two nodes, 1) your native proxmox host 2) the virtual
-proxmox host.
-
-[According to the
-documentation](https://pve.proxmox.com/wiki/Cluster_Manager#_remove_a_cluster_node),
-here's how you remove the node:
-
- * Backup / Move all the VMs and data (although you probably haven't
-   put anything important in there yet, so whatever).
- * Shutdown and disable the `pve-test` VM from starting on boot.
- * With one node missing from a two node cluster, you no longer have
-   quruom to do most tasks. To regain quorum on the primary node, you
-   must set the expected # of votes to 1, run:
-
-```
-pvecm expected 1
-```
-
- * Remove the node from the cluster, run:
-
-```
-pvecm delnode pve-test
-```
-
-It should say `Killing node 2`. The docs also say that you can safely
-ignore any error about `Could not kill node (error =
-CS_ERR_NOT_EXIST)`, it is not really a failure.
-
- * Refresh the dashboard, and the `pve-test` node should be now be
-   gone.
- * Click on `Datacenter`, and then `Cluster`, and you should see the
-   cluster no longer shows the `pve-test` node.
-
 ## Add additional storage to the virtual instance
 
 Virtual hard drives are hot swappable, so you can simply create and
@@ -138,4 +96,46 @@ Find the new disk automatically recognized on the `pve-test` instance:
  * Select both of the new drives available in the list.
  * Click `Create`
 
-Enjoy your virtual proxmox experience!
+## Remove a node from the cluster
+
+Log into the pve shell, run:
+
+```
+## List all the cluster nodes:
+pvecm nodes
+```
+
+You should see two nodes, 1) your native proxmox host 2) the virtual
+proxmox host.
+
+[According to the
+documentation](https://pve.proxmox.com/wiki/Cluster_Manager#_remove_a_cluster_node),
+here's how you remove the node from the cluster:
+
+ * Backup / Move all the VMs and data (although you probably haven't
+   put anything important in there yet, so whatever).
+ * Shutdown and disable the `pve-test` VM from starting on boot.
+ * With one node missing from a two node cluster, you no longer have
+   quruom to do most tasks. To regain quorum on the primary node, you
+   must set the expected # of votes to 1, run:
+
+```
+## Regain quorum:
+pvecm expected 1
+```
+
+ * Remove the node from the cluster, run:
+
+```
+## Remove the node from the cluster:
+pvecm delnode pve-test
+```
+
+It should say `Killing node 2`. The docs also say that you can safely
+ignore any error about `Could not kill node (error =
+CS_ERR_NOT_EXIST)`, it is not really a failure.
+
+ * Refresh the dashboard, and the `pve-test` node should be now be
+   gone.
+ * Click on `Datacenter`, and then `Cluster`, and you should see the
+   cluster no longer shows the `pve-test` node.
