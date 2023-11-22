@@ -8,6 +8,10 @@ Here is an automated script to install Proxmox containers (LXC) from
 base templates, configuring their SSH servers with passwords disabled,
 and optionally installing Docker for nesting containers.
 
+Honestly, LXC is cool, but KVM is compelling. If you're in a hurry,
+you might want to skip directly to the next post [part 5:
+KVM](/blog/proxmox/05-kvm-templates/)
+
 ## LXC?
 
 According to the [LXC Introduction
