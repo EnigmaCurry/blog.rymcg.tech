@@ -286,3 +286,16 @@ add or remove the bridges:
 
 {{<img src="/img/proxmox/nat-bridges.png" alt="Proxmox dashboard shows all the NAT bridges, you can easily delete them from here">}}
 
+## Creating VMs with NAT
+
+With bridge networking, VMs can query a DHCP server to get an IP
+address. When using a private NAT network, there is no DHCP server (by
+default) that can be contacted. Therefore, you will need to configure
+a static IP address and gateway for each VM:
+
+{{<img src="/img/proxmox/cloud-init-static-ip-address.png" alt="VM cloud-init setting a static IP address and gateway">}}
+
+Configure the virtual network card to connect to the correct bridge:
+
+{{<img src="/img/proxmox/vm-network-bridge.png" alt="A VM selecting the bridge to connect the virtual ethernet cable to">}}
+
