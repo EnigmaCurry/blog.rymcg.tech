@@ -205,6 +205,70 @@ NAT rules applied: /etc/network/my-iptables-rules.sh
 
 {{< code file="/src/proxmox/proxmox_nat.sh" language="shell" >}}
 
+## Systemd unit to manage NAT rules
+
+The script includes a systemd unit that is setup to add the DNAT
+(ingress) rules on every system boot.
+
+Here are the relevant files, whose paths are all declared at the top
+of the script:
+
+```env
+SYSTEMD_UNIT="my-iptables-rules"
+SYSTEMD_SERVICE="/etc/systemd/system/${SYSTEMD_UNIT}.service"
+IPTABLES_RULES_SCRIPT="/etc/network/${SYSTEMD_UNIT}.sh"
+```
+
+ * `SYSTEMD_UNIT` is the name of the systemd service that is started.
+   You can interact with it with `systemctl`:
+
+```bash
+$ systemctl status my-iptables-rules
+● my-iptables-rules.service - Load iptables ruleset from /etc/network/my-iptables-rules.sh
+     Loaded: loaded (/etc/systemd/system/my-iptables-rules.service; enabled; preset: enabled)
+     Active: active (exited) since Wed 2023-11-22 16:05:48 MST; 6h ago
+    Process: 469722 ExecStart=/etc/network/my-iptables-rules.sh (code=exited, status=0/SUCCESS)
+        CPU: 8ms
+
+Nov 22 16:05:48 pve systemd[1]: Starting my-iptables-rules.service - Load iptables ruleset from /…s.sh...Nov 22 16:05:48 pve my-iptables-rules.sh[469722]: Error: PORT_FORWARD_RULES array is empty!
+Nov 22 16:05:48 pve systemd[1]: Started my-iptables-rules.service - Load iptables ruleset from /e…les.sh.Hint: Some lines were ellipsized, use -l to show in full.
+```
+
+The output `Error: PORT_FORWARD_RULES array is empty!` is normal when
+you have not yet defined any DNAT rules (ie. all ports are blocked).
+
+ * `SYSTEMD_SERVICE` is the full path to the systemd service config
+   file, (and which is automatically created by the script).
+
+```
+## You don't need to copy this, this is just an example of what
+## the script automatically creates for you:
+[Unit]
+Description=Load iptables ruleset from /etc/network/my-iptables-rules
+ConditionFileIsExecutable=/etc/network/my-iptables-rules
+After=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/etc/network/my-iptables-rules
+TimeoutSec=0
+RemainAfterExit=yes
+GuessMainPID=no
+
+[Install]
+WantedBy=network-online.target
+```
+
+ * `IPTABLES_RULES_SCRIPT` is the path to the NAT rules
+   configuration/script, (and which is automatically created by the
+   script). The systemd service calls this script to add the NAT
+   rules, on boot. You can also call the script yourself anytime. When
+   the script is executed, *all* of the existing DNAT rules are purged
+   (they are all tagged `Added by ${IPTABLES_RULES_SCRIPT}`, and so
+   are deleted based on this same tag.). New rules are then created
+   based on the `PORT_FORWARD_RULES` variable in the current
+   `IPTABLES_RULES_SCRIPT`.
+
 ## Manage bridges from the dashboard
 
 Although you cannot manage the NAT rules from the dashboard, you can
