@@ -237,7 +237,7 @@ check_var(){
     fi
 }
 purge_port_forward_rules() {
-    iptables-save | grep -v "Added by proxmox_nat.sh" | iptables-restore
+    iptables-save | grep -v "Added by ${BASH_SOURCE}" | iptables-restore
 }
 apply_port_forward_rules() {
     ## Validate all the rules:
@@ -265,7 +265,7 @@ apply_port_forward_rules() {
         check_var INTERFACE PROTOCOL IN_PORT DEST_IP DEST_PORT
         iptables -t nat -A PREROUTING -i ${INTERFACE} -p ${PROTOCOL} \
             --dport ${IN_PORT} -j DNAT --to ${DEST_IP}:${DEST_PORT} \
-            -m comment --comment "Added by proxmox_nat.sh"
+            -m comment --comment "Added by ${BASH_SOURCE}"
     done
 }
 EOF
