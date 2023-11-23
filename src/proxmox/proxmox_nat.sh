@@ -386,7 +386,15 @@ delete_port_forwarding_rules() {
 enable_service() {
     echo "The systemd unit is named: ${SYSTEMD_UNIT}"
     echo "The systemd unit is currently: $(systemctl is-enabled ${SYSTEMD_UNIT})"
-    confirm yes "Would you like to enable the systemd unit on boot" "?" && systemctl enable ${SYSTEMD_UNIT} && echo "Systemd unit enabled: ${SYSTEMD_UNIT}" && systemctl restart ${SYSTEMD_UNIT} && echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
+    if confirm yes "Would you like to enable the systemd unit on boot" "?"; then
+        systemctl enable ${SYSTEMD_UNIT}
+        echo "Systemd unit enabled: ${SYSTEMD_UNIT}"
+        systemctl restart ${SYSTEMD_UNIT}
+        echo "NAT rules applied: ${IPTABLES_RULES_SCRIPT}"
+    else
+        systemctl disable ${SYSTEMD_UNIT}
+        echo "Systemd unit is disabled on next boot: ${SYSTEMD_UNIT}"
+    fi
 }
 
 print_help() {
