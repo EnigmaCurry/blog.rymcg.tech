@@ -321,14 +321,25 @@ Edit the `/etc/dnsmasq.conf` config file on the VM:
 
 ```
 ## Example /etc/dnsmasq.conf file for running a DHCP server:
+### 10.1.1.1 is the gateway (the proxmox host)
+### 10.1.1.2 is this VM, the DHCP server
+
+# Run on the main VM interface:
 interface=eth0
 except-interface=lo
+
+# Set an appropriate domain:
 domain=vm1
 bind-interfaces
+
+# Listen on the static IP address for this VM (10.1.1.2):
 listen-address=10.1.1.2
 server=::1
 server=127.0.0.1
+
+# Serve the DHCP range from .10 to .250:
 dhcp-range=10.1.1.10,10.1.1.250,255.255.255.0,1h
+# Add the default route through the proxmox host (10.1.1.1):
 dhcp-option=3,10.1.1.1
 dhcp-option=6,10.1.1.1
 ```
