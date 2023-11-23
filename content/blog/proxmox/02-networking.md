@@ -335,7 +335,7 @@ dhcp-option=6,10.1.1.1
 
 Save the file, and restart dnsmasq:
 
-```
+```bash
 systemctl enable --now dnsmasq
 systemctl restart dnsmasq
 ```
