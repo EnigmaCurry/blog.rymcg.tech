@@ -299,3 +299,48 @@ Configure the virtual network card to connect to the correct bridge:
 
 {{<img src="/img/proxmox/vm-network-bridge.png" alt="A VM selecting the bridge to connect the virtual ethernet cable to">}}
 
+## Adding a DHCP server
+
+If you want to add a DHCP server to your NAT bridge, you can use
+something simple like dnsmasq. You'll need to create a VM with a
+static IP.
+
+For example, suppose:
+
+ * `10.1.1.1` is the Proxmox host on `vmbr1` (this is the gateway)
+ * `10.1.1.2` is a VM with a static IP, tasked with running dnsmasq
+   (this is the DHCP server)
+
+```bash
+# Run this on the VM running on 10.1.1.2:
+apt update
+apt install dnsmasq
+```
+
+Edit the `/etc/dnsmasq.conf` config file on the VM:
+
+```
+## Example /etc/dnsmasq.conf file for running a DHCP server:
+interface=eth0
+except-interface=lo
+domain=vm1
+bind-interfaces
+listen-address=10.1.1.2
+server=::1
+server=127.0.0.1
+dhcp-range=10.1.1.10,10.1.1.250,255.255.255.0,1h
+dhcp-option=3,10.1.1.1
+dhcp-option=6,10.1.1.1
+```
+
+Save the file, and restart dnsmasq:
+
+```
+systemctl enable --now dnsmasq
+systemctl restart dnsmasq
+```
+
+If you now boot another VM on the same bridge (`vmbr1`), and if its
+configured for DHCP, it should get an ip from the dnsmasq server, and
+create a route through the proxmox host `10.1.1.1`. Now you won't have
+to set any more static IPs.
