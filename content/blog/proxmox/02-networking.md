@@ -236,6 +236,11 @@ Nov 22 16:05:48 pve systemd[1]: Started my-iptables-rules.service - Load iptable
 
 The output `Error: PORT_FORWARD_RULES array is empty!` is normal when
 you have not yet defined any DNAT rules (ie. all ports are blocked).
+If you need to see the full log output, use `journalctl`:
+
+```
+journalctl --unit my-iptables-rules
+```
 
  * `SYSTEMD_SERVICE` is the full path to the systemd service config
    file, (and which is automatically created by the script).
@@ -258,6 +263,8 @@ GuessMainPID=no
 [Install]
 WantedBy=network-online.target
 ```
+
+The `WantedBy` config will ensure the service is started on boot.
 
  * `IPTABLES_RULES_SCRIPT` is the path to the NAT rules
    configuration/script, (and which is automatically created by the
