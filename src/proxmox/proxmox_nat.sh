@@ -1,8 +1,15 @@
 #!/bin/bash
 
+## Setup NAT (IP Masquerading egress + Port Forwarding ingress) on Proxmox
+## See https://blog.rymcg.tech/blog/proxmox/02-networking/
+
 SYSTEMD_UNIT="my-iptables-rules"
 SYSTEMD_SERVICE="/etc/systemd/system/${SYSTEMD_UNIT}.service"
 IPTABLES_RULES_SCRIPT="/etc/network/${SYSTEMD_UNIT}.sh"
+
+## Default network address is for a /24 based on the the bridge number:
+## (Change the prefix [10.1] per install, to create unique addresses):
+DEFAULT_NETWORK_PATTERN="10.1.BRIDGE.1/24"
 
 set -eo pipefail
 stderr(){ echo "$@" >/dev/stderr; }
@@ -126,7 +133,7 @@ new_interface() {
     echo
     echo "Configuring new interface: ${INTERFACE}"
     if [[ "${BRIDGE_NUMBER}" -ge 0 ]] && [[ "${BRIDGE_NUMBER}" -le 255 ]]; then
-        DEFAULT_IP_CIDR="10.${BRIDGE_NUMBER}.0.1/24"
+        DEFAULT_IP_CIDR=$(echo "${DEFAULT_NETWORK_PATTERN}" | sed "s/BRIDGE/${BRIDGE_NUMBER}/")
     else
         DEFAULT_IP_CIDR=""
     fi
@@ -141,8 +148,6 @@ new_interface() {
     if ! validate_ip_address "${IP_ADDRESS}"; then
         fault "Bad IP address: ${IP_ADDRESS}"
     fi
-    debug_var IP_ADDRESS
-    debug_var NETMASK
     echo
     ask "Enter the description/comment for this interface" COMMENT "NAT ${IP_CIDR} bridged to ${OTHER_BRIDGE}"
     cat <<EOF >> /etc/network/interfaces
@@ -397,14 +402,6 @@ print_help() {
 }
 
 main() {
-    # new_interface || true
-    # echo
-    # print_port_forward_rules
-    # echo
-    # define_port_forwarding_rules
-    # echo
-    # delete_port_forwarding_rules
-
     echo
     get_bridges
     echo

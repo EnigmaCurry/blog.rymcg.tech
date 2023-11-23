@@ -1,5 +1,6 @@
 #!/bin/bash
 ## Automated script to setup LXC containers on Proxmox (PVE)
+## See https://blog.rymcg.tech/blog/proxmox/04-containers/
 
 ## Choose your distribution base template:
 ## Supported: arch, debian, alpine, fedora

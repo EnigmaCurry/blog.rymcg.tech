@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## Create Proxmox KVM templates from cloud images
+## See https://blog.rymcg.tech/blog/proxmox/05-kvm-templates/
 
 ## Specify DISTRO and the latest image will be discovered automatically:
 DISTRO=${DISTRO:-arch}
