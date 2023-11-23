@@ -106,8 +106,6 @@ Enter the static IP address and network prefix in CIDR notation for vmbr56:
 : 10.56.0.1/24
 
 ## DEBUG: IP_CIDR=10.56.0.1/24
-## DEBUG: IP_ADDRESS=10.56.0.1
-## DEBUG: NETMASK=
 
 Enter the description/comment for this interface
 : NAT 10.56.0.1/24 bridged to vmbr0
