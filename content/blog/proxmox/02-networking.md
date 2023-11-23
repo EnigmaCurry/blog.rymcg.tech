@@ -18,7 +18,7 @@ setup, assuming you already have a LAN and an existing DHCP server and
 gateway on it. With bridge networking, you can use a single network
 interface with all of the virtual machines accessible through it. Each
 VM will have a unique virtual MAC address, and each will receive a
-unique IP address from your DHCP server, all the VMs become
+unique IP address from your DHCP server. All the VMs become
 discoverable on the network, just like any other machine on your LAN.
 
 By default, Proxmox creates a single bridge network, named `vmbr0`,
@@ -26,6 +26,9 @@ and this is connected to the management interface, and it is assumed
 you will connect this to your LAN.
 
 {{<img src="/img/proxmox/bridge-network.png" alt="The default Bridge network, vmbr0">}}
+
+If you are able to use bridge networking, great! Nothing more to do
+here. If you have run out of IP addresses though, read on!
 
 ## Use Network Address Translation (NAT) if you have limited IP addresses
 
