@@ -313,6 +313,8 @@ For example, suppose:
 
 ```bash
 # Run this on the VM running on 10.1.1.2:
+systemctl stop systemd-resolved
+systemctl mask systemd-resolved
 apt update
 apt install dnsmasq
 ```
