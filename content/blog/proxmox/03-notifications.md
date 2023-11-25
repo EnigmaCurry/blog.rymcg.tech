@@ -14,7 +14,7 @@ and setup your outgoing SMTP server and credentials. If you upgrade to
 Proxmox 8.1, this is now much nicer: there is a new dashboard menu to
 setup the authenticated SMTP relay.
 
-# Requirements
+## Requirements
 
  * A Proxmox server ([start with step 1](/blog/proxmox/01-install/) if
    you haven't already)
@@ -36,7 +36,7 @@ credentials as you use for your personal mail. You should use an
 email/smtp account that is dedicated to the Proxmox user, and should
 not have any other purpose.
 
-# Upgrade to at least Proxmox 8.1
+## Upgrade to at least Proxmox 8.1
 
  * Click on your pve host under the `Datacenter` list.
  * Click `Updates`
@@ -46,7 +46,7 @@ not have any other purpose.
  * Verify the version is now 8.1+, printed in the top left of the
    dashboard
 
-# Verify the root user's email address setting
+## Verify the root user's email address setting
 
  * Click `Datacenter`
  * Under `Permissions`, click `Users`
@@ -56,7 +56,7 @@ not have any other purpose.
    email address here, so that you receive all the mail that the root
    Proxmox user should receive
 
-# Configure a new SMTP notification target
+## Configure a new SMTP notification target
 
  * Click `Datacenter`
  * Click `Notifications`
@@ -76,14 +76,14 @@ not have any other purpose.
      account instead, but you can if you want
    * Click `Add`
 
-## Test the new SMTP notification target
+### Test the new SMTP notification target
 
  * Click on the new notification target in the list
  * Click the `Test` button
  * Click `Yes`, to confirm that you would like to send the test email
  * Verify that you do recieve the test email
 
-## Disable the builtin `mail-to-root` notification target
+### Disable the builtin `mail-to-root` notification target
 
 You should now see two `Notifications Targets` listed: 1) mail-to-root
 and 2) your external SMTP server. You should disable the first one,
@@ -97,7 +97,7 @@ and 2) your external SMTP server. You should disable the first one,
    like `—` instead of `✔`). (You can't remove it, because its
    builtin, you can only disable it.)
 
-# Configure the default notification matcher
+## Configure the default notification matcher
 
 You want *all* notifications to go to the root user, via your new SMTP
 notification target, so you need to edit the `default-matcher`
@@ -110,7 +110,7 @@ notification target:
  * Check the new SMTP target
  * Click `OK`
 
-# Configure Gotify (optional)
+## Configure Gotify (optional)
 
 As an alternative to Email, or in addition to, you can send
 notifications via [Gotify](https://gotify.net/) which supports [an
