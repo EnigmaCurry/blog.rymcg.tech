@@ -62,18 +62,19 @@ not have any other purpose.
  * Click `Notifications`
  * Under `Notification targets`, click `Add`, then choose `SMTP`
  * Fill in all the details of your external SMTP account:
-  * Enmter the endpoint name, like: `My external SMTP relay`
-  * Enter your provider's SMTP `Server` domain name: `mail.example.com`
-  * Choose the `Encryption` (usually `TLS`, check with your provider)
-  * Enter the `Port` number (usually 465 or 587, check with your provider)
-  * Enter the `Username` and `Password` for your provided SMTP account.
-  * Enter the `From` Address, this can usually be whatever you like,
-    eg. `root@pve`
-  * Select the `Recipient(s)` - choose `root@pam` - unless you use a
-    different Proxmox account than root, choose `root@pam`
-  * You should not need to fill in the `Additional Recipient(s)`
-    unless you want to
-  * Click `Add`
+   * Enmter the endpoint name, like: `My external SMTP relay`
+   * Enter your provider's SMTP `Server` domain name: `mail.example.com`
+   * Choose the `Encryption` (usually `TLS`, check with your provider)
+   * Enter the `Port` number (usually 465 or 587, check with your provider)
+   * Enter the `Username` and `Password` for your provided SMTP account.
+   * Enter the `From` Address, this can usually be whatever you like,
+     eg. `root@pve`
+   * Select the `Recipient(s)` - choose `root@pam` - unless you use a
+     different Proxmox account than root, choose `root@pam`
+   * You should not need to fill in the `Additional Recipient(s)`,
+     because the forwarding address is already defined on the root
+     account instead, but you can if you want
+   * Click `Add`
 
 ## Test the new SMTP notification target
 
