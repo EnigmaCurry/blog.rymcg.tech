@@ -42,7 +42,7 @@ In [part two: Networking](/blog/proxmox/02-networking/), we discuss
 the difference between bridge networking and NAT, and when to use one
 over the other. A script to help you setup NAT is included.
 
-In [part three: Notifications](/blog/proxmox/02-networking/), we
+In [part three: Notifications](/blog/proxmox/03-notifications/), we
 configure the notification system to send us all server notifications
 as an email through our external SMTP server and/or Gotify client.
 
