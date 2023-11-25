@@ -17,8 +17,8 @@ setup the authenticated SMTP relay.
 ## Requirements
 
  * A Proxmox server ([start with step 1](/blog/proxmox/01-install/) if
-   you haven't already)
- * An external SMTP relay service
+   you haven't already.)
+ * An external SMTP relay service.
 
 Sending email in 2023 is near impossible unless you use a provider
 that makes it their full time job to ensure that their servers are not
@@ -39,49 +39,49 @@ not have any other purpose.
 ## Upgrade to at least Proxmox 8.1
 
  * Click on your pve host under the `Datacenter` list.
- * Click `Updates`
- * Click `Upgrade`
- * This will open a shell and do any pending upgrades
- * Reboot if prompted to do so
+ * Click `Updates`.
+ * Click `Upgrade`.
+ * This will open a shell and do any pending upgrades.
+ * Reboot if prompted to do so.
  * Verify the version is now 8.1+, printed in the top left of the
-   dashboard
+   dashboard.
 
 ## Verify the root user's email address setting
 
- * Click `Datacenter`
- * Under `Permissions`, click `Users`
- * Click the `root` user
- * Click `Edit`
+ * Click `Datacenter`.
+ * Under `Permissions`, click `Users`.
+ * Click the `root` user.
+ * Click `Edit`.
  * Verify the `E-Mail` address is correct. You should put your own
    email address here, so that you receive all the mail that the root
-   Proxmox user should receive
+   Proxmox user should receive.
 
 ## Configure a new SMTP notification target
 
- * Click `Datacenter`
- * Click `Notifications`
- * Under `Notification targets`, click `Add`, then choose `SMTP`
+ * Click `Datacenter`.
+ * Click `Notifications`.
+ * Under `Notification targets`, click `Add`, then choose `SMTP`.
  * Fill in all the details of your external SMTP account:
-   * Enmter the endpoint name, like: `My external SMTP relay`
-   * Enter your provider's SMTP `Server` domain name: `mail.example.com`
-   * Choose the `Encryption` (usually `TLS`, check with your provider)
-   * Enter the `Port` number (usually 465 or 587, check with your provider)
+   * Enter the endpoint name, like: `My external SMTP relay`.
+   * Enter your provider's SMTP `Server` domain name: `mail.example.com`.
+   * Choose the `Encryption` (usually `TLS`, check with your provider).
+   * Enter the `Port` number (usually `465` or `587`, check with your provider).
    * Enter the `Username` and `Password` for your provided SMTP account.
    * Enter the `From` Address, this can usually be whatever you like,
-     eg. `root@pve`
+     eg. `root@pve.example.com`
    * Select the `Recipient(s)` - choose `root@pam` - unless you use a
-     different Proxmox account than root, choose `root@pam`
+     different Proxmox account than root, choose `root@pam`.
    * You should not need to fill in the `Additional Recipient(s)`,
      because the forwarding address is already defined on the root
-     account instead, but you can if you want
-   * Click `Add`
+     account instead, but you can if you want.
+   * Click `Add`.
 
 ### Test the new SMTP notification target
 
- * Click on the new notification target in the list
- * Click the `Test` button
- * Click `Yes`, to confirm that you would like to send the test email
- * Verify that you do recieve the test email
+ * Click on the new notification target in the list.
+ * Click the `Test` button.
+ * Click `Yes`, to confirm that you would like to send the test email.
+ * Verify that you do recieve the test email.
 
 ### Disable the builtin `mail-to-root` notification target
 
@@ -89,10 +89,10 @@ You should now see two `Notifications Targets` listed: 1) mail-to-root
 and 2) your external SMTP server. You should disable the first one,
 `mail-to-root`, as the new one will serve that role instead:
 
- * Click the `mail-to-root` entry
- * Click `Modify`
- * Uncheck the `Enable` flag
- * Click `OK`
+ * Click the `mail-to-root` entry.
+ * Click `Modify`.
+ * Uncheck the `Enable` flag.
+ * Click `OK`.
  * Verify the builtin `mail-to-root` is now disabled (shows an icon
    like `—` instead of `✔`). (You can't remove it, because its
    builtin, you can only disable it.)
@@ -103,12 +103,12 @@ You want *all* notifications to go to the root user, via your new SMTP
 notification target, so you need to edit the `default-matcher`
 notification target:
 
- * Click the `default-matcher` notification target
- * Click `Modify`
- * Click `Targets to notify`
- * Uncheck `mail-to-root`
- * Check the new SMTP target
- * Click `OK`
+ * Click the `default-matcher` notification target.
+ * Click `Modify`.
+ * Click `Targets to notify`.
+ * Uncheck `mail-to-root`.
+ * Check the new SMTP target.
+ * Click `OK`.
 
 ## Configure Gotify (optional)
 
