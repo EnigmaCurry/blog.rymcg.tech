@@ -42,8 +42,9 @@ In [part two: Networking](/blog/proxmox/02-networking/), we discuss
 the difference between bridge networking and NAT, and when to use one
 over the other. A script to help you setup NAT is included.
 
-Part 3 has yet to be written, but will cover installing Postfix for
-sending email notifications.
+In [part three: Notifications](/blog/proxmox/02-networking/), we
+configure the notification system to send us all server notifications
+as an email through our external SMTP server and/or Gotify client.
 
 In [part four: Containers](/blog/proxmox/04-containers/) we discuss
 Proxmox support for LXC containers, which are a lightweight
