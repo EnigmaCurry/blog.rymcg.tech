@@ -8,6 +8,11 @@ DISTRO=${DISTRO:-arch}
 ## Alternatively, specify IMAGE_URL to the full URL of the cloud image:
 #IMAGE_URL=https://mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
 
+## To configure DISK path correctly, set STORAGE_TYPE to "nfs" or "local"
+## (no other storage backends supported at this time)
+STORAGE_TYPE=${STORAGE_TYPE:-local}
+
+## The ID of the storage to create the disk in 
 STORAGE=${STORAGE:-local-lvm}
 
 ## Set these variables to configure the container:
@@ -31,10 +36,16 @@ INSTALL_DOCKER=${INSTALL_DOCKER:-no}
 START_ON_BOOT=${START_ON_BOOT:-1}
 
 ## Depending on the storage backend, the DISK path may differ slightly:
-# lvm path:
-DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
-# nfs path:
-#DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+if [ "${STORAGE_TYPE}" == 'nfs' ]; then
+    # nfs path:
+    DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+elif [ "${STORAGE_TYPE}" == 'local' ]; then
+    # lvm path:
+    DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
+else
+    echo "only `local` (lvm) or `nfs` storage backends are supported at this time"
+    exit 1
+fi
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
