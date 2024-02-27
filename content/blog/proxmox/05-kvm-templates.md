@@ -93,20 +93,26 @@ parameter might need slight tweaking as well, as shown in the script:
 
 ```
 ## Depending on the storage backend, the DISK path may differ slightly:
-# lvm or zfs path (this is the default):
-DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
-# nfs path:
-#DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+if [ "${STORAGE_TYPE}" == 'nfs' ]; then
+    # nfs path:
+    DISK="${STORAGE}:${TEMPLATE_ID}/vm-${TEMPLATE_ID}-disk-0.raw"
+elif [ "${STORAGE_TYPE}" == 'local' ]; then
+    # lvm path:
+    DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
+else
+    echo "only `local` (lvm) or `nfs` storage backends are supported at this time"
+    exit 1
+fi
 ```
 
-The default is correct for the default proxmox storage `local-lvm`
-and/or `local-zfs`. If you're using NFS, the path format is different
-(?), so you need to uncomment the second example as shown above. I
-don't know why the naming is different (if you do, [please file an
-issue](https://github.com/EnigmaCurry/blog.rymcg.tech/issues)), but
-what I do know is that it's very annoying. I don't have a good
-solution here other than to comment/uncomment these lines and to
-document the issue here.
+Be sure to set `STORAGE_TYPE` to `local` if you're using the local-lvm backend
+or to `nfs`  if you're using the NFS backend. If you're using any other
+storage backend, you may need to tweak the `DISK` parameter and alter this
+`if` statement accordingly. I don't know why the naming is different between
+storage backends (if you do, [please file an issue](https://github.com/EnigmaCurry/blog.rymcg.tech/issues)),
+but what I do know is that it's very annoying. I don't have a good solution
+here other than to hardcode the path differences into an if statement and
+to document the issue here.
 
 ## Creating KVM templates
 
@@ -119,25 +125,25 @@ ones for Arch Linux (`9000`), Debian (`9001`), and Docker (`9998`)).
 ### Arch Linux
 
 ```bash
-DISTRO=arch TEMPLATE_ID=9000 STORAGE=local-lvm ./proxmox_kvm.sh template
+DISTRO=arch TEMPLATE_ID=9000 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Debian (12; bookworm)
 
 ```bash
-DISTRO=debian TEMPLATE_ID=9001 STORAGE=local-lvm ./proxmox_kvm.sh template
+DISTRO=debian TEMPLATE_ID=9001 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Ubuntu (jammy; 22.04 LTS)
 
 ```bash
-DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE=local-lvm ./proxmox_kvm.sh template
+DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Fedora (39)
 
 ```bash
-DISTRO=fedora TEMPLATE_ID=9003 STORAGE=local-lvm ./proxmox_kvm.sh template
+DISTRO=fedora TEMPLATE_ID=9003 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
 ### Docker
@@ -152,6 +158,7 @@ VM_HOSTNAME=docker \
 DISTRO=debian \
 TEMPLATE_ID=9998 \
 INSTALL_DOCKER=yes \
+STORAGE_TYPE=local \
 STORAGE=local-lvm \
 ./proxmox_kvm.sh template
 ```
