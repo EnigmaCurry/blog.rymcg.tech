@@ -114,6 +114,8 @@ template() {
                               )
         elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-40" ]]; then
             _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2
+            USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
+                              )
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
             if [[ ${VM_USER} == "root" ]]; then
                 echo "For FreeBSD, VM_USER cannot be root. Use another username."
