@@ -112,8 +112,8 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-39" ]]; then
-            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
+        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-40" ]]; then
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
             if [[ ${VM_USER} == "root" ]]; then
                 echo "For FreeBSD, VM_USER cannot be root. Use another username."

@@ -140,7 +140,7 @@ DISTRO=debian TEMPLATE_ID=9001 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kv
 DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Fedora (39)
+### Fedora (40)
 
 ```bash
 DISTRO=fedora TEMPLATE_ID=9003 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
