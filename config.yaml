@@ -48,14 +48,18 @@ menu:
       name: EnigmaCurry.com
       url: https://www.enigmacurry.com
       weight: 20
-    - identifier: soundcloud
-      name: Soundcloud
-      url: https://www.soundcloud.com/EnigmaCurry
+    - identifier: books
+      name: Books
+      url: https://book.rymcg.tech
       weight: 30
     - identifier: github
       name: Github
       url: https://github.com/EnigmaCurry
       weight: 40
+    - identifier: soundcloud
+      name: Soundcloud
+      url: https://www.soundcloud.com/EnigmaCurry
+      weight: 50
   footer:
     - identifier: tags
       name: Tags
