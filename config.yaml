@@ -44,14 +44,14 @@ menu:
       name: Blog
       url: /
       weight: 10
-    - identifier: enigmacurry.com
-      name: EnigmaCurry.com
-      url: https://www.enigmacurry.com
-      weight: 20
     - identifier: books
       name: Books
       url: https://book.rymcg.tech
       weight: 30
+    - identifier: enigmacurry.com
+      name: EnigmaCurry.com
+      url: https://www.enigmacurry.com
+      weight: 20
     - identifier: github
       name: Github
       url: https://github.com/EnigmaCurry
