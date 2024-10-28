@@ -109,7 +109,8 @@ template() {
                 create_debian_qemu_guest_agent_iso
                 CDROM=debian_qemu_guest_agent.iso
             fi
-            USER_DATA_RUNCMD+=("mount /dev/sr0 /mnt/guest_agent"
+            USER_DATA_RUNCMD+=("mkdir /mnt/guest_agent"
+                               "mount /dev/sr0 /mnt/guest_agent"
                                "echo \"deb [trusted=yes] file:/mnt/guest_agent ./\" | tee /etc/apt/sources.list.d/guest_agent.list"
                                "apt-get -o Dir::Etc::sourcelist=\"sources.list.d/guest_agent.list\" -o Dir::Etc::sourceparts=\"-\" -o APT::Get::List-Cleanup=\"0\" update"
                                "apt install qemu-guest-agent"
