@@ -462,4 +462,4 @@ main() {
     fi
 }
 
-main
+main $@
