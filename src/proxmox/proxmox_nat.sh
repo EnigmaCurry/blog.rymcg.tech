@@ -409,7 +409,7 @@ print_help() {
     echo ' * Type `q` or `quit` to quit.'
 }
 
-main() {
+interface() {
     echo
     get_bridges
     echo
@@ -443,6 +443,23 @@ main() {
         fi
         echo
     done
+}
+
+main() {
+    if [[ -z "$1" ]]; then
+        interface
+    else
+        case "$1" in
+            "enable")
+                activate_iptables_rules
+                enable_service
+                ;;
+            *)
+                echo "Unknown command: $1"
+                exit 1
+                ;;
+        esac
+    fi
 }
 
 main
