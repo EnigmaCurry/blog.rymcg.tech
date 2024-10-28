@@ -445,3 +445,5 @@ main() {
         echo
     done
 }
+
+main
