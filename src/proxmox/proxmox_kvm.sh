@@ -77,7 +77,6 @@ create_debian_qemu_guest_agent_iso() {
 
     for pkg in "${PACKAGES[@]}"; do
         apt-get download "${pkg}"
-        apt-get download $(apt-rdepends -p "${pkg}" --state-follow=Installed --state-follow=Hold --state-show=Deinstall | grep -v '^ ')
     done
 
     dpkg-scanpackages ${TMP_DIR} /dev/null | gzip -9c > ${TMP_DIR}/Packages.gz
