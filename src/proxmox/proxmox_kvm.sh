@@ -107,7 +107,7 @@ template() {
             _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
             if [[ ! -f ${DEBIAN_QEMU_GUEST_AGENT_ISO} ]]; then
                 create_debian_qemu_guest_agent_iso
-                CDROM=debian_qemu_guest_agent_iso
+                CDROM=debian_qemu_guest_agent.iso
             fi
             USER_DATA_RUNCMD+=("mount /dev/sr0 /mnt/guest_agent"
                                "echo \"deb [trusted=yes] file:/mnt/guest_agent ./\" | tee /etc/apt/sources.list.d/guest_agent.list"
