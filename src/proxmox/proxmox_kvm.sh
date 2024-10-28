@@ -168,7 +168,7 @@ template() {
            --serial0 socket \
            --vga serial0 \
            --agent 1
-        if [[ -n ${CDROM} ]]; then
+        if [[ -n "${CDROM}" ]]; then
             qm set "${TEMPLATE_ID}" --ide0 local:iso/debian_qemu_guest_agent.iso,media=cdrom
         fi
         ## Generate cloud-init User Data script:
