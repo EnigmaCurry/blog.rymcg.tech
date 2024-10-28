@@ -107,6 +107,7 @@ template() {
             _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
             if [[ ! -f ${DEBIAN_QEMU_GUEST_AGENT_ISO} ]]; then
                 create_debian_qemu_guest_agent_iso
+                CDROM=debian_qemu_guest_agent_iso
             fi
             USER_DATA_RUNCMD+=("mount /dev/sr0 /mnt/guest_agent"
                                "echo \"deb [trusted=yes] file:/mnt/guest_agent ./\" | tee /etc/apt/sources.list.d/guest_agent.list"
@@ -159,7 +160,6 @@ template() {
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
            --scsi0 "${DISK}" \
-           --ide0 none,media=cdrom \
            --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
            --ipconfig0 ip=dhcp \
@@ -168,7 +168,9 @@ template() {
            --serial0 socket \
            --vga serial0 \
            --agent 1
-
+        if [[ -n ${CDROM} ]]; then
+            qm set "${TEMPLATE_ID}" --cdrom "local:iso/${CDROM}"
+        fi
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
             ## Attach the Docker install script as Cloud-Init User Data so
