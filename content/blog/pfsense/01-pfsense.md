@@ -119,12 +119,20 @@ network cards. That will be the case until you install the realtek
 driver for the card. To get it to boot and not shutdown, I temporarily
 plugged in a USB ethernet adapter which is supported by FreeBSD. After
 the network link to the internet is up, you can install the package
-you need:
+you need.
 
+The `pkg` repos that come with with PFsense 2.7.2 include the realtek
+driver, so you can install it with this command:
+```
+pkg install realtek-re-kmod-198.00_3
+```
+
+If the version of PFsense you're using doesn't include the realtek
+driver in their repo, you might be able to install it by pointing 
+`pkg` to the remote package file, like this: 
 ```
 pkg add https://pkg.freebsd.org/FreeBSD:14:amd64/latest/All/realtek-re-kmod-198.00_3.pkg
 ```
-
 The name of this package may change as newer versions are released.
 [Check here for updated
 releases](https://ports.freebsd.org/cgi/ports.cgi?query=realtek-re-kmod)
