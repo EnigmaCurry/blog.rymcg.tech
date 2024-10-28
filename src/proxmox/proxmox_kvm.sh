@@ -183,7 +183,7 @@ EOF
 
 clone() {
     set -e
-    qm clone "${TEMPLATE_ID}" "${VM_ID}"
+    qm clone "${TEMPLATE_ID}" "${VM_ID}" --full 0
     USER_DATA=vm-${VM_ID}-user-data.yaml
     cp ${SNIPPETS_DIR}/vm-template-${TEMPLATE_ID}-user-data.yaml ${SNIPPETS_DIR}/${USER_DATA}
     sed -i "s/^fqdn:.*/fqdn: ${VM_HOSTNAME}/" ${SNIPPETS_DIR}/${USER_DATA}
