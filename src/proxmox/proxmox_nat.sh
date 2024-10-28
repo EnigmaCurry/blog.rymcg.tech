@@ -227,6 +227,7 @@ create_iptables_rules() {
 ## This script should not be edited by hand, it is generated from proxmox_nat.sh
 
 error(){ echo "Error: $@"; }
+warn(){ echo "Warning: $@"; }
 fault(){ test -n "$1" && error $1; echo "Exiting." >/dev/stderr; exit 1; }
 check_var(){
     local __missing=false
@@ -248,7 +249,7 @@ apply_port_forward_rules() {
     ## Validate all the rules:
     set -e
     if [[ "${#PORT_FORWARD_RULES[@]}" -le 1 ]] && [[ "${PORT_FORWARD_RULES[0]}" == "" ]]; then
-        error "PORT_FORWARD_RULES array is empty!"
+        warn "PORT_FORWARD_RULES array is empty!"
         exit 0
     fi
     for rule in "${PORT_FORWARD_RULES[@]}"; do
@@ -409,7 +410,7 @@ print_help() {
     echo ' * Type `q` or `quit` to quit.'
 }
 
-interface() {
+main() {
     echo
     get_bridges
     echo
@@ -444,22 +445,3 @@ interface() {
         echo
     done
 }
-
-main() {
-    if [[ -z "$1" ]]; then
-        interface
-    else
-        case "$1" in
-            "enable")
-                activate_iptables_rules
-                enable_service
-                ;;
-            *)
-                echo "Unknown command: $1"
-                exit 1
-                ;;
-        esac
-    fi
-}
-
-main $@
