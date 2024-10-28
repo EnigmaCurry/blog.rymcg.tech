@@ -49,6 +49,7 @@ fi
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
+DEBIAN_QEMU_GUEST_AGENT_ISO=/var/lib/vz/template/iso/debian_qemu_guest_agent.iso
 
 _confirm() {
     set +x
@@ -67,6 +68,21 @@ _confirm() {
         echo "Exiting."
         [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1
     fi
+}
+
+create_debian_qemu_guest_agent_iso() {
+    PACKAGES=("qemu-guest-agent")
+    TMP_DIR=$(mktemp -d)
+    cd ${TMP_DIR}
+
+    for pkg in "${PACKAGES[@]}"; do
+        apt-get download "${pkg}"
+        apt-get download $(apt-rdepends -p "${pkg}" --state-follow=Installed --state-follow=Hold --state-show=Deinstall | grep -v '^ ')
+    done
+
+    dpkg-scanpackages ${TMP_DIR} /dev/null | gzip -9c > ${TMP_DIR}/Packages.gz
+    genisoimage -o ${DEBIAN_QEMU_GUEST_AGENT_ISO} -J -r ${TMP_DIR}
+    rm -rf ${TMP_DIR}
 }
 
 template() {
@@ -90,8 +106,13 @@ template() {
                               )
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bookworm" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
-            USER_DATA_RUNCMD+=("apt-get update"
-                               "apt-get install -y qemu-guest-agent"
+            if [[ ! -f ${DEBIAN_QEMU_GUEST_AGENT_ISO} ]]; then
+                create_debian_qemu_guest_agent_iso
+            fi
+            USER_DATA_RUNCMD+=("mount /dev/sr0 /mnt/guest_agent"
+                               "echo \"deb [trusted=yes] file:/mnt/guest_agent ./\" | tee /etc/apt/sources.list.d/guest_agent.list"
+                               "apt-get -o Dir::Etc::sourcelist=\"sources.list.d/guest_agent.list\" -o Dir::Etc::sourceparts=\"-\" -o APT::Get::List-Cleanup=\"0\" update"
+                               "apt install qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
         elif [[ ${DISTRO} == "bullseye" ]]; then
