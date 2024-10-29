@@ -168,7 +168,7 @@ chmod +x proxmox_firewall.sh
 ./proxmox_firewall.sh
 ```
 
-## The firewall script
+## The script
 
  * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh)
 
