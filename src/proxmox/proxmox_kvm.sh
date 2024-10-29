@@ -141,7 +141,6 @@ template() {
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
            --scsi0 "${DISK}" \
-           --ide0 none,media=cdrom \
            --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
            --ipconfig0 ip=dhcp \
@@ -160,7 +159,7 @@ template() {
         for PORT in "${UDP_PORTS[@]}"; do
             pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto udp --dport "${PORT}" --enable 1
         done
-        
+
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
             ## Attach the Docker install script as Cloud-Init User Data so
