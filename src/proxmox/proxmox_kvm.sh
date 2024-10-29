@@ -49,7 +49,6 @@ fi
 
 PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-vmbr0}
 SNIPPETS_DIR=${SNIPPETS_DIR:-/var/lib/vz/snippets}
-DEBIAN_QEMU_GUEST_AGENT_ISO=/var/lib/vz/template/iso/debian_qemu_guest_agent.iso
 
 _confirm() {
     set +x
@@ -92,7 +91,7 @@ template() {
         elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bookworm" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
             USER_DATA_RUNCMD+=("apt-get update"
-                               "apt-get install qemu-guest-agent"
+                               "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
         elif [[ ${DISTRO} == "bullseye" ]]; then
