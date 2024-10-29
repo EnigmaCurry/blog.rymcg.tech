@@ -154,11 +154,11 @@ template() {
         pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
         IFS=',' read -ra PORTS <<< "${PUBLIC_PORTS_TCP}"
         for PORT in "${PORTS[@]}"; do
-            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto tcp --dport "${PORT}"
+            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto tcp --dport "${PORT}" --enable 1
         done
         IFS=',' read -ra UDP_PORTS <<< "${PUBLIC_PORTS_UDP}"
         for PORT in "${UDP_PORTS[@]}"; do
-            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto udp --dport "${PORT}"
+            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto udp --dport "${PORT}" --enable 1
         done
         
         ## Generate cloud-init User Data script:
