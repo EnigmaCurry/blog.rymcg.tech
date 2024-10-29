@@ -149,9 +149,9 @@ template() {
            --bootdisk scsi0 \
            --serial0 socket \
            --vga serial0 \
-           --agent 1 \
-           --firewall 1
+           --agent 1
 
+        pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
         IFS=',' read -ra PORTS <<< "${VM_PUBLIC_PORTS_TCP}"
         for PORT in "${PORTS[@]}"; do
             qm set "${TEMPLATE_ID}" --firewall-rules "[{\"action\":\"ACCEPT\",\"type\":\"in\",\"proto\":\"tcp\",\"dport\":\"${PORT}\"}]"
