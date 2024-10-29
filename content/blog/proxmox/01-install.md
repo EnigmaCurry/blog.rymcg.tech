@@ -147,25 +147,29 @@ of this section.
 
 ## Setup Firewall
 
-By default the proxmox instance has an open firewall, but this can be made more
-secure to only accept connections from specific sources, for example to lock
-down to only being accessed from your workstation. This is particularly
-important to do if you chose to use the `bridge` network selection, in
-`virt-manager` when you created the VM.
+Proxmox has a 3-tier layered firewall:
 
- * In the `Server View` list, click the line that says `Datacenter`.
- * On the datacenter screen, find the `Firewall` settings.
- * Click the `Add` button to add firewall rules.
- * There are default anti-lockout rules for port 22 and 8006, *but
-   only acessible from the same subnet*. You should create your own
-   rules for these ports so that you don't lock yourself out.
+ * Datacenter - priority 3 - most general
+ * Node - priority 2 - node specific
+ * VM / Container - priority 1 - most specific
 
-{{<img src="/img/proxmox/firewall-anti-lockout.png" alt="Firewall explicit anti-lockout rules for SSH and the Dashboard">}}
+By default the firewall is turned off. To set everything up, run the
+`proxmox_firewall.sh` script, which will reset the firewall rules,
+create basic rules for SSH and Web console, and enable both the Node
+and Datacenter firewalls:
 
+```bash
+wget https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh
 
-The firewall is turned off by default. To enable the firewall, find the Firewall
-`Options` submenu page, on the new screen double-click `Firewall` (value `No`)
-at the top of the list. In the popup window, checkmark the box to enable the
-firewall, then click `OK`. (The `Firewall` value should now show `Yes`).
+chmod +x proxmox_firewall.sh
+```
 
-{{<img src="/img/proxmox/firewall-enable.png" alt="Turn on the Firewall in the Options">}}
+```bash
+./proxmox_firewall.sh
+```
+
+## The firewall script
+
+ * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh)
+
+{{< code file="/src/proxmox/proxmox_firewall.sh" language="shell" >}}

@@ -7,7 +7,6 @@ error(){ stderr "Error: $@"; }
 cancel(){ stderr "Canceled."; exit 2; }
 fault(){ test -n "$1" && error $1; stderr "Exiting."; exit 1; }
 confirm() {
-    ## Confirm with the user.
     local default=$1; local prompt=$2; local question=${3:-". Proceed?"}
     if [[ $default == "y" || $default == "yes" || $default == "ok" ]]; then
         dflt="Y/n"
@@ -22,7 +21,7 @@ confirm() {
         return 1
     fi
 }
- ask() {
+ask() {
     local __prompt="${1}"; local __var="${2}"; local __default="${3}"
     while true; do
         read -e -p "${__prompt}"$'\x0a\e[32m:\e[0m ' -i "${__default}" ${__var}
@@ -30,10 +29,48 @@ confirm() {
         [[ -z "${!__var}" ]] || break
     done
 }
-debug_var() {
+check_var(){
+    local __missing=false
+    local __vars="$@"
+    for __var in ${__vars}; do
+        if [[ -z "${!__var}" ]]; then
+            error "${__var} variable is missing."
+            __missing=true
+        fi
+    done
+    if [[ ${__missing} == true ]]; then
+        fault
+    fi
+}
+check_num(){
     local var=$1
     check_var var
-    echo "## DEBUG: ${var}=${!var}" > /dev/stderr
+    if ! [[ ${!var} =~ ^[0-9]+$ ]] ; then
+        fault "${var} is not a number: '${!var}'"
+    fi
+}
+validate_ip_address () {
+    #thanks https://stackoverflow.com/a/21961938
+    echo "$@" | grep -o -E  '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' >/dev/null
+}
+
+add_management_rule_macro() {
+    MACRO=$1
+    check_var HOSTNAME MACRO MANAGER_INTERFACE MANAGER_SUBNET PUBLIC_IP_ADDRESS
+    pvesh create /nodes/${HOSTNAME}/firewall/rules \
+          --action ACCEPT --type in --macro ${MACRO} \
+          --iface ${MANAGER_INTERFACE} --source ${MANAGER_SUBNET} --dest ${PUBLIC_IP_ADDRESS} --enable 1 \
+          --comment "Allow ${MACRO^^} from ${MANAGER_SUBNET} on ${MANAGER_INTERFACE} for ${PUBLIC_IP_ADDRESS}"
+}
+
+add_management_rule_port() {
+    PORT=$1
+    check_var HOSTNAME MANAGER_INTERFACE MANAGER_SUBNET PUBLIC_IP_ADDRESS
+    check_num PORT
+    pvesh create /nodes/${HOSTNAME}/firewall/rules \
+          --action ACCEPT --type in --dport ${PORT} --proto tcp \
+          --iface ${MANAGER_INTERFACE} --source ${MANAGER_SUBNET} --dest ${PUBLIC_IP_ADDRESS} --enable 1 \
+          --comment "Allow from ${MANAGER_SUBNET} on ${MANAGER_INTERFACE} to ${PUBLIC_IP_ADDRESS}:${PORT}"
 }
 
 
@@ -44,7 +81,8 @@ reset_firewall() {
     ask "Which subnet is allowed to access the management interface?" MANAGER_SUBNET 0.0.0.0/0
     echo
     PUBLIC_IP_ADDRESS=$(ip -4 addr show ${MANAGER_INTERFACE} | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-
+    validate_ip_address ${PUBLIC_IP_ADDRESS}
+    
     ## Delete existing Datacenter rules
     RULE_POSITIONS="$(pvesh get /cluster/firewall/rules --output-format json | jq -r '.[].pos' | sort -r)"
     # Iterate over each rule position and delete the rule
@@ -62,23 +100,12 @@ reset_firewall() {
     done
 
     echo "Allowing ICMP ping response from the management interface."
-    pvesh create /nodes/${HOSTNAME}/firewall/rules \
-          --action ACCEPT --type in --macro ping \
-          --iface ${MANAGER_INTERFACE} --source ${MANAGER_SUBNET} --dest ${PUBLIC_IP_ADDRESS} --enable 1 \
-          --comment "Allow ICMP ping from ${MANAGER_SUBNET} on ${MANAGER_INTERFACE} for ${PUBLIC_IP_ADDRESS}"
-
+    add_management_rule_macro ping
     echo "Allowing access to SSH (22) for the management interface."
-    pvesh create /nodes/${HOSTNAME}/firewall/rules \
-          --action ACCEPT --type in --macro ssh \
-          --iface ${MANAGER_INTERFACE} --source ${MANAGER_SUBNET} --dest ${PUBLIC_IP_ADDRESS} --enable 1 \
-          --comment "Allow SSH from ${MANAGER_SUBNET} on ${MANAGER_INTERFACE} for ${PUBLIC_IP_ADDRESS}"
-
+    add_management_rule_macro ssh
     echo "Allowing access to Proxmox console (8006) for the management interface."
-    pvesh create /nodes/${HOSTNAME}/firewall/rules \
-          --action ACCEPT --type in --dport 8006 --proto tcp \
-          --iface ${MANAGER_INTERFACE} --source ${MANAGER_SUBNET} --dest ${PUBLIC_IP_ADDRESS} --enable 1 \
-          --comment "Allow Proxmox Web Console from ${MANAGER_SUBNET} on ${MANAGER_INTERFACE} for ${PUBLIC_IP_ADDRESS}"
-
+    add_management_rule_port 8006
+    
     echo "Enabling Node firewall."
     pvesh set /nodes/${HOSTNAME}/firewall/options --enable 1
 
