@@ -29,7 +29,7 @@ confirm() {
 
 
 reset_firewall() {
-    confirm "This will reset the Node and Datacenter firewalls and delet all existing rules."
+    confirm no "This will reset the Node and Datacenter firewalls and delet all existing rules."
     PUBLIC_IP_ADDRESS=$(ip -4 addr show ${MANAGER_INTERFACE} | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 
     ## Delete existing Datacenter rules
