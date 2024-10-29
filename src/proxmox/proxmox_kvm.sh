@@ -22,6 +22,8 @@ VM_ID=${VM_ID:-100}
 VM_HOSTNAME=${VM_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 VM_USER=${VM_USER:-root}
 VM_PASSWORD=${VM_PASSWORD:-""}
+VM_PUBLIC_PORTS_TCP=${VM_PUBLIC_PORTS_TCP:-22,80,443}
+VM_PUBLIC_PORTS_UDP=${VM_PUBLIC_PORTS_UDP}
 ## Point to the local authorized_keys file to copy into VM:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 # Container CPUs:
@@ -147,8 +149,18 @@ template() {
            --bootdisk scsi0 \
            --serial0 socket \
            --vga serial0 \
-           --agent 1
+           --agent 1 \
+           --firewall 1
 
+        IFS=',' read -ra PORTS <<< "${VM_PUBLIC_PORTS_TCP}"
+        for PORT in "${PORTS[@]}"; do
+            qm set "${TEMPLATE_ID}" --firewall-rules "[{\"action\":\"ACCEPT\",\"type\":\"in\",\"proto\":\"tcp\",\"dport\":\"${PORT}\"}]"
+        done
+        IFS=',' read -ra UDP_PORTS <<< "${VM_PUBLIC_PORTS_UDP}"
+        for PORT in "${UDP_PORTS[@]}"; do
+            qm set "${TEMPLATE_ID}" --firewall-rules "[{\"action\":\"ACCEPT\",\"type\":\"in\",\"proto\":\"udp\",\"dport\":\"${PORT}\"}]"
+        done
+        
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
             ## Attach the Docker install script as Cloud-Init User Data so
