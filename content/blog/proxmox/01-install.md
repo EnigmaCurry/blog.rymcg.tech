@@ -74,25 +74,30 @@ and the password is the password you chose during install. Because
 passwords are less secure than SSH keys, that's the next step: to
 install your SSH key, and disable password authentication.
 
-Create an SSH host entry in your workstation's `$HOME/.ssh/config`
-file:
+Create an SSH host entry in your workstation's `$HOME/.ssh/config`:
 
-```
-Host proxmox
-    Hostname 192.168.X.X
-    User root
+```bash
+PROXMOX_IP_ADDRESS=192.168.X.X \
+PROXMOX_HOST=pve \
+cat << EOF >> ~/.ssh/config
+
+Host ${PROXMOX_HOST}
+     Hostname ${PROXMOX_IP_ADDRESS}
+     User root
+
+EOF
 ```
 
-(Change the Hostname `192.168.X.X` to be the IP address of your Proxmox virtual machine.)
+(Change the Hostname `192.168.X.X` to be the IP address of your Proxmox host.)
 
 If you have not created an SSH identity on this workstation, you will need to
 run `ssh-keygen`.
- * From your workstation, run `ssh-copy-id proxmox`, which will ask you to
+ * From your workstation, run `ssh-copy-id pve`, which will ask you to
    confirm the ssh key fingerprint, and for your remote password (chosen during
    install) to login to the Proxmox server via SSH. It will copy your SSH key to
    the server's `authorized_keys` file, which will allow all future logins to be
    by key based authentication, instead of by password.
- * SSH to the Proxmox host, run `ssh proxmox`. Ensure that no password is
+ * SSH to the Proxmox host, run `ssh pve`. Ensure that no password is
    required (except perhaps for unlocking your key file). You will now be in the
    root account of Proxmox, be careful!
  * You need to edit the `/etc/ssh/sshd_config` file. The text editors `nano` and
@@ -109,7 +114,7 @@ run `ssh-keygen`.
    to SSH again, with a bogus username, one that you know does not really exist:
 
 ```
-$ ssh hunter1@proxmox-k3s-1
+$ ssh hunter1@pve
 hunter1@192.168.122.177: Permission denied (publickey).
 ```
 
@@ -125,47 +130,85 @@ By default, Proxmox expects that you are an enterprise, and that you have an
 enterprise license for Proxmox. If you do, skip this section. However, you may
 also use the Proxmox community version, without a license (and it is the same
 .iso image installer and method for both versions.) To switch between these
-versions, you must use different apt package repositories. If you wish to use
-Proxmox exclusively with the Community, non-enterprise version, follow the rest
-of this section.
+versions, you must use different apt package repositories. 
 
- * You will see a warning message `No valid subscription`, which will nag you on
-   each login unless you purchase an enterprise edition of Proxmox. Click `OK`
-   to freely use the community version.
- * On the left-hand side of the screen, find the `Server View` list, click the
-   Proxmox host in the list.
- * Find the `Updates` and `Repositories` screen on the Node details screen.
- * Find the `pve-enterprise` repository in the list, and click it.
- * Click the `Disable` button at the top of the list.
- * You will see a message that says `No Proxmox VE repository is enabled.`
- * Click `Add`, it will nag you about the license again, just click `OK`.
- * Select `No-Subscription` in the Repository drop-down list, click `Add`.
- * You should now expect to to see this warning message: `The no-subscription
-   repository is not recommended for production use`.
+If you wish to use Proxmox exclusively with the Community,
+non-enterprise version, run this as root:
 
-{{<img src="/img/proxmox/no-subscription-repository.png" alt="Setting up the No-Subscription repository">}}
+```bash
+## Backup existing sources list for Proxmox
+cp /etc/apt/sources.list.d/pve-enterprise.list \
+  /etc/apt/sources.list.d/pve-enterprise.list.bak
+
+## Disable enterprise repository by commenting it out
+sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list
+sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list
+
+## Add the no-subscription community repository
+echo "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > \
+  /etc/apt/sources.list.d/pve-no-subscription.list
+
+## Update the package lists
+apt update
+
+## Clear the cache to make the changes effective immediately
+systemctl restart pveproxy.service
+```
 
 ## Setup Firewall
 
-By default the proxmox instance has an open firewall, but this can be made more
-secure to only accept connections from specific sources, for example to lock
-down to only being accessed from your workstation. This is particularly
-important to do if you chose to use the `bridge` network selection, in
-`virt-manager` when you created the VM.
+Proxmox has a 3-tier layered firewall:
 
- * In the `Server View` list, click the line that says `Datacenter`.
- * On the datacenter screen, find the `Firewall` settings.
- * Click the `Add` button to add firewall rules.
- * There are default anti-lockout rules for port 22 and 8006, *but
-   only acessible from the same subnet*. You should create your own
-   rules for these ports so that you don't lock yourself out.
+ * Datacenter - priority 3 - most general
+ * Node - priority 2 - node specific
+ * VM / Container - priority 1 - most specific
 
-{{<img src="/img/proxmox/firewall-anti-lockout.png" alt="Firewall explicit anti-lockout rules for SSH and the Dashboard">}}
+By default the firewall is turned off. To set everything up, run the
+`proxmox_firewall.sh` script, which will reset the firewall rules,
+create basic rules for SSH and Web console, and enable both the Node
+and Datacenter firewalls:
 
+```bash
+wget https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh
 
-The firewall is turned off by default. To enable the firewall, find the Firewall
-`Options` submenu page, on the new screen double-click `Firewall` (value `No`)
-at the top of the list. In the popup window, checkmark the box to enable the
-firewall, then click `OK`. (The `Firewall` value should now show `Yes`).
+chmod +x proxmox_firewall.sh
+```
 
-{{<img src="/img/proxmox/firewall-enable.png" alt="Turn on the Firewall in the Options">}}
+```bash
+./proxmox_firewall.sh
+```
+
+ * This script will delete all of the existing firewall rules.
+ * Confirm the prompt.
+ * Enter the management interface: `vmbr0`.
+ * Enter the allowed subnet for managers: `0.0.0.0/0` (the default
+   allows access to anyone connected through the management interface,
+   but you might want to further restrict this.)
+ * It will enable the firewalls and create new rules for SSH (port 22)
+   and the web console (port 8006).
+ * You may re-run the script. It is idempotent.
+
+```stdout
+? This will reset the Node and Datacenter firewalls 
+  and delete all existing rules.. Proceed? (y/N): y
+
+Enter the management interface (e.g., vmbr0)
+: vmbr0
+Which subnet is allowed to access the management interface?
+: 0.0.0.0/0
+
+Deleting node firewall rule at position 2.
+Deleting node firewall rule at position 1.
+Deleting node firewall rule at position 0.
+Allowing ICMP ping response from the management interface.
+Allowing access to SSH (22) for the management interface.
+Allowing access to Proxmox console (8006) for the management interface.
+Enabling Node firewall.
+Enabling Datacenter firewall.
+```
+
+## The script
+
+ * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh)
+
+{{< code file="/src/proxmox/proxmox_firewall.sh" language="shell" >}}

@@ -22,6 +22,8 @@ VM_ID=${VM_ID:-100}
 VM_HOSTNAME=${VM_HOSTNAME:-$(echo ${DISTRO} | cut -d- -f1)}
 VM_USER=${VM_USER:-root}
 VM_PASSWORD=${VM_PASSWORD:-""}
+PUBLIC_PORTS_TCP=${PUBLIC_PORTS_TCP:-22,80,443}
+PUBLIC_PORTS_UDP=${PUBLIC_PORTS_UDP}
 ## Point to the local authorized_keys file to copy into VM:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
 # Container CPUs:
@@ -147,6 +149,19 @@ template() {
            --serial0 socket \
            --vga serial0 \
            --agent 1
+
+        pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
+        pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules \
+          --action ACCEPT --type in --macro ping --enable 1
+        IFS=',' read -ra PORTS <<< "${PUBLIC_PORTS_TCP}"
+        for PORT in "${PORTS[@]}"; do
+            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto tcp --dport "${PORT}" --enable 1
+        done
+        IFS=',' read -ra UDP_PORTS <<< "${PUBLIC_PORTS_UDP}"
+        for PORT in "${UDP_PORTS[@]}"; do
+            pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto udp --dport "${PORT}" --enable 1
+        done
+
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
             ## Attach the Docker install script as Cloud-Init User Data so
