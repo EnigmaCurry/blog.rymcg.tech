@@ -8,8 +8,8 @@ SYSTEMD_SERVICE="/etc/systemd/system/${SYSTEMD_UNIT}.service"
 IPTABLES_RULES_SCRIPT="/etc/network/${SYSTEMD_UNIT}.sh"
 
 ## Default network address is for a /24 based on the the bridge number:
-## (Change the prefix [10.1] per install, to create unique addresses):
-DEFAULT_NETWORK_PATTERN="10.1.BRIDGE.1/24"
+## (Change the prefix [10.10] per install, to create unique addresses):
+DEFAULT_NETWORK_PATTERN="10.10.BRIDGE.1/24"
 
 set -eo pipefail
 stderr(){ echo "$@" >/dev/stderr; }
