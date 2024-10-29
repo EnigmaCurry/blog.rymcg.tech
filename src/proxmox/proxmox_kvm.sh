@@ -139,7 +139,6 @@ template() {
            --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
            --scsihw virtio-scsi-pci \
            --scsi0 "${DISK}" \
-           --ide0 none,media=cdrom \
            --ide2 ${STORAGE}:cloudinit \
            --sshkey "${SSH_KEYS}" \
            --ipconfig0 ip=dhcp \
@@ -148,7 +147,6 @@ template() {
            --serial0 socket \
            --vga serial0 \
            --agent 1
-
         ## Generate cloud-init User Data script:
         if [[ "${INSTALL_DOCKER}" == "yes" ]]; then
             ## Attach the Docker install script as Cloud-Init User Data so
