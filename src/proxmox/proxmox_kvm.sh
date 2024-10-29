@@ -151,6 +151,8 @@ template() {
            --agent 1
 
         pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
+        pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules \
+          --action ACCEPT --type in --macro ping --enable 1
         IFS=',' read -ra PORTS <<< "${PUBLIC_PORTS_TCP}"
         for PORT in "${PORTS[@]}"; do
             pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules --action ACCEPT --type in --proto tcp --dport "${PORT}" --enable 1
