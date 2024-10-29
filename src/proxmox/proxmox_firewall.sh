@@ -1,8 +1,6 @@
 #!/bin/bash
 ## Reset and configure the Proxmox firewall.
 
-## Who is allowed to access the management interface?
-MANAGER_SUBNET=${MANAGER_SUBNET:-0.0.0.0/0}
 MANAGER_INTERFACE=${MANAGER_INTERFACE:-vmbr0}
 
 set -eo pipefail
@@ -26,10 +24,26 @@ confirm() {
         return 1
     fi
 }
+ ask() {
+    local __prompt="${1}"; local __var="${2}"; local __default="${3}"
+    while true; do
+        read -e -p "${__prompt}"$'\x0a\e[32m:\e[0m ' -i "${__default}" ${__var}
+        export ${__var}
+        [[ -z "${!__var}" ]] || break
+    done
+}
+debug_var() {
+    local var=$1
+    check_var var
+    echo "## DEBUG: ${var}=${!var}" > /dev/stderr
+}
 
 
 reset_firewall() {
     confirm no "This will reset the Node and Datacenter firewalls and delete all existing rules."
+    echo
+    ask "Which subnet is allowed to access the management interface?" MANAGER_SUBNET 0.0.0.0/0
+    echo
     PUBLIC_IP_ADDRESS=$(ip -4 addr show ${MANAGER_INTERFACE} | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 
     ## Delete existing Datacenter rules
