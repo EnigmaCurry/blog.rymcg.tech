@@ -1,8 +1,6 @@
 #!/bin/bash
 ## Reset and configure the Proxmox firewall.
 
-MANAGER_INTERFACE=${MANAGER_INTERFACE:-vmbr0}
-
 set -eo pipefail
 stderr(){ echo "$@" >/dev/stderr; }
 error(){ stderr "Error: $@"; }
@@ -42,6 +40,7 @@ debug_var() {
 reset_firewall() {
     confirm no "This will reset the Node and Datacenter firewalls and delete all existing rules."
     echo
+    ask "Enter the management interface (e.g., vmbr0)" MANAGER_INTERFACE vmbr0
     ask "Which subnet is allowed to access the management interface?" MANAGER_SUBNET 0.0.0.0/0
     echo
     PUBLIC_IP_ADDRESS=$(ip -4 addr show ${MANAGER_INTERFACE} | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
