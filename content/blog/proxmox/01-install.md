@@ -168,6 +168,25 @@ chmod +x proxmox_firewall.sh
 ./proxmox_firewall.sh
 ```
 
+```stdout
+? This will reset the Node and Datacenter firewalls 
+  and delete all existing rules.. Proceed? (y/N): y
+
+Enter the management interface (e.g., vmbr0)
+: vmbr0
+Which subnet is allowed to access the management interface?
+: 0.0.0.0/0
+
+Deleting node firewall rule at position 2.
+Deleting node firewall rule at position 1.
+Deleting node firewall rule at position 0.
+Allowing ICMP ping response from the management interface.
+Allowing access to SSH (22) for the management interface.
+Allowing access to Proxmox console (8006) for the management interface.
+Enabling Node firewall.
+Enabling Datacenter firewall.
+```
+
 ## The script
 
  * [You can download the script from this direct link](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/proxmox/proxmox_firewall.sh)
