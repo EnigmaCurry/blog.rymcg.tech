@@ -45,7 +45,7 @@ elif [ "${STORAGE_TYPE}" == 'local' ]; then
     # lvm path:
     DISK="${STORAGE}:vm-${TEMPLATE_ID}-disk-0"
 else
-    echo "only `local` (lvm) or `nfs` storage backends are supported at this time"
+    echo "only 'local' (lvm) or 'nfs' storage backends are supported at this time"
     exit 1
 fi
 
