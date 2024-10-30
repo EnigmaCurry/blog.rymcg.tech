@@ -114,7 +114,12 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-40" ]]; then
+        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-41" ]]; then
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2
+            USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
+                               "systemctl restart sshd"
+                              )
+        elif [[ ${DISTRO} == "fedora-40" ]]; then
             _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2
             USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
                                "systemctl restart sshd"
