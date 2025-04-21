@@ -23,13 +23,13 @@ _example_ hostnames and public IP addresses, all on different
 networks:
 
  * `defiant` - 45.67.89.10
- * `enterprise` - 156.123.45.67
- * `voyager` - 23.45.67.89
+ * `enterprise` - 156.123.98.34
+ * `voyager` - 23.47.88.14
  
 You must download [the
 script](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/wireguard/wireguard_p2p.sh)
 onto each Linux host you want to join the VPN. The script will handle
-installing wireguard if its not already installed (it your OS is
+installing wireguard if its not already installed (if your OS is
 unsupported, try [installing wireguard
 manually](https://www.wireguard.com/install/) first).
 
@@ -78,22 +78,22 @@ _examples_ for demonstration purposes. You should use the real
 On `defiant`: add `enterprise` and `voyager`:
 
 ```
-./wireguard_p2p.sh add-peer enterprise 156.123.45.67:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
-./wireguard_p2p.sh add-peer voyager 23.45.67.89:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
+./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
+./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
 ```
 
 On `enterprise`: add `defiant` and `voyager`:
 
 ```
 ./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
-./wireguard_p2p.sh add-peer voyager 23.45.67.89:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
+./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
 ```
 
 On `voyager`: add `defiant` and `enterprise`:
 
 ```
 ./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
-./wireguard_p2p.sh add-peer enterprise 156.123.45.67:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
+./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
 ```
 
 Now that all three hosts have been installed, and have added each
@@ -110,14 +110,14 @@ interface: wg0
   listening port: 51820
 
 peer: xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
-  endpoint: 23.45.67.89:51820
+  endpoint: 23.47.88.14:51820
   allowed ips: (none)
   latest handshake: 16 seconds ago
   transfer: 92 B received, 180 B sent
   persistent keepalive: every 25 seconds
 
 peer: Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
-  endpoint: 156.123.45.67:51820
+  endpoint: 156.123.98.34:51820
   allowed ips: 10.15.0.0/24
   latest handshake: 16 seconds ago
   transfer: 124 B received, 180 B sent
