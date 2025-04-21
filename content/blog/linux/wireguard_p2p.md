@@ -57,19 +57,23 @@ To add THIS node as a peer on another WireGuard server using this script, run:
 ------------------------------------------------------------
 ```
 
-But before you do that though, you must install the script on
-`enterprise` and `voyager` the same way as you did on `defiant`,
-except with different (sequential) VPN addresses:
+(If you need to print this information again, run `./wireguard_p2p.sh
+add-peer` with no other arguments.)
+
+Don't run the `add-peer` command on the other nodes yet. You must
+install the script on `enterprise` and `voyager` the same way as you
+did on `defiant`, except with different (sequential) VPN addresses:
 
  * On `enterprise`: `./wireguard_p2p.sh install 10.15.0.2/24`
  * On `voyager`: `./wireguard_p2p.sh install 10.15.0.3/24`
 
-These commands will similarly print out `add-peer` commands. Now you
-need to run all of the `add-peer` commands on each other host.
+These commands will print out a similar `add-peer` command with their
+own wirguard endpoint and key. Gather all three `add-peer` commands,
+and then run them on each other host:
 
-(Note: all of the IP addresses and public keys are _examples_ for
-demonstration purposes. You should copy and paste the exact `add-peer`
-command the `install` command provides instead!)
+(Note: all of the IP addresses and public keys listed here are
+_examples_ for demonstration purposes. You should use the real
+`add-peer` command for your actual hosts instead!)
 
 On `defiant`, add `enterprise` and `voyager`:
 
@@ -121,19 +125,20 @@ peer: Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
 ```
 
 This shows that both of the other peers (`enterprise` and `voyager`)
-are added. It doesn't show their hostnames, but it shows the public
-keys.
+are added. Unfortunately, it won't show their hostnames, but it does
+show their public keys.
 
 The *most important* thing to look for is: `latest handshake: X
-seconds ago`, and X must always be less than 25 seconds. If it doesn't
-say that, or if its greater than 25 seconds, something is wrong, and
-preventing p2p connection between the machines.
+seconds ago`. If you don't see `latest handshake`, or if it shows a
+time greater than 25 seconds, then something is wrong, and preventing
+p2p connection between the machines.
 
-You should now be able to ping each other host, e.g. on `defiant`:
+If all three machines show a good handshake, you should now be able to
+ping each other host, e.g. on `defiant`:
 
 ```
-ping 10.15.0.2
-ping 10.15.0.3
+ping -c1 10.15.0.2
+ping -c1 10.15.0.3
 ```
 
 Now you know how to setup a peer-to-peer VPN, between any number of
