@@ -9,8 +9,8 @@ that makes it easy to set up secure, ad-hoc, private connections using
 the latest encryption tech. WireGuard's design makes no distinction
 between "server" and "client" — every node is simply a peer. You could
 _designate_ a particular node as a "server", and build a hub-and-spoke
-architecture, or you can design a full mesh architecture where every
-node can talk to every other node. This post will focus on the latter.
+architecture, or you can design a full mesh network where every node
+can talk to every other node. This post will focus on the latter.
 
 The following Bash script sets up a p2p VPN between two or more Linux
 (systemd) machines. The only network requirement is that each host has
