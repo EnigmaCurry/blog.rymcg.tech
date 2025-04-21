@@ -16,6 +16,10 @@ most residential ISPs, this will work out of the box. If you are using
 a corporate network (business, hotel, mobile, etc.) this might not work so
 well.
 
+Note: this script will create VPN routes *only* between the hosts that
+you specify. It will not modify your normal internet connection to any
+other hosts.
+
 ## Usage
 
 For example, lets say you have three Linux hosts, with the following
