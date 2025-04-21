@@ -20,7 +20,7 @@ Note: this script will create VPN routes *only* between the hosts that
 you specify. It will not modify your normal internet connection to any
 other hosts.
 
-## Usage
+## Example
 
 For example, lets say you have three Linux hosts, with the following
 _example_ hostnames and public IP addresses, all on different
@@ -147,6 +147,26 @@ ping -c1 10.15.0.3
 
 Now you know how to setup a peer-to-peer VPN, between any number of
 hosts, all without needing to pay for any third party service!
+
+## Usage
+
+```
+Usage: ./src/wireguard/wireguard_p2p.sh <command>
+
+Commands:
+  dependencies                       Install required packages.
+  install <address-cidr>             Install and configure WireGuard. Required first time.
+  uninstall                          Remove WireGuard configuration and keys.
+  status                             Show the WireGuard service status.
+  start                              Start the WireGuard service.
+  stop                               Stop the WireGuard service.
+  dry-run                            Show what would be done without making changes.
+  import-key PRIVATE_KEY             Import a private key instead of generating one.
+  add-peer NAME ENDPOINT PUBLIC_KEY  Add peer live and auto-save into config.
+  remove-peer PUBLIC_KEY             Remove peer live and auto-save into config.
+  help                               Show this help message.
+
+```
 
 ## The script
 
