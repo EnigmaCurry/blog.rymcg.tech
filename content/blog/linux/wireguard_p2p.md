@@ -13,7 +13,7 @@ The following Bash script sets up a p2p VPN between two or more Linux
 (systemd) machines. The only network requirement is that each host has
 the ability to make _outbound_ UDP connections (Full Cone NAT). For
 most residential ISPs, this will work out of the box. If you are using
-a corporate network (business, hotel, etc.) this might not work so
+a corporate network (business, hotel, mobile, etc.) this might not work so
 well.
 
 ## Usage
