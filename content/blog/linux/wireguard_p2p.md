@@ -1,5 +1,5 @@
 ---
-title: "WireGuard P2P"
+title: "WireGuard P2P VPN"
 date: 2025-04-20T23:39:00-06:00
 tags: ['linux', 'wireguard']
 ---
