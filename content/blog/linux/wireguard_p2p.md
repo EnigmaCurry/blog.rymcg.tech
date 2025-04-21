@@ -23,8 +23,7 @@ other hosts.
 ## Example
 
 For example, lets say you have three Linux hosts, with the following
-_example_ hostnames and public IP addresses, all on different
-networks:
+hostnames and public IP addresses, all on different networks:
 
  * `defiant` - 45.67.89.10
  * `enterprise` - 156.123.98.34
