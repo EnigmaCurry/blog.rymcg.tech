@@ -72,7 +72,7 @@ did on `defiant`, except with different (sequential) VPN addresses:
  * On `voyager`: `./wireguard_p2p.sh install 10.15.0.3/24`
 
 These commands will print out a similar `add-peer` command with their
-own wirguard endpoint and key. Gather all three `add-peer` commands,
+own wireguard endpoint and key. Gather all three `add-peer` commands,
 and then run them on each other host:
 
 (Note: all of the IP addresses and public keys listed here are
