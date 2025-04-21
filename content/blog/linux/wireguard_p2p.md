@@ -37,15 +37,15 @@ public IP addresses, all on different networks:
  * `voyager` - 23.47.88.14
 
 If your hosts don't have static IP addresses, you might want to set up
-(dynamic) DNS and use fully qualified domain names. For this example,
-we'll just use the public IP addresses (most residential IP addresses
-don't change very often).
+(dynamic) DNS and use fully qualified domain names instead. For this
+example, we'll just use the public IP addresses (most residential IP
+addresses tend to stay the same for long periods).
 
 You must download [the
 script](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/wireguard/wireguard_p2p.sh)
 onto each Linux host you want to join the VPN. The script will handle
-installing wireguard if its not already installed (if your OS is
-unsupported, try [installing wireguard
+installing WireGuard if it's not already installed (if your OS is
+unsupported, try [installing WireGuard
 manually](https://www.wireguard.com/install/) first).
 
 On `defiant`, run:
@@ -89,7 +89,7 @@ did on `defiant`, except with different (sequential) VPN addresses:
  * On `voyager`: `./wireguard_p2p.sh install 10.15.0.3/24`
 
 These commands will print out a similar `add-peer` command with their
-own wireguard endpoint and key. Gather all three `add-peer` commands,
+own endpoint and key. Gather all three `add-peer` commands,
 and then run them on each other host:
 
 (Note: all of the IP addresses and public keys listed here are
@@ -132,14 +132,14 @@ interface: wg0
 
 peer: xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
   endpoint: 23.47.88.14:51820
-  allowed ips: (none)
+  allowed ips: 10.15.0.2/32
   latest handshake: 16 seconds ago
   transfer: 92 B received, 180 B sent
   persistent keepalive: every 25 seconds
 
 peer: Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
   endpoint: 156.123.98.34:51820
-  allowed ips: 10.15.0.0/24
+  allowed ips: 10.15.0.3/32
   latest handshake: 16 seconds ago
   transfer: 124 B received, 180 B sent
   persistent keepalive: every 25 seconds
