@@ -13,13 +13,14 @@ The following Bash script sets up a p2p VPN between two or more Linux
 (systemd) machines. The only network requirement is that each host has
 the ability to make _outbound_ UDP connections (Full Cone NAT). For
 most residential ISPs, this will work out of the box. If you are using
-a corporate network (business, hotel, etc.) this might not work as
+a corporate network (business, hotel, etc.) this might not work so
 well.
 
 ## Usage
 
-For example, lets say you have the following Linux hosts, with the
-_example_ public IP addresses, all on different networks:
+For example, lets say you have three Linux hosts, with the following
+_example_ hostnames and public IP addresses, all on different
+networks:
 
  * `defiant` - 45.67.89.10
  * `enterprise` - 156.123.45.67
@@ -27,9 +28,10 @@ _example_ public IP addresses, all on different networks:
  
 You must download [the
 script](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/wireguard/wireguard_p2p.sh)
-onto each Linux host you want to join the VPN, and make it
-exectable. The script will handle installing wireguard if its not
-already installed.
+onto each Linux host you want to join the VPN. The script will handle
+installing wireguard if its not already installed (it your OS is
+unsupported, try [installing wireguard
+manually](https://www.wireguard.com/install/) first).
 
 On `defiant`, run:
 
