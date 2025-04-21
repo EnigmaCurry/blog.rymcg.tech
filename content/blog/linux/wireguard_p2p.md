@@ -151,7 +151,7 @@ hosts, all without needing to pay for any third party service!
 ## Usage
 
 ```
-Usage: ./src/wireguard/wireguard_p2p.sh <command>
+Usage: ./wireguard_p2p.sh <command>
 
 Commands:
   dependencies                       Install required packages.
