@@ -246,15 +246,6 @@ stop() {
     systemctl stop "$SERVICE_NAME"
 }
 
-dry_run() {
-    echo "(dry-run) Would perform the following actions:"
-    echo "- Ensure WireGuard tools are installed"
-    echo "- Generate keys if missing"
-    echo "- Store address if needed"
-    echo "- Create initial config with SaveConfig = true"
-    echo "- Bring interface up/down as needed"
-}
-
 help() {
     cat <<EOF
 Usage: $0 <command>
@@ -266,7 +257,6 @@ Commands:
   status                             Show the WireGuard service status.
   start                              Start the WireGuard service.
   stop                               Stop the WireGuard service.
-  dry-run                            Show what would be done without making changes.
   import-key PRIVATE_KEY             Import a private key instead of generating one.
   add-peer NAME ENDPOINT PUBLIC_KEY  Add peer live and auto-save into config.
   remove-peer PUBLIC_KEY             Remove peer live and auto-save into config.
@@ -309,7 +299,6 @@ main() {
         status) status ;;
         start) start ;;
         stop) stop ;;
-        dry-run) dry_run ;;
         import-key)
             if [[ $# -ne 2 ]]; then
                 echo "Usage: $0 import-key <private_key>" >&2

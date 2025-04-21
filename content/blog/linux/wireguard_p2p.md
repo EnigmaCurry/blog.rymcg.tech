@@ -160,7 +160,6 @@ Commands:
   status                             Show the WireGuard service status.
   start                              Start the WireGuard service.
   stop                               Stop the WireGuard service.
-  dry-run                            Show what would be done without making changes.
   import-key PRIVATE_KEY             Import a private key instead of generating one.
   add-peer NAME ENDPOINT PUBLIC_KEY  Add peer live and auto-save into config.
   remove-peer PUBLIC_KEY             Remove peer live and auto-save into config.
