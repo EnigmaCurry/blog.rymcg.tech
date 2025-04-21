@@ -6,14 +6,15 @@ tags: ['linux', 'wireguard']
 
 [WireGuard](https://www.wireguard.com/) is a super fast and simple VPN
 that makes it easy to set up secure, private connections using the
-latest encryption tech. WireGuard has no server, clients talk to
-eachother in a peer-to-peer fashion. 
+latest encryption tech. WireGuard has no server: clients talk directly
+to each other in a peer-to-peer fashion.
 
-The following script sets up a direct p2p connection between two or
-more Linux machines. The only requirement is that each host has the
-ability to make _outbound_ UDP connections (Full Cone NAT). For most
-residential ISPs, this will work out of the box. If you are using a
-corporate network (business, hotel, etc.) this might not work as well.
+The following Bash script sets up a p2p VPN between two or more Linux
+(systemd) machines. The only network requirement is that each host has
+the ability to make _outbound_ UDP connections (Full Cone NAT). For
+most residential ISPs, this will work out of the box. If you are using
+a corporate network (business, hotel, etc.) this might not work as
+well.
 
 ## Usage
 
@@ -26,8 +27,9 @@ _example_ public IP addresses, all on different networks:
  
 You must download [the
 script](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/wireguard/wireguard_p2p.sh)
-onto each Linux host you want to join the VPN, and make it exectable. The script will handle
-installing wireguard if its not already installed.
+onto each Linux host you want to join the VPN, and make it
+exectable. The script will handle installing wireguard if its not
+already installed.
 
 On `defiant`, run:
 
