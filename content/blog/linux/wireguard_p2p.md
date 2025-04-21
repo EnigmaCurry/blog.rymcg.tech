@@ -24,8 +24,8 @@ other hosts.
 
 ## Example
 
-For example, lets say you have three Linux hosts, with the following
-hostnames and public IP addresses, all on different networks:
+Lets say you have three Linux hosts, with the following hostnames and
+public IP addresses, all on different networks:
 
  * `defiant` - 45.67.89.10
  * `enterprise` - 156.123.98.34
