@@ -5,16 +5,18 @@ tags: ['linux', 'wireguard']
 ---
 
 [WireGuard](https://www.wireguard.com/) is a super fast and simple VPN
-that makes it easy to set up secure, private connections using the
-latest encryption tech. WireGuard has no server: clients talk directly
-to each other in a peer-to-peer fashion.
+that makes it easy to set up secure, adhoc, private connections using
+the latest encryption tech. WireGuard has no server: clients talk
+directly to each other in a peer-to-peer fashion.
 
 The following Bash script sets up a p2p VPN between two or more Linux
 (systemd) machines. The only network requirement is that each host has
-the ability to make _outbound_ UDP connections (Full Cone NAT). For
-most residential ISPs, this will work out of the box. If you are using
-a corporate network (business, hotel, mobile, etc.) this might not work so
-well.
+the ability to make _outbound_ UDP connections ([Full Cone or
+Restricted Cone
+NAT](https://en.wikipedia.org/wiki/UDP_hole_punching)). For most
+residential ISP connections, this will work out of the box. If your
+connection uses Symmetric NAT or CGNAT (typical in corporate, hotel,
+and mobile networks) this might not work so well.
 
 Note: this script will create VPN routes *only* between the hosts that
 you specify. It will not modify your normal internet connection to any
@@ -28,7 +30,12 @@ hostnames and public IP addresses, all on different networks:
  * `defiant` - 45.67.89.10
  * `enterprise` - 156.123.98.34
  * `voyager` - 23.47.88.14
- 
+
+If your hosts don't have static IP addresses, you might want to set up
+(dynamic) DNS and use fully qualified domain names. For this example,
+we'll just use the public IP addresses (most residential IP addresses
+don't change very often).
+
 You must download [the
 script](https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/wireguard/wireguard_p2p.sh)
 onto each Linux host you want to join the VPN. The script will handle
@@ -54,16 +61,22 @@ hosts, which includes the public endpoint and key for `defiant`:
 ------------------------------------------------------------
 To add THIS node as a peer on another WireGuard server using this script, run:
 
-./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
+./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI= 10.15.0.1
 
 (Replace 'defiant' with your desired label for this peer.)
 ------------------------------------------------------------
 ```
 
-(If you need to print this information again, run `./wireguard_p2p.sh
-add-peer` with no other arguments.)
+Notes:
 
-Don't run the `add-peer` command on the other nodes yet. You must
+ * If you need to print the `add-peer` information again, run
+   `./wireguard_p2p.sh add-peer` with no other arguments.
+
+ * If you don't have public static IP addresses, simply replace the IP
+   address with the domain name (FQDN). Keep the `:51820` port the
+   same. (e.g. `host.example.com:51820`)
+
+Don't run the `add-peer` command on the other hosts yet. You must
 install the script on `enterprise` and `voyager` the same way as you
 did on `defiant`, except with different (sequential) VPN addresses:
 
@@ -81,22 +94,22 @@ _examples_ for demonstration purposes. You should use the real
 On `defiant`: add `enterprise` and `voyager`:
 
 ```
-./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
-./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
+./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk= 10.15.0.2
+./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4= 10.15.0.3
 ```
 
 On `enterprise`: add `defiant` and `voyager`:
 
 ```
-./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
-./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
+./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI= 10.15.0.1
+./wireguard_p2p.sh add-peer voyager 23.47.88.14:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4= 10.15.0.3
 ```
 
 On `voyager`: add `defiant` and `enterprise`:
 
 ```
-./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
-./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
+./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI= 10.15.0.1
+./wireguard_p2p.sh add-peer enterprise 156.123.98.34:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk= 10.15.0.2
 ```
 
 Now that all three hosts have been installed, and have added each
