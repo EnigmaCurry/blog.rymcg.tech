@@ -18,6 +18,11 @@ residential ISP connections, this will work out of the box. If your
 connection uses Symmetric NAT or CGNAT (typical in corporate, hotel,
 and mobile networks) this might not work so well.
 
+The magic of this setup is that it works without needing to make any
+modifications to your home router, you don't need to open any static
+ports, and you don't need to pay for an external VPN server or
+provider!
+
 Note: this script will create VPN routes *only* between the hosts that
 you specify. It will not modify your normal internet connection to any
 other hosts.
