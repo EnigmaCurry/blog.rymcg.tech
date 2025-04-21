@@ -40,7 +40,7 @@ public IP addresses, all on different networks:
  * `voyager` - 23.47.88.14
 
 If your hosts don't have static IP addresses, you might want to set up
-(dynamic) DNS and use fully qualified domain names instead. For this
+dynamic DNS and use fully qualified domain names instead. For this
 example, we'll just use the public IP addresses (most residential IP
 addresses tend to stay the same for long periods).
 
@@ -135,14 +135,14 @@ interface: wg0
 
 peer: xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
   endpoint: 23.47.88.14:51820
-  allowed ips: 10.15.0.2/32
+  allowed ips: 10.15.0.3/32
   latest handshake: 16 seconds ago
   transfer: 92 B received, 180 B sent
   persistent keepalive: every 25 seconds
 
 peer: Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
   endpoint: 156.123.98.34:51820
-  allowed ips: 10.15.0.3/32
+  allowed ips: 10.15.0.2/32
   latest handshake: 16 seconds ago
   transfer: 124 B received, 180 B sent
   persistent keepalive: every 25 seconds
