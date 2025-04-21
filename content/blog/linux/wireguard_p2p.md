@@ -75,21 +75,21 @@ and then run them on each other host:
 _examples_ for demonstration purposes. You should use the real
 `add-peer` command for your actual hosts instead!)
 
-On `defiant`, add `enterprise` and `voyager`:
+On `defiant`: add `enterprise` and `voyager`:
 
 ```
 ./wireguard_p2p.sh add-peer enterprise 156.123.45.67:51820 Tx+JOAaZmGZCsE8qqy5AYFnXI7zksC4C2GOjfRlb8lk=
 ./wireguard_p2p.sh add-peer voyager 23.45.67.89:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
 ```
 
-On `enterprise`, add `defiant` and `voyager`:
+On `enterprise`: add `defiant` and `voyager`:
 
 ```
 ./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
 ./wireguard_p2p.sh add-peer voyager 23.45.67.89:51820 xpW2S5aJaEj2JSbmRdUMBt12y1lhz003m5WKi70YOj4=
 ```
 
-On `voyager`, add `defiant` and `enterprise`:
+On `voyager`: add `defiant` and `enterprise`:
 
 ```
 ./wireguard_p2p.sh add-peer defiant 45.67.89.10:51820 du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
