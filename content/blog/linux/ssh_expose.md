@@ -44,7 +44,7 @@ expose a configured local port to the public internet.
    remote host:
    
 ```
-# Example entry in ~/.ssh/config
+# Example host in ~/.ssh/config
 
 Host sentry
      Hostname sentry.example.com
