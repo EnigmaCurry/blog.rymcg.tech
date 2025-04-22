@@ -7,8 +7,9 @@ tags: ['linux', 'ssh']
 To gain remote access to a machine behind a NAT, you have quite a few
 options. Some of the better ones include:
 
- 1) Open a static port at the router. 2) [Use a
- VPN](https://blog.rymcg.tech/blog/linux/wireguard_p2p/).
+ 1) Open a static port at the router.
+ 
+ 2) [Use a VPN](https://blog.rymcg.tech/blog/linux/wireguard_p2p/).
 
 Both of these top options require some preplanning. Sometimes I want a
 method that is considerably more temporary or ad-hoc, so heres another
