@@ -74,6 +74,30 @@ chmod +x ssh_expose.sh
 
 ## Usage
 
+```
+## Usage: ssh_expose.sh <subcommand> [options]
+
+Subcommands:
+  port           Expose a local port to a remote SSH server
+  sshd-config    Reconfigure a remote sshd server config
+  list           List active tunnels
+
+Port usage:
+  ssh_expose.sh port [--persistent|--close] HOST PUBLIC_PORT LOCAL_PORT
+  ssh_expose.sh port HOST PUBLIC_PORT LOCAL_PORT [--persistent|--close]
+  ssh_expose.sh port --close-all
+
+Examples (HOST=sentry):
+  ssh_expose.sh sshd-config sentry GatewayPorts=yes AllowTcpForwarding=yes
+
+  ssh_expose.sh port sentry 8888 8000
+  ssh_expose.sh port --persistent sentry 8888 8000
+  ssh_expose.sh port sentry 8888 8000 --close
+  ssh_expose.sh port --close-all
+
+  ssh_expose.sh list
+```
+
 All of the following commands are to be run from your local machine.
 
 To setup the remote SSH config, use the script to enable
