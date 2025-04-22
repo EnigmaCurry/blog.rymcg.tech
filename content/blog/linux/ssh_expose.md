@@ -98,6 +98,8 @@ Examples (HOST=sentry):
   ssh_expose.sh list
 ```
 
+## Example
+
 All of the following commands are to be run from your local machine.
 
 To setup the remote SSH config, use the script to enable
