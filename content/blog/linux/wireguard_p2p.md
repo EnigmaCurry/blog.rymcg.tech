@@ -228,9 +228,8 @@ Create [Host
    Alias](https://docs.netgate.com/pfsense/en/latest/firewall/aliases-types.html#host-aliases)
    for both peers:
 
- * Create the 
-   for the LAN node that should be able to use WireGuard. Enter the
-   private LAN ip address.
+ * Create an alias for the local WireGuard peer. Enter the private LAN
+   IP address.
    
  * Create another host alias for the destination peer you will
    connect to. Enter the public FQDN or IP address of the peer.
@@ -243,11 +242,11 @@ Create the [Static
   * Address Family: `IPv4+IPv6`
   * Protocol: `UDP`
   * Source: Choose `Network or Alias` and select the LAN host alias
-     (`{host}/32`) and choose the _source_ port that wireguard is
+     (`{host}/32`) and choose the _source_ port that WireGuard is
      listening to.
   * Destination: Choose `Network or Alias` and select the WAN host
      alias of your remote peer (`{remote}/32`) and choose the
-     _destination_ port that wireguard peer is listening to.
+     _destination_ port that WireGuard peer is listening to.
      
 With this rule active the source port on the receiving end will now
 always match the WireGuard listening port.
