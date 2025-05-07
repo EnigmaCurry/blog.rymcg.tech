@@ -17,7 +17,7 @@ RRD_FILE="/var/lib/netwatch/${NET_INTERFACE}.rrd"
 UNIT_NAME="netwatch-${NET_INTERFACE}"
 
 # Output PNG path for graph
-GRAPH_FILE="/tmp/netwatch/${UNIT_NAME}_stats.png"
+GRAPH_FILES="/tmp/netwatch"
 
 # Timer interval
 TIMER_INTERVAL="1min"
@@ -151,19 +151,35 @@ function check_status() {
 
 function generate_graph() {
   check_deps || exit 1
+  span="${1:-day}"
+  case "$span" in
+    day)   range=86400;  label="24h" ;;
+    week)  range=$((7*86400));  label="7d" ;;
+    month) range=$((30*86400)); label="30d" ;;
+    year)  range=$((365*86400)); label="1y" ;;
+    *)
+      echo "Invalid span: $span"
+      echo "Valid options: day, week, month, year"
+      return 1
+      ;;
+  esac
+
   end_time=$(date +%s)
-  start_time=$((end_time - 86400)) # 24 hours
+  start_time=$((end_time - range))
 
   if [[ ! -f "$RRD_FILE" ]]; then
-      echo "RRDTOOL database missing: ${RRD_FILE}"
+      echo "RRD database missing: ${RRD_FILE}"
       exit 1
   fi
 
-  mkdir -p $(dirname "${GRAPH_FILE}")
+  mkdir -p "${GRAPH_FILES}"
+  GRAPH_FILE="${GRAPH_FILES}/${UNIT_NAME}_${span}_stats.png"
+
   timestamp=$(date +"%F_%H%M%S_%Z")
+
   rrdtool graph "$GRAPH_FILE" \
           --start "$start_time" --end "$end_time" \
-          --title "Network stats for $NET_INTERFACE (24h)" \
+          --title "Network stats for $NET_INTERFACE ($label)" \
           --width 800 --height 300 \
           --vertical-label "bytes / ms / state" \
           DEF:rx="$RRD_FILE":rx:AVERAGE \
@@ -186,11 +202,71 @@ function show_logs() {
 
 function serve() {
     check_deps python3
-    generate_graph
-    cd $(dirname "${GRAPH_FILE}")
+    cd "${GRAPH_FILES}"
     echo "## Serving $(echo "$(pwd | sed 's:/*$::')/")"
-    shift
-    python3 -m http.server $@
+
+    tmpfile=$(mktemp)
+    cat > "$tmpfile" <<'EOF'
+import argparse
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import ipaddress
+import sys
+
+class IPRestrictedHandler(SimpleHTTPRequestHandler):
+    allowed_networks = []
+
+    def _client_allowed(self):
+        client_ip = self.client_address[0]
+        try:
+            ip_obj = ipaddress.ip_address(client_ip)
+            return any(ip_obj in net for net in self.allowed_networks)
+        except ValueError:
+            return False
+
+    def do_GET(self):
+        if not self._client_allowed():
+            self.send_response(401)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"401 Unauthorized\n")
+            return
+
+        super().do_GET()
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Simple HTTP server with IP allowlist."
+    )
+    parser.add_argument("--port", type=int, default=8000, help="Port to listen on")
+    parser.add_argument(
+        "--allow",
+        action="append",
+        metavar="IP/CIDR",
+        help="Allowed IP address or CIDR block (can be specified multiple times)",
+    )
+    args = parser.parse_args()
+
+    # Default to allow all IPv4 if none specified
+    allowlist = args.allow or ["0.0.0.0/0"]
+
+    try:
+        IPRestrictedHandler.allowed_networks = [
+            ipaddress.ip_network(a) for a in allowlist
+        ]
+    except ValueError as e:
+        print(f"Invalid IP/CIDR in --allow: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    server_address = ("", args.port)
+    httpd = HTTPServer(server_address, IPRestrictedHandler)
+    print(f"Serving on port {args.port}. Allowed: {', '.join(allowlist)}")
+    httpd.serve_forever()
+
+if __name__ == "__main__":
+    main()
+EOF
+    python3 "$tmpfile" "$@"
+    rm "$tmpfile"
 }
 
 function usage() {
@@ -225,7 +301,7 @@ Subcommands:
               - RX/TX bytes
               - Ping latency
               - Interface up/down status
-              Output file: ${GRAPH_FILE}
+              Output files: ${GRAPH_FILES}
 
   serve [port]  Start HTTP server for the graph directory.
 
@@ -238,21 +314,21 @@ Configuration is defined at the top of this script:
 Example:
   sudo $0 install
   sudo systemctl status ${UNIT_NAME}.timer
-  $0 graph && feh ${GRAPH_FILE}
+  $0 graph
 
 EOF
   exit 1
 }
 
 case "${1:-}" in
-  run) run_check ;;
+  run) run_check && generate_graph day && generate_graph week && generate_graph year ;;
   install) install_timer ;;
   uninstall) uninstall_timer ;;
   deps) check_deps ;;
-  graph) generate_graph ;;
+  graph) shift; generate_graph $@;;
   status) check_status ;;
   log) show_logs ;;
   logs) show_logs ;;
-  serve) serve $@;;
+  serve) shift; serve $@;;
   *) usage ;;
 esac
