@@ -202,15 +202,17 @@ settings](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html),
  * `Automatic Outbound NAT` - this is the default setting, and it is
    what is most useful for home Internet services. This setting is
    good if you have a router that serves a lot of clients. This will
-   allow high levels of TCP and UDP traffic by mantaing the unique
-   source ports that must be maintained for those connections. When
-   pfSense has this set to automatic, all outbound connections will be
-   assigned a random source port translation, regardless of the source
-   port the client used. The router will use the unique random port
-   mapping to create the bi-directional route between your client and
-   destination for the duration of the call. However, the automatic
-   random port interferes with the wireguard setup because the
-   _outbound_ UDP port must be static.
+   allow high levels of TCP and UDP traffic from many clients, without
+   interference. When pfSense has set `Automatic Outbound NAT`, all
+   outbound connections will be assigned a random source port
+   translation, regardless of the source port the client used. The
+   router will use the unique port mapping to create the
+   bi-directional route between your client and destination for the
+   duration of the call. 
+   
+   This setting cannot be used with the WireGuard scenario we've
+   described so far. This is because the _outbound source_ UDP port
+   must be static.
    
  * `Hybrid Outbound NAT` - this setting is just like `Automatic
    Outbound NAT`, except that it also lets you create exceptional
@@ -219,20 +221,19 @@ settings](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html),
    specific rule to let WireGuard use a _static_ source port from a
    specific host.
 
-To create a custom rule for WireGuard traffic, select `Hybrid Outbound
-NAT`.
+To create a custom rule for WireGuard traffic, make sure to select
+`Hybrid Outbound NAT`.
 
-Create host aliases for both peers:
-
- * `Firewall` -> `Aliases` 
- 
-  * Create the [Host
+Create [Host
    Alias](https://docs.netgate.com/pfsense/en/latest/firewall/aliases-types.html#host-aliases)
+   for both peers:
+
+ * Create the 
    for the LAN node that should be able to use WireGuard. Enter the
    private LAN ip address.
    
-  * Create another host alias for the destination peer you will
-    connect to. Enter the public FQDN or IP address of the peer.
+ * Create another host alias for the destination peer you will
+   connect to. Enter the public FQDN or IP address of the peer.
 
 Create the [Static
    Port](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html#static-port)
