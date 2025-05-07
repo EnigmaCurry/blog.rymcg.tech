@@ -219,31 +219,37 @@ settings](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html),
    specific rule to let WireGuard use a _static_ source port from a
    specific host.
 
-You must create a host alias with a static (LAN) IP address:
+To create a custom rule for WireGuard traffic, select `Hybrid Outbound
+NAT`.
+
+Create host aliases for both peers:
 
  * `Firewall` -> `Aliases` 
  
   * Create the [Host
    Alias](https://docs.netgate.com/pfsense/en/latest/firewall/aliases-types.html#host-aliases)
-   for the LAN node that should be able to use WireGuard.
-  * Create another host alias for the destination peer you will connect to.
+   for the LAN node that should be able to use WireGuard. Enter the
+   private LAN ip address.
    
- * Create the [Static
+  * Create another host alias for the destination peer you will
+    connect to. Enter the public FQDN or IP address of the peer.
+
+Create the [Static
    Port](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html#static-port)
    outbound NAT rule.
    
-   * Interface: `WAN`
-   * Address Family: `IPv4+IPv6`
-   * Protocol: `UDP`
-   * Source: Choose `Network or Alias` and select the LAN host alias
+  * Interface: `WAN`
+  * Address Family: `IPv4+IPv6`
+  * Protocol: `UDP`
+  * Source: Choose `Network or Alias` and select the LAN host alias
      (`{host}/32`) and choose the _source_ port that wireguard is
      listening to.
-   * Destination: Choose `Network or Alias` and select the WAN host
+  * Destination: Choose `Network or Alias` and select the WAN host
      alias of your remote peer (`{remote}/32`) and choose the
      _destination_ port that wireguard peer is listening to.
      
-With this rule active (and an amenable non-NAT ISP), the source port on
-the receiving end will now always match the WireGuard listening port.
+With this rule active the source port on the receiving end will now
+always match the WireGuard listening port.
      
 You can verify the UDP source ports using `tcpdump`:
 
@@ -251,11 +257,12 @@ You can verify the UDP source ports using `tcpdump`:
 tcpdump -n -i any udp
 ```
      
-The output shows both packets being sent and received, and the source
-and destintations hosts and ports. To deduce whether NAT is being
-(mis)applied, you must run this on both peers to get their own
-perspective. Critically, for this scenario to work, both the sender
-and receiver must see the same _source_ ports.
+The output of `tcpdump` shows packets both being sent and received,
+with the source and destintations hosts and ports. To deduce whether
+NAT is being (mis)applied, you must run this on both peers to get
+their own perspective. Critically, for this scenario to work, both the
+sender and receiver must see the same _source_ ports. Whereas the IP
+address will be translated public<->private, the ports are static.
 
 ## The script
 
