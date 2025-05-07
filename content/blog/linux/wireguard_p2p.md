@@ -187,28 +187,26 @@ Commands:
 
 ```
 
-## Firewall / Router tips
+## Outbound NAT issues
 
 Even if you have verified that your ISP has given you a public, static
 IP address, with full Internet connectivity, you might still find that
 your router prevents this scenario from working as described.
 
-Here is one example. 
+Here is one example with a pfSense router. 
 
-On a pfSense router, there are four possible [Outbound NAT
+pfSense has four possible [Outbound NAT
 settings](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html),
 (but you only need to be concerned with the first two):
 
- * `Automatic Outbound NAT` - this is the default setting, and it is
-   what is most useful for home Internet services. This setting is
-   good if you have a router that serves a lot of clients. This will
-   allow high levels of TCP and UDP traffic from many clients, without
-   interference. When pfSense has set `Automatic Outbound NAT`, all
-   outbound connections will be assigned a random source port
-   translation, regardless of the source port the client used. The
-   router will use the unique port mapping to create the
+ * `Automatic Outbound NAT` - this is the default setting, and is most
+   useful for home Internet services. This will allow high levels of
+   TCP and UDP traffic, from many clients, without interference. All
+   outbound connections will be assigned a temporary random source
+   port mapping between the LAN client and the WAN interface. The
+   router will use this unique port mapping to create the
    bi-directional route between your client and destination for the
-   duration of the call. 
+   duration of the call.
    
    This setting cannot be used with the WireGuard scenario we've
    described so far. This is because the _outbound source_ UDP port
@@ -224,15 +222,13 @@ settings](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html),
 To create a custom rule for WireGuard traffic, make sure to select
 `Hybrid Outbound NAT`.
 
-Create [Host
+Create a [Host
    Alias](https://docs.netgate.com/pfsense/en/latest/firewall/aliases-types.html#host-aliases)
    for both peers:
 
- * Create an alias for the local WireGuard peer. Enter the private LAN
-   IP address.
+ * For the local WireGuard peer, enter the private LAN IP address.
    
- * Create another host alias for the destination peer you will
-   connect to. Enter the public FQDN or IP address of the peer.
+ * For the destination peer, enter the public FQDN or IP address.
 
 Create the [Static
    Port](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html#static-port)
@@ -248,9 +244,11 @@ Create the [Static
      alias of your remote peer (`{remote}/32`) and choose the
      _destination_ port that WireGuard peer is listening to.
      
-With this rule active the source port on the receiving end will now
+With this rule active, the source port on the receiving end will now
 always match the WireGuard listening port.
-     
+
+### Troubleshooting NAT
+
 You can verify the UDP source ports using `tcpdump`:
 
 ```
