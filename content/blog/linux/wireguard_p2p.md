@@ -193,6 +193,9 @@ Even if you have verified that your ISP has given you a public, static
 IP address, with full Internet connectivity, you might still find that
 your router prevents this scenario from working as described.
 
+
+### pfSense
+
 Here is one example with a pfSense router. 
 
 pfSense has four possible [Outbound NAT
