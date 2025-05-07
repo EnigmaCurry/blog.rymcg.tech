@@ -2,10 +2,11 @@ author: EnigmaCurry
 baseurl: https://blog.rymcg.tech/
 canonifyurls: true
 copyright: 'Copyright © 2020-2024, EnigmaCurry'
-paginate: 5
 theme: alageek
 title: blog.rymcg.tech
 enableGitInfo: true
+pagination:
+  pagerSize: 5
 params:
   copyright: '© 2020-2024 EnigmaCurry'
   copyrightUrl: 'https://blog.rymcg.tech'
