@@ -355,9 +355,9 @@ PersistentKeepalive = 25
  * Your friend needs to [download
    WireGuard](https://www.wireguard.com/install/) and install it.
 
- * They should save the config text into a file named `[peer].conf`
-   (they should replace [peer] with the name of *your* peer, as this
-   will be the name of the connection from *their* perspective).
+ * They should save the config text into a file named `defiant.conf`
+   (they should use the name of *your* peer, as this will be the name
+   of the connection from *their* perspective).
    
  * The config file can be imported via the WireGuard GUI. Activate the
    connection.
