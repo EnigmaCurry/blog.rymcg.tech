@@ -278,10 +278,9 @@ key. In the context of this script, "provisioning" a peer means that
 we are taking a shortcut, and generating a key on behalf of that peer
 and providing it to them ahead of time, embedded into a `.conf` file.
 This is convenient to hand to your your trusted friend, moreso than
-having to exchange keys. Another advantage is it means we don't have
-to port the script to any other platforms, and the provisioned
-machines just need to install WireGuard. All of the keys will be
-provisioned using the Linux host.
+having to exchange keys. Another advantage is that it means we don't
+have to port the script to any other platforms -- the provisioned
+machines just need to install WireGuard and import the `.conf` file.
 
 ```
 Usage: ./wireguard_p2p.sh provision-peer <name> <endpoint> <address/CIDR>
