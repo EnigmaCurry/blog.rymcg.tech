@@ -276,10 +276,10 @@ Linux, Android, and iOS.
 For the most secure VPN, you should have each peer generate their own
 key. In the context of this script, "provisioning" a peer means that
 we are taking a shortcut, and generating a key on behalf of that peer
-and providing it to them ahead of time, embedded it into a `.conf`
-file. This is more convenient to hand your to your trusted friend,
-rather then to have to exchange keys. It also means we don't have to
-port the script to any other platforms, because all the keys will be
+and providing it to them ahead of time, embedded into a `.conf` file.
+This is more convenient to hand your to your trusted friend, rather
+then to have to exchange keys. It also means we don't have to port the
+script to any other platforms, because all the keys will be
 provisioned from the Linux host.
 
 Running the `provision-peer` subcommand, on the Linux host, will:
@@ -307,26 +307,26 @@ Generate a new key and config on their behalf:
 ```
 
  * Make sure to enter borg's public IP address (e.g. 34.56.78.90) -
-    Your friend should double check via [ifconfig.me](ifconfig.me).
- * The endpoint port 51820 can be customized for their machine. You
-   may need to experiment with different ports especially if its
+    Your friend should double check via [ifconfig.me](https://ifconfig.me).
+ * The endpoint port (e.g. 51820) can be customized for their machine.
+   You may need to experiment with different ports especially if its
    already being used for something else on their end.
  * Enter an unused private IP address/CIDR for use on the VPN subnet.
 
-Copy the `add-peer` command that the `provision-peer` outputs and run
-it:
+The `provision-peer` will output an `add-peer` command that you must
+copy, paste, and run, to add the peer connection:
 
 ```
 ./wireguard_p2p.sh add-peer borg x.x.x.x:51820 o7iXZVberLzQclBG+9U4+BJozKVhOl3Mqgaj9MCLST8=  10.15.0.4/24
 ```
 
-Grab the peer's config:
+Grab the contents of the peer's config file:
 
 ```
 cat /etc/wireguard/provisioned_peers/borg.conf
 ```
 
- * Copy the config output and give it to your friend in an email or
+ * Copy the text and give it to your friend in an email or
    chat message.
 
  * Your friend needs to [download
