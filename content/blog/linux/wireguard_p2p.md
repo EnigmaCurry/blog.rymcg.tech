@@ -16,14 +16,15 @@ The following Bash script sets up a p2p VPN between two or more Linux
 (systemd) machines (also Windows, macOS, Android, iOS, etc. via
 [provisioned](https://blog.rymcg.tech/blog/linux/wireguard_p2p/#provisioning-new-peers)
 keys). The only network requirement is that each host has the ability
-to make _outbound_ UDP connections ([Full Cone or Restricted Cone
+to make _outbound_ UDP connections and where the router doesn't change
+the source port (i.e. [Full Cone or Restricted Cone
 NAT](https://en.wikipedia.org/wiki/UDP_hole_punching)). For most
 residential ISP connections, this will work out of the box. If your
 connection uses Symmetric NAT or CGNAT (typical in corporate, hotel,
 and mobile networks) this might not work so well.
 
 The magic of this setup is that it works without needing to make any
-modifications to your home router, you don't need to open any static
+modifications to your home router -- you don't need to open any static
 ports, and you don't need to pay for an external VPN server or
 provider!
 
