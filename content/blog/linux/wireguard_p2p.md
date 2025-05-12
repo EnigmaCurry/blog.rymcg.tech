@@ -334,8 +334,22 @@ Grab the contents of the peer's config file:
 cat /etc/wireguard/provisioned_peers/borg.conf
 ```
 
- * Copy the text and give it to your friend in an email or
-   chat message.
+```
+### Example borg.conf connects to defiant
+[Interface]
+PrivateKey = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=
+Address    = 10.15.0.2/24
+ListenPort = 51820
+
+[Peer]
+PublicKey           = du6ODGzyU742OIOMNjB3lu5nzUR4zxLnsrTuIrb1ZhI=
+Endpoint            = 45.67.89.10:51820
+AllowedIPs          = 10.15.0.1/24
+PersistentKeepalive = 25
+```
+
+ * Copy the text from the config file and give it to your friend in an
+   email or chat message.
 
  * Your friend needs to [download
    WireGuard](https://www.wireguard.com/install/) and install it.
@@ -344,9 +358,9 @@ cat /etc/wireguard/provisioned_peers/borg.conf
    (they should replace [peer] with the name of *your* peer, as this
    will be the name of the connection from *their* perspective).
    
- * The config file can be imported via the WireGuard GUI. Once
-   imported, it should immediately connect.
-   
+ * The config file can be imported via the WireGuard GUI. Activate the
+   connection.
+
  * Tell your friend to look for the `handshake`, or how to ping your
    peer's VPN address to check that everything is working.
 
