@@ -13,9 +13,10 @@ architecture, or you can design a full mesh network where every node
 can talk to every other node. This post will focus on the latter.
 
 The following Bash script sets up a p2p VPN between two or more Linux
-(systemd) machines. The only network requirement is that each host has
-the ability to make _outbound_ UDP connections ([Full Cone or
-Restricted Cone
+(systemd) machines (also Windows, macOS, Android, iOS, etc. via
+[provisioned](https://blog.rymcg.tech/blog/linux/wireguard_p2p/#provisioning-new-peers)
+keys). The only network requirement is that each host has the ability
+to make _outbound_ UDP connections ([Full Cone or Restricted Cone
 NAT](https://en.wikipedia.org/wiki/UDP_hole_punching)). For most
 residential ISP connections, this will work out of the box. If your
 connection uses Symmetric NAT or CGNAT (typical in corporate, hotel,
