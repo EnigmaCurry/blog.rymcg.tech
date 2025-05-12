@@ -277,21 +277,28 @@ For the most secure VPN, you should have each peer generate their own
 key. In the context of this script, "provisioning" a peer means that
 we are taking a shortcut, and generating a key on behalf of that peer
 and providing it to them ahead of time, embedded into a `.conf` file.
-This is more convenient to hand your to your trusted friend, rather
-then to have to exchange keys. It also means we don't have to port the
-script to any other platforms, because all the keys will be
-provisioned from the Linux host.
+This is convenient to hand to your your trusted friend, moreso than
+having to exchange keys. Another advantage is it means we don't have
+to port the script to any other platforms, and the provisioned
+machines just need to install WireGuard. All of the keys will be
+provisioned using the Linux host.
+
+```
+Usage: ./wireguard_p2p.sh provision-peer <name> <endpoint> <address/CIDR>
+```
 
 Running the `provision-peer` subcommand, on the Linux host, will:
 
- * Generate a fresh keypair for the other peer.
+ * Generate a fresh keypair for the other (provisioned) peer.
 
- * Emit a ready-to-import `.conf` file (complete with private key, VPN
-   address, and this peers public key and endpoint).
+ * Emit a ready-to-import `.conf` file (complete with their new
+   private key, VPN address, and the Linux peer's public key and
+   endpoint to connect to).
 
  * Print the exact `add-peer` command to run on the Linux host to add
    the new peer connection.
 
+Install the .conf file using WireGuard (GUI) on the other side.
 
 ### Example of provisioning
 
