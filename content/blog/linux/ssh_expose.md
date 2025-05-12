@@ -37,9 +37,10 @@ expose a configured local port to the public internet.
 
 ## Dependencies
 
- * An SSH server running on some public VPS somewhere.
- * On the public VPS, install your local user's SSH pubkey in the
-   `~root/.ssh/authorized_keys` file.
+ * An SSH server running on some public VPS somewhere, and a user
+   account created for this purpose.
+ * Install your local user's SSH pubkey into the
+   `~/.ssh/authorized_keys` file on the VPS.
  * On your local machine, setup `~/.ssh/config` with an entry for the
    remote host:
    
@@ -48,7 +49,7 @@ expose a configured local port to the public internet.
 
 Host sentry
      Hostname sentry.example.com
-     User root
+     User xxx
      Port 22
 ```
 
