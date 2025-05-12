@@ -265,6 +265,82 @@ their own perspective. Critically, for this scenario to work, both the
 sender and receiver must see the same _source_ ports. Whereas the IP
 address will be translated public<->private, the ports are static.
 
+## Provisioning new peers
+
+WireGuard supports many platforms beyond just Linux. However, this
+Bash script is only designed for Linux. No problem though, because you
+can use this script to create keys and config files using the standard
+WireGuard `.conf` file format, which is supported on Windows, macOS,
+Linux, Android, and iOS.
+
+For the most secure VPN, you should have each peer generate their own
+key. In the context of this script, "provisioning" a peer means that
+we are taking a shortcut, and generating a key on behalf of that peer
+and providing it to them ahead of time, embedded it into a `.conf`
+file. This is more convenient to hand your to your trusted friend,
+rather then to have to exchange keys. It also means we don't have to
+port the script to any other platforms, because all the keys will be
+provisioned from the Linux host.
+
+Running the `provision-peer` subcommand, on the Linux host, will:
+
+ * Generate a fresh keypair for the other peer.
+
+ * Emit a ready-to-import `.conf` file (complete with private key, VPN
+   address, and this peers public key and endpoint).
+
+ * Print the exact `add-peer` command to run on the Linux host to add
+   the new peer connection.
+
+
+### Example of provisioning
+
+For example, your friend has a Windows computer (or mac, android, ios,
+etc.):
+
+ * `borg` - 34.56.78.90
+
+Generate a new key and config on their behalf:
+
+```
+./wireguard_p2p.sh provision-peer borg 34.56.78.90:51820 10.15.0.4/24
+```
+
+ * Make sure to enter borg's public IP address (e.g. 34.56.78.90) -
+    Your friend should double check via [ifconfig.me](ifconfig.me).
+ * The endpoint port 51820 can be customized for their machine. You
+   may need to experiment with different ports especially if its
+   already being used for something else on their end.
+ * Enter an unused private IP address/CIDR for use on the VPN subnet.
+
+Copy the `add-peer` command that the `provision-peer` outputs and run
+it:
+
+```
+./wireguard_p2p.sh add-peer borg x.x.x.x:51820 o7iXZVberLzQclBG+9U4+BJozKVhOl3Mqgaj9MCLST8=  10.15.0.4/24
+```
+
+Grab the peer's config:
+
+```
+cat /etc/wireguard/provisioned_peers/borg.conf
+```
+
+ * Copy the config output and give it to your friend in an email or
+   chat message.
+
+ * Your friend needs to [download
+   WireGuard](https://www.wireguard.com/install/) and install it.
+
+ * They should save the config text into a file named `[peer].conf`
+   (they should replace [peer] with the name of *your* peer).
+   
+ * The config file can be imported via the WireGuard GUI. Once
+   imported, it should immediately connect.
+   
+ * Tell your friend to look for the `handshake`, or how to ping your
+   peer's VPN address to check that everything is working.
+
 ## The script
 
  * [You can download the script from this direct

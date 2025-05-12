@@ -260,6 +260,7 @@ Commands:
   import-key PRIVATE_KEY             Import a private key instead of generating one.
   add-peer NAME ENDPOINT PUBLIC_KEY  Add peer live and auto-save into config.
   remove-peer PUBLIC_KEY             Remove peer live and auto-save into config.
+  provision-peer NAME ENDPOINT ADDRESS    Provision keys and .conf for a new peer.
   help                               Show this help message.
 
 Make sure required environment variables are set before running.
@@ -280,6 +281,76 @@ import_key() {
     echo "$private_key" | wg pubkey | tee "$PUBLIC_KEY_FILE" > /dev/null
     echo "Key imported."
 }
+
+provision_peer() {
+    shift
+    load_address
+    if [[ $# -ne 3 ]]; then
+      echo "Usage: $0 provision-peer <name> <endpoint> <address/CIDR>" >&2
+      exit 1
+    fi
+
+
+    local name="$1"
+    local endpoint="$2"     # e.g. alice.example.com:51820
+    local peer_cidr="$3"    # e.g. 10.15.0.4/32
+
+    if [[ "$endpoint" != *:* ]]; then
+        echo "Error: endpoint must be in host:port form" >&2
+        exit 1
+    fi
+    local peer_host="${endpoint%:*}"
+    local peer_port="${endpoint##*:}"
+
+    local public_ip=$(curl -s ifconfig.me)
+
+    # Directory for the new peer’s artifacts
+    local dir="$WG_CONFIG_DIR/provisioned-peers"
+    mkdir -p "$dir"
+    chmod 700 "$dir"
+
+    # Generate a fresh keypair
+    umask 077
+    wg genkey | tee "$dir/${name}.priv" \
+      | wg pubkey > "$dir/${name}.pub"
+
+    local priv="$dir/${name}.priv"
+    local pub="$(<"$dir/${name}.pub")"
+    local conf="$dir/${name}.conf"
+
+    # Build the turnkey .conf
+    {
+      echo "[Interface]"
+      echo "PrivateKey = $(<"$priv")"
+      echo "Address    = $peer_cidr"
+      echo "ListenPort = $peer_port"
+      echo
+      echo "[Peer]"
+      echo "PublicKey           = $(<"$PUBLIC_KEY_FILE")"
+      echo "Endpoint            = $public_ip:$WG_PORT"
+      echo "AllowedIPs          = $WG_ADDRESS"
+      echo "PersistentKeepalive = 25"
+    } > "$conf"
+    chmod 600 "$conf"
+
+    # Print the add-peer command for THIS node
+    cat <<EOF
+
+▶️  Provisioned peer bundle for '$name':
+    • $conf
+
+▶️  To stitch '$name' into this node’s mesh, run:
+
+./wireguard_p2p.sh add-peer \\
+    $name \\
+    $endpoint \\
+    $pub \\
+    $peer_cidr
+
+Now copy ${name}.conf to your client, import & activate, then run the above add-peer command here.
+EOF
+}
+
 
 main() {
     if [[ $EUID -ne 0 ]]; then
@@ -322,6 +393,9 @@ main() {
                 exit 1
             fi
             remove_peer "$@"
+            ;;
+        provision-peer)
+            provision_peer "$@"
             ;;
         help|-h|--help) help ;;
         *)
