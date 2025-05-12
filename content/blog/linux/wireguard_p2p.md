@@ -325,7 +325,7 @@ The `provision-peer` will output an `add-peer` command that you must
 copy, paste, and run, to add the peer connection:
 
 ```
-./wireguard_p2p.sh add-peer borg x.x.x.x:51820 o7iXZVberLzQclBG+9U4+BJozKVhOl3Mqgaj9MCLST8=  10.15.0.4/24
+./wireguard_p2p.sh add-peer borg 34.56.78.90:51820 o7iXZVberLzQclBG+9U4+BJozKVhOl3Mqgaj9MCLST8=  10.15.0.4/24
 ```
 
 Grab the contents of the peer's config file:
