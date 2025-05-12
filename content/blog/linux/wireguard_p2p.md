@@ -155,8 +155,8 @@ show their public keys.
 
 The *most important* thing to look for is: `latest handshake: X
 seconds ago`. If you don't see `latest handshake`, or if it shows a
-time greater than 25 seconds, then something is wrong, and preventing
-p2p connection between the machines.
+time thats larger than a few minutes, then something is wrong, and
+preventing p2p connection between the machines.
 
 If all three machines show a good handshake, you should now be able to
 ping each other host, e.g. on `defiant`:
@@ -166,8 +166,9 @@ ping -c1 10.15.0.2
 ping -c1 10.15.0.3
 ```
 
-Now you know how to setup a peer-to-peer VPN, between any number of
-hosts, all without needing to pay for any third party service!
+Thanks for reading, now you know how to setup a peer-to-peer VPN,
+between any number of hosts, all without needing to pay for any third
+party service!
 
 ## Usage
 
