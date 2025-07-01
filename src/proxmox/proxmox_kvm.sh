@@ -12,7 +12,7 @@ DISTRO=${DISTRO:-arch}
 ## (no other storage backends supported at this time)
 STORAGE_TYPE=${STORAGE_TYPE:-local}
 
-## The ID of the storage to create the disk in 
+## The ID of the storage to create the disk in
 STORAGE=${STORAGE:-local-lvm}
 
 ## Set these variables to configure the container:
@@ -104,6 +104,12 @@ template() {
                               )
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "jammy" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
+        elif [[ ${DISTRO} == "noble" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
