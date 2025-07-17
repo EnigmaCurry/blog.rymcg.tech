@@ -113,7 +113,7 @@ add_peer() {
     local public_key="$4"
     local peer_ip="$5"
 
-    if [[ -z "$name" || -z "$endpoint" || -z "$public_key" || -z "$peer_ip" ]]; then
+    if [[ -z "$name" || -z "$public_key" || -z "$peer_ip" ]]; then
         echo "Error: name, endpoint, public_key, and peer_ip cannot be blank." >&2
         exit 1
     fi
@@ -122,8 +122,11 @@ add_peer() {
 
     wg set "$WG_INTERFACE" peer "$public_key" \
         allowed-ips "$peer_ip" \
-        endpoint "$endpoint" \
         persistent-keepalive 25
+
+    if [[ -n "$endpoint" ]]; then
+        wg set "$WG_INTERFACE" peer "$public_key" endpoint "$endpoint"
+    fi
 
     echo "Peer added live. Restarting interface to save into config..."
     wg-quick down "$WG_INTERFACE" || true
