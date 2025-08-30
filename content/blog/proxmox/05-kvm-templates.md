@@ -128,19 +128,19 @@ ones for Arch Linux (`9000`), Debian (`9001`), and Docker (`9998`)).
 DISTRO=arch TEMPLATE_ID=9000 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Debian (12; bookworm)
+### Debian (13; trixie)
 
 ```bash
 DISTRO=debian TEMPLATE_ID=9001 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Ubuntu (jammy; 22.04 LTS)
+### Ubuntu (noble; 24.04 LTS)
 
 ```bash
 DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Fedora (40)
+### Fedora (42)
 
 ```bash
 DISTRO=fedora TEMPLATE_ID=9003 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
