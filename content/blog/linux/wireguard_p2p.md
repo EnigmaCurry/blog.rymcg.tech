@@ -253,7 +253,7 @@ Create the [Static
 With this rule active, the source port on the receiving end will now
 always match the WireGuard listening port.
 
-![pfsense static outbound port](/img/pfsense_static_outbound_port.jpg)
+{{<img src="/img/pfsense_static_outbound_port.jpg" alt="pfsense static outbound port">}}
 
 ### Troubleshooting NAT
 
