@@ -253,6 +253,8 @@ Create the [Static
 With this rule active, the source port on the receiving end will now
 always match the WireGuard listening port.
 
+![pfsense static outbound port](/img/pfsense_static_outbound_port.jpg)
+
 ### Troubleshooting NAT
 
 You can verify the UDP source ports using `tcpdump`:
