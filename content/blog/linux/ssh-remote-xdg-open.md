@@ -55,7 +55,7 @@ automatically installed by the script):
 On your local computer (the one with your graphical web browser),
 download the script:
 
-```
+```bash
 wget https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/ssh/ssh_remote_xdg_open.sh
 chmod +x ssh_remote_xdg_open.sh
 
@@ -63,17 +63,14 @@ chmod +x ssh_remote_xdg_open.sh
 
 Install the bundled systemd service locally:
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh install-local
-
 ```
 
 Configure your remote hosts in your local `${HOME}/.ssh/config`.
 Make sure each remote has a defined `Host` section:
 
 ```
-
 ## Basic host example in ~/.ssh/config
 
 ## This example assumes your user UID=1000
@@ -89,26 +86,20 @@ Host foo
 You can also run the script to automatically add the `RemoteForward` and
 `ExitOnForwardFailure` fields to an existing host entry (e.g., `foo`):
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh configure-ssh foo
-
 ```
 
 Install the helper scripts on the remote host (e.g., `foo`):
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh install-remote foo
-
 ```
 
 Test opening a URL from the remote host:
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh test foo
-
 ```
 
 It should open the test URL in your local web browser — and never let
@@ -116,26 +107,20 @@ you down.
 
 Check the status of the socket/service:
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh status
-
 ```
 
 To uninstall the socket/service locally:
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh uninstall-local
-
 ```
 
 To remove the helper scripts from the remote host:
 
-```
-
+```bash
 ./ssh_remote_xdg_open.sh remove-remote foo
-
 ```
 
 ## The script
