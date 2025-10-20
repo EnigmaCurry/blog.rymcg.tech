@@ -30,16 +30,6 @@ On the local side, a user-level systemd socket listens on
 receives spawns a short-lived service that runs `xargs -0 -n1
 xdg-open` to open each NUL-delimited URL it receives.
 
-In your SSH host configuration (`~/.ssh/config`), add the following:
-
-```
-## This example assumes your user UID=1000
-
-Host foo
-    RemoteForward 127.0.0.1:19999 /run/user/1000/ssh_remote_xdg_open.sock
-    ExitOnForwardFailure yes
-```
-
 When the remote host connects via TCP to `127.0.0.1:19999`, SSH forwards
 the data back into your local UNIX socket.
 
