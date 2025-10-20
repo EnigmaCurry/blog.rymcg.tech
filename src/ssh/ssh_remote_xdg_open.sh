@@ -268,12 +268,13 @@ remove_remote_helpers() {
 # Simple smoke test: connect via ssh and call open-local to see if it reaches local socket
 test_roundtrip() {
   local remote="$1"
-  local test_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  local test_url="${2:-https://www.youtube.com/watch?v=dQw4w9WgXcQ}"
   local port="${SSH_OPENURL_PORT:-$PORT_DEFAULT}"
 
   info "Testing roundtrip: will call open-local on remote -> should trigger local xdg-open"
   info "Hint: ensure the local socket is active: systemctl --user status $SOCKET_UNIT_NAME"
-
+  info "Opening ${test_url}"
+  
   # Use the remote's $HOME path at runtime, not a locally-expanded path.
   # Also run via a login shell so PATH/env behave like your normal session.
   ssh "$remote" '${SHELL:-sh} -lc "OPEN_LOCAL_PORT='"$port"' \"\$HOME/.local/bin/open-local\" \"'"$test_url"'\""'
@@ -509,7 +510,7 @@ case "$cmd" in
     ;;
   test)
     [ $# -ge 1 ] || die "test requires <ssh-target>"
-    test_roundtrip "$1"
+    test_roundtrip "$1" "$2"
     ;;
   status)
     _status_overview
