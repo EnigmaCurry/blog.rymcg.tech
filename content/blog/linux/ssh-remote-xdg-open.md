@@ -1,15 +1,15 @@
 ---
 title: "Make SSH remote xdg-open use your local web browser"
-date: 2025-10-19T23:54:00-06:00
+date: 2025-10-19T13:54:00-06:00
 tags: ['linux', 'ssh']
 ---
 
 Have you ever SSHed into a remote machine and ran a program that
-wanted to automatically open a URL in your browser with `xdg-open`?
+wanted to automatically open a URL in your web browser with `xdg-open`?
 
 `xdg-open` is designed to open the URL in your preferred web browser.
 On your local machine that usually works great. Logged in remotely,
-over SSH, ithout a graphical session, it *may* try to open it in a
+over SSH, without a graphical session, it *may* try to open it in a
 text mode browser (e.g., links, w3m), but more likely it will fail
 altogether. Wouldn't it be cool if `xdg-open` running on the remote
 machine could open URLs in your *local* web browser? Well, that's what
@@ -18,7 +18,7 @@ the following Bash script does.
 ## How it works
 
 The following script works on Linux. It requires `bash`, `ssh`, and
-`socat` to be installed on the local and all remote machines.
+`socat` to be installed on the local **and** all remote machines.
 
 The script sets up a tiny reverse tunnel so that whenever the remote
 machine runs `xdg-open https://example.org` the request is
