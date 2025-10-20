@@ -67,10 +67,8 @@ Make sure each remote has a defined `Host` section:
 
 Host foo
     Hostname 192.168.1.1
-    User root
     RemoteForward 127.0.0.1:19999 /run/user/1000/ssh_remote_xdg_open.sock
     ExitOnForwardFailure yes
-
 ```
 
 You can also run the script to automatically add the `RemoteForward` and
