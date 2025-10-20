@@ -510,7 +510,7 @@ case "$cmd" in
     ;;
   test)
     [ $# -ge 1 ] || die "test requires <ssh-target>"
-    test_roundtrip "$1" "$2"
+    test_roundtrip "$1" "${2:-}"
     ;;
   status)
     _status_overview
