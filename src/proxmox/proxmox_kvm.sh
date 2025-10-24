@@ -196,6 +196,8 @@ EOF
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
         ## chattr +i will fail on NFS but don't worry about it:
         qm template "${TEMPLATE_ID}"
+        set +x
+        [[ "${STORAGE_TYPE}" == "nfs" ]] && echo "\`chattr +i\` will fail on NFS but don't worry about it."
     )
 }
 
