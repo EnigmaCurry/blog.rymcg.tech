@@ -64,10 +64,10 @@ details for your WebDAV service:
      `~/ryan-files`)
      
  * Certificate: `~/.config/rclone/ryan-files.pem`
-   * Optional
+   * Optional client TLS certificate.
    
  * Key: `~/.config/rclone/ryan-files.key`
-   * Optional
+   * Optional client TLS key.
 
 ## Download the script
 
@@ -109,14 +109,14 @@ Install the systemd/User service to automatically mount the volume:
 ./rclone_webdav.sh enable ryan-files
 ```
 
-Now the remote volume should be mounted locally at `~/ryan-files` and
-will automatically mount when your system boots or when you login.
-
 ## Check service status
 
 ```bash
 ./rclone_webdav.sh status ryan-files
 ```
+
+Now the remote volume should be mounted locally at `~/ryan-files` and
+will automatically mount when your system boots or when you login.
 
 ## Check logs for debugging purposes
 
