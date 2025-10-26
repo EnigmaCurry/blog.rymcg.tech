@@ -1,5 +1,5 @@
 ---
-title: "WebDAV with Rclone"
+title: "WebDAV with Rclone and mTLS"
 date: 2025-10-26T13:54:00-06:00
 tags: ['linux', 'rclone', 'webdav']
 ---
