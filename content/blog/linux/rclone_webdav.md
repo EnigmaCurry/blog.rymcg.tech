@@ -5,14 +5,14 @@ tags: ['linux', 'rclone', 'webdav']
 ---
 
 [WebDAV](https://datatracker.ietf.org/doc/html/rfc4918) is an open
-extension to HTTP that lets you treat a web server like a remote
-filesystem. [Rclone](https://rclone.org/) is an open source WebDAV
-client that lets you mount remote volumes for read/write access on
-your local computer.
+extension to the HTTP protocol that lets you treat a web server like a
+remote filesystem. [Rclone](https://rclone.org/) is an open source
+WebDAV client that lets you mount remote volumes for read/write access
+on your local computer.
 
 ## Provision your WebDAV server
 
-You can use whatever WebDAV server you have access to. If you need to
+You can use any WebDAV server that you have access to. If you need to
 install one, I recommend
 [copyparty](https://github.com/9001/copyparty) or
 [nextcloud](https://nextcloud.com/) (Use the
@@ -42,8 +42,8 @@ distribution for installing it on Docker).
 
 ## Example
 
-For the examples in this post, we'll assume the following connection
-details for your WebDAV service:
+In this example, let's assume the following connection details when
+setting up the WebDAV service:
 
  * URL: `https://files.example.com` 
    * Note: for copyparty, there is usually no path necessary. For
@@ -78,7 +78,7 @@ chmod +x rclone_webdav.sh
 
 ## Configuration
 
-Create a new config (or updates an existing one) named `ryan-files`:
+Create a new config (or update an existing one) named `ryan-files`:
 
 ```bash
 ./rclone_webdav.sh config ryan-files
@@ -116,7 +116,16 @@ Install the systemd/User service to automatically mount the volume:
 ```
 
 Now the remote volume should be mounted locally at `~/ryan-files` and
-will automatically mount when your system boots or when you login.
+will automatically mount when you login.
+
+If you want the volume mounted on system boot (prior to first login),
+you may want to turn on [systemd
+"lingering"](https://wiki.archlinux.org/title/Systemd/User#Automatic_start-up_of_systemd_user_instances):
+
+```bash
+# Allow user services to automatically start on system boot:
+sudo loginctl enable-linger ${USER}
+```
 
 ## Check logs for debugging purposes
 
