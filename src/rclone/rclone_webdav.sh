@@ -131,10 +131,10 @@ _cmd_config() {
   _need rclone
   echo "== Interactive rclone WebDAV setup (idempotent) =="
 
-  local name url vendor user pass enable_mtls client_cert client_key mount_point
+  local name="${1:-}"; [[ -n "$name" ]] || _die "Usage: $0 config <name>"
+  local url vendor user pass enable_mtls client_cert client_key mount_point
 
   # --- prompts ---
-  name="$(_prompt_default 'Remote volume name (e.g., ryan-files)')"
   url="$(_prompt_default 'WebDAV URL (e.g., https://copyparty.example.com)')"
   vendor="$(_prompt_default 'Vendor (copyparty|owncloud|nextcloud|other)' 'copyparty')"
   user="$(_prompt_default 'Username (HTTP Auth; username ignored by copyparty)')"

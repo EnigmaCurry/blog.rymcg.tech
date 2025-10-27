@@ -88,7 +88,6 @@ Follow the prompts to configure the volume:
 
 ```
 == Interactive rclone WebDAV setup (idempotent) ==
-Remote volume name (e.g., ryan-files): ryan-files
 WebDAV URL (e.g., https://copyparty.example.com): https://files.example.com
 Vendor (copyparty|owncloud|nextcloud|other) [copyparty]: copyparty
 Username (HTTP Auth; username ignored copyparty): admin
