@@ -1,7 +1,7 @@
 ---
 title: "Continuous immediate file sync with Rclone"
 date: 2021-03-03T00:01:00-06:00
-tags: ['linux']
+tags: ['linux','rclone']
 ---
 
 [RClone](https://rclone.org/) is an excellent, open-source, file synchronization
