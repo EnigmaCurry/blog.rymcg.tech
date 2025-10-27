@@ -47,7 +47,7 @@ setting up the WebDAV service:
 
  * URL: `https://files.example.com` 
    * Note: for copyparty, there is usually no path necessary. For
-     Nextcloud, you need to specifiy the URL with a path, e.g.:
+     Nextcloud, you need to specify the URL with a path, e.g.:
      `https://files.example.com/nextcloud/remote.php/dav/files/USERNAME/`)
 
  * Username: `ryan`
