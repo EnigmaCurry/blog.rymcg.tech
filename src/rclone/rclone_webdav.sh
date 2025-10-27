@@ -16,6 +16,21 @@ _die() { echo "Error: $*" >&2; exit 1; }
 _need() { command -v "$1" >/dev/null 2>&1 || _die "Required command '$1' not found"; }
 _mkdirp() { mkdir -p "$1"; }
 
+_yesno() { # _yesno "Prompt" default_yes|default_no
+  local prompt="$1" def="$2" ans defc
+  case "$def" in
+    default_yes) defc="Y/n";;
+    default_no)  defc="y/N";;
+    *) _die "_yesno: second arg must be default_yes|default_no";;
+  esac
+  read -r -p "$prompt [$defc] " ans || true
+  ans="${ans,,}"
+  if [[ -z "$ans" ]]; then
+    [[ "$def" == "default_yes" ]] && return 0 || return 1
+  fi
+  [[ "$ans" == "y" || "$ans" == "yes" ]]
+}
+
 # Read mountpoint for a remote from ~/.config/rclone/mount_points.cfg
 _get_mountpoint() {
   local name="$1"
@@ -84,7 +99,8 @@ Commands:
   log <name>              Show log from the systemd unit.
 
 Notes:
-- TLS mTLS paths (client cert/key) are stored in rclone.conf via global.client_cert/global.client_key.
+- mTLS (client cert/key) is optional. If enabled in the wizard, the paths are stored as
+  global.client_cert/global.client_key in rclone.conf for the remote.
 - Mount options default to RCLONE_VFS_CACHE_MODE="writes" and RCLONE_DIR_CACHE_TIME="5s".
   Override by exporting env vars before running, or edit the generated unit.
 - Mount point paths are stored as entries in ~/.config/rclone/mount_points.cfg (format: NAME=/path).
@@ -115,25 +131,37 @@ _cmd_config() {
   _need rclone
   echo "== Interactive rclone WebDAV setup (idempotent) =="
 
-  local name url vendor user pass client_cert client_key mount_point
+  local name url vendor user pass enable_mtls client_cert client_key mount_point
 
   # --- prompts ---
   name="$(_prompt_default 'Remote volume name (e.g., ryan-files)')"
   url="$(_prompt_default 'WebDAV URL (e.g., https://copyparty.example.com)')"
   vendor="$(_prompt_default 'Vendor (copyparty|owncloud|nextcloud|other)' 'copyparty')"
-  user="$(_prompt_default 'Username (HTTP Auth; username ignored copyparty)')"
+  user="$(_prompt_default 'Username (HTTP Auth; username ignored by copyparty)')"
   pass="$(_prompt_secret 'Password (HTTP Auth)')"
   echo
-  client_cert="$(_prompt_default 'Client certificate PEM path' "$HOME/.config/rclone/client.crt")"
-  client_key="$(_prompt_default 'Client key PEM path' "$HOME/.config/rclone/client.key")"
-  local mp_default="$(realpath $HOME/${name})"
+
+  if _yesno "Use mutual TLS (client certificate)?" default_no; then
+    enable_mtls=1
+    client_cert="$(_prompt_default 'Client certificate PEM path' "$HOME/.config/rclone/client.crt")"
+    client_key="$(_prompt_default 'Client key PEM path' "$HOME/.config/rclone/client.key")"
+    echo
+    # best-effort warnings if files missing; rclone will error if truly required
+    [[ -f "$client_cert" ]] || echo "Warning: client cert not found at '$client_cert' (continuing)">&2
+    [[ -f "$client_key" ]] || echo "Warning: client key not found at '$client_key' (continuing)">&2
+  else
+    enable_mtls=0
+  fi
+
+  local mp_default
+  mp_default="$(realpath "$HOME/${name}" 2>/dev/null || echo "$HOME/${name}")"
   mount_point="$(_prompt_default 'Mount point (absolute)' "$mp_default")"
 
   # --- sanitize values to avoid CR/LF sneaking in ---
   sanitize() { printf %s "$1" | tr -d '\r\n'; }
   name=$(sanitize "$name"); url=$(sanitize "$url"); vendor=$(sanitize "$vendor")
   user=$(sanitize "$user"); pass=$(sanitize "$pass")
-  client_cert=$(sanitize "$client_cert"); client_key=$(sanitize "$client_key")
+  client_cert=$(sanitize "${client_cert:-}"); client_key=$(sanitize "${client_key:-}")
 
   # vendor alias
   [[ "$vendor" == "copyparty" ]] && vendor="owncloud"
@@ -146,14 +174,16 @@ _cmd_config() {
     rclone config delete "$name" >/dev/null || true
   fi
 
-  # build args array; only include user/pass if non-empty
-  args=( "$name" webdav
-         "url=$url" "vendor=$vendor" "pacer_min_sleep=0.01ms"
-         "global.client_cert=$client_cert" "global.client_key=$client_key" )
-
+  # build args array
+  # include mTLS settings only if enabled
+  args=( "$name" webdav "url=$url" "vendor=$vendor" "pacer_min_sleep=0.01ms" )
+  if [[ "$enable_mtls" == "1" ]]; then
+    args+=( "global.client_cert=$client_cert" "global.client_key=$client_key" )
+  fi
   if [[ -n "$user" ]]; then
     args+=( "user=$user" )
   fi
+
   if [[ -n "$pass" ]]; then
     # use --obscure so rclone stores it safely
     rclone config create "${args[@]}" "pass=$pass" --obscure
@@ -236,10 +266,9 @@ _cmd_status() {
 
 _cmd_log() {
   _need journalctl
-  local name="${1:-}"; [[ -n "$name" ]] || _die "Usage: $0 status <name>"
+  local name="${1:-}"; [[ -n "$name" ]] || _die "Usage: $0 log <name>"
   journalctl --user -u "$(_unit_name "$name")"
 }
-
 
 # === Main ===
 cmd="${1:-help}"
@@ -251,7 +280,6 @@ case "$cmd" in
   disable) shift; _cmd_disable "$@" ;;
   uninstall) shift; _cmd_uninstall "$@" ;;
   status) shift; _cmd_status "$@" ;;
-  log) shift; _cmd_log "$@" ;;
-  logs) shift; _cmd_log "$@" ;;
+  log|logs) shift; _cmd_log "$@" ;;
   *) _die "Unknown command: $cmd. Try '$0 help'." ;;
 esac
