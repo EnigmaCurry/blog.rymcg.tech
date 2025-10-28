@@ -26,6 +26,10 @@ PUBLIC_PORTS_TCP=${PUBLIC_PORTS_TCP:-22,80,443}
 PUBLIC_PORTS_UDP=${PUBLIC_PORTS_UDP}
 ## Point to the local authorized_keys file to copy into VM:
 SSH_KEYS=${SSH_KEYS:-${HOME}/.ssh/authorized_keys}
+# Valid VM BIOS values are "seabios", "ovmf", or "uefi" ("ovmf" and "uefi" have the same result)
+BIOS=${BIOS:-seabios}
+# Valid VM Machine Type values are "i440fx" or "q35"
+MACHINE_TYPE=${MACHINE_TYPE:-i440fx}
 # Container CPUs:
 NUM_CORES=${NUM_CORES:-1}
 # Container RAM in MB:
@@ -155,22 +159,35 @@ template() {
         fi
     fi
     (
+        # Build common arguments
+        COMMON_ARGS=(
+            --name "${VM_HOSTNAME}"
+            --sockets "${NUM_CORES}"
+            --memory "${MEMORY}"
+            --net0 "virtio,bridge=${PUBLIC_BRIDGE}"
+            --scsihw virtio-scsi-pci
+            --scsi0 "${DISK}"
+            --ide2 ${STORAGE}:cloudinit
+            --sshkey "${SSH_KEYS}"
+            --ipconfig0 ip=dhcp
+            --boot c
+            --bootdisk scsi0
+            --serial0 socket
+            --vga serial0
+            --agent 1
+            --bios "${BIOS}"
+        )
+        # Add machine type if needed
+        if [[ "${MACHINE_TYPE}" == "q35" ]]; then
+            COMMON_ARGS+=(--machine "${MACHINE_TYPE}")
+        fi
+        # Add EFI disk if needed
+        if [[ "$BIOS" == "ovmf" || "$BIOS" == "uefi" ]]; then
+            COMMON_ARGS+=(--efidisk0 "${STORAGE}:1,format=qcow2,efitype=4m,pre-enrolled-keys=0")
+        fi
+        # Execute the command
         set -ex
-        qm set "${TEMPLATE_ID}" \
-           --name "${VM_HOSTNAME}" \
-           --sockets "${NUM_CORES}" \
-           --memory "${MEMORY}" \
-           --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
-           --scsihw virtio-scsi-pci \
-           --scsi0 "${DISK}" \
-           --ide2 ${STORAGE}:cloudinit \
-           --sshkey "${SSH_KEYS}" \
-           --ipconfig0 ip=dhcp \
-           --boot c \
-           --bootdisk scsi0 \
-           --serial0 socket \
-           --vga serial0 \
-           --agent 1
+        qm set "${TEMPLATE_ID}" "${COMMON_ARGS[@]}"
 
         pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
         pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules \
@@ -213,6 +230,8 @@ EOF
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
         ## chattr +i will fail on NFS but don't worry about it:
         qm template "${TEMPLATE_ID}"
+        set +x
+        [[ "${STORAGE_TYPE}" == "nfs" ]] && echo "\`chattr +i\` will fail on NFS but don't worry about it."
     )
 }
 
