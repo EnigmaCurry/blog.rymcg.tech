@@ -3,14 +3,15 @@ set -euo pipefail
 
 # nix-build-iso.sh
 #
-# Wizard -> writes a flake workspace -> (optionally) builds ISO -> copies to ~/Downloads.
+# Wizard -> writes a flake workspace -> builds ISO -> copies to ~/Downloads.
 #
 KEEP=0
 OUTDIR="${HOME}/Downloads"
 SYSTEM="x86_64-linux"
 
 WORKDIR=""     # if set, we write workspace here
-DO_BUILD=1     # default build, but if --output is used, default becomes 0 unless --build passed
+DO_BUILD=1     # default build, but if --output is used,
+               # default becomes 0 unless --build passed
 
 usage() {
   cat <<'EOF'
@@ -20,7 +21,8 @@ Options:
   --keep              Keep temporary build directory (also kept on failure).
   --outdir DIR        Where to copy the resulting ISO (default: ~/Downloads).
   --system SYSTEM     Nix system (default: x86_64-linux), e.g. aarch64-linux.
-  --output DIR        Write workspace to DIR and exit without building (unless --build).
+  --output DIR        Write workspace to DIR and exit without building
+                      (unless --build).
   --build             Build ISO even if --output is set.
   -h, --help          Show help.
 
@@ -38,7 +40,7 @@ while [[ $# -gt 0 ]]; do
     --keep) KEEP=1; shift ;;
     --outdir) OUTDIR="${2:?missing arg}"; shift 2 ;;
     --system) SYSTEM="${2:?missing arg}"; shift 2 ;;
-    --output) WORKDIR="${2:?missing arg}"; shift 2; DO_BUILD=0 ;;  # default no-build in output mode
+    --output) WORKDIR="${2:?missing arg}"; shift 2; DO_BUILD=0 ;;
     --build) DO_BUILD=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo >&2 "Unknown option: $1"; usage; exit 2 ;;
@@ -333,20 +335,20 @@ WIFI_BLOCK=""
 if [[ "$WIFI_ENABLE" -eq 1 ]]; then
   WIFI_BLOCK=$(cat <<EOF
 
-              # --- NetworkManager + pre-seeded WiFi ---
-              networking.networkmanager.enable = true;
+    # --- NetworkManager + pre-seeded WiFi ---
+    networking.networkmanager.enable = true;
 
-              environment.etc."NetworkManager/system-connections/${NM_CONN_NAME}.nmconnection" = {
-                mode = "0600";
-                source = ./${NM_FILE};
-              };
+    environment.etc."NetworkManager/system-connections/${NM_CONN_NAME}.nmconnection" = {
+      mode = "0600";
+      source = ./${NM_FILE};
+    };
 EOF
 )
 else
   WIFI_BLOCK=$(cat <<'EOF'
 
-              # --- NetworkManager (useful for ethernet too) ---
-              networking.networkmanager.enable = true;
+    # --- NetworkManager (useful for ethernet too) ---
+    networking.networkmanager.enable = true;
 EOF
 )
 fi
@@ -355,13 +357,13 @@ SERIAL_BLOCK=""
 if [[ "$SERIAL_ENABLE" -eq 1 ]]; then
   SERIAL_BLOCK=$(cat <<EOF
 
-              # --- Serial console ---
-              boot.kernelParams = [ "console=${SERIAL_DEV},${SERIAL_BAUD}" ];
+    # --- Serial console ---
+    boot.kernelParams = [ "console=${SERIAL_DEV},${SERIAL_BAUD}" ];
 
-              systemd.services."serial-getty@${SERIAL_DEV}" = {
-                enable = true;
-                wantedBy = [ "getty.target" ];
-              };
+    systemd.services."serial-getty@${SERIAL_DEV}" = {
+      enable = true;
+      wantedBy = [ "getty.target" ];
+    };
 EOF
 )
 fi
@@ -370,33 +372,33 @@ WEBHOOK_BLOCK=""
 if [[ "$WEBHOOK_ENABLE" -eq 1 ]]; then
   WEBHOOK_BLOCK=$(cat <<EOF
 
-              # --- Webhook fires once network is up ---
-              environment.etc."webhook-notify.sh" = {
-                mode = "0755";
-                source = ./webhook-notify.sh;
-              };
+    # --- Webhook fires once network is up ---
+    environment.etc."webhook-notify.sh" = {
+      mode = "0755";
+      source = ./webhook-notify.sh;
+    };
 
-              systemd.services.webhook-notify = {
-                description = "POST hostname + local IP to webhook once network is up";
-                wantedBy = [ "multi-user.target" ];
+    systemd.services.webhook-notify = {
+      description = "POST hostname + local IP to webhook once network is up";
+      wantedBy = [ "multi-user.target" ];
 
-                after = [ "network-online.target" "NetworkManager-wait-online.service" ];
-                wants = [ "network-online.target" "NetworkManager-wait-online.service" ];
+      after = [ "network-online.target" "NetworkManager-wait-online.service" ];
+      wants = [ "network-online.target" "NetworkManager-wait-online.service" ];
 
-                path = with pkgs; [ bash curl iproute2 gawk coreutils ];
+      path = with pkgs; [ bash curl iproute2 gawk coreutils ];
 
-                serviceConfig = {
-                  Type = "oneshot";
-                  TimeoutStartSec = "2min";
-                  StandardOutput = "journal+console";
-                  StandardError = "journal+console";
-                  Environment = [ "WEBHOOK_URL=$(nix_escape "$WEBHOOK_URL")" ];
-                };
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "2min";
+        StandardOutput = "journal+console";
+        StandardError = "journal+console";
+        Environment = [ "WEBHOOK_URL=$(nix_escape "$WEBHOOK_URL")" ];
+      };
 
-                script = ''
-                  exec /etc/webhook-notify.sh
-                '';
-              };
+      script = ''
+        exec /etc/webhook-notify.sh
+      '';
+    };
 EOF
 )
 fi
