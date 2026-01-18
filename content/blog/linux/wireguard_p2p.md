@@ -240,7 +240,7 @@ Create the [Static
    Port](https://docs.netgate.com/pfsense/en/latest/nat/outbound.html#static-port)
    outbound NAT rule.
    
-  * Interface: `WAN`
+  * Interface: `LAN` (or where the client lives)
   * Address Family: `IPv4+IPv6`
   * Protocol: `UDP`
   * Source: Choose `Network or Alias` and select the LAN host alias
@@ -249,11 +249,13 @@ Create the [Static
   * Destination: Choose `Network or Alias` and select the WAN host
      alias of your remote peer (`{remote}/32`) and choose the
      _destination_ port that WireGuard peer is listening to.
+  * Translation: Select the `WAN address` option. Check the `Static
+    Port` checkbox.
      
 With this rule active, the source port on the receiving end will now
 always match the WireGuard listening port.
 
-{{<img src="/img/pfsense_static_outbound_port.jpg" alt="pfsense static outbound port">}}
+{{<img src="/img/pfsense_static_outbound_port.webp" alt="pfsense static outbound port">}}
 
 ### Troubleshooting NAT
 
