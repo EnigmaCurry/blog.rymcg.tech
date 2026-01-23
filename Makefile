@@ -13,5 +13,5 @@ setup:
 
 .PHONY: serve
 serve:
-	hugo serve
+	hugo serve -D
 
