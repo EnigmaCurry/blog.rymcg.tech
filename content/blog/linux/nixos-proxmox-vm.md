@@ -5,7 +5,7 @@ tags: ['linux', 'nixos', 'proxmox', 'docker']
 ---
 
 In the [last
-post](http://localhost:1313/blog/linux/code-agent-vm/) I
+post](http://blog.rymcg.tech/blog/linux/code-agent-vm/) I
 described running AI code agents inside immutable NixOS VMs using
 libvirt on a laptop. That setup works well for local development, but
 sometimes you want to deploy VMs on actual infrastructure - a Proxmox
