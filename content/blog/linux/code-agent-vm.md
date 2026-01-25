@@ -48,25 +48,6 @@ sudo dnf install nix just git libvirt qemu-kvm virt-manager guestfs-tools edk2-o
 sudo systemctl enable --now nix-daemon libvirtd
 ```
 
-## Create the libvirt-admin user
-
-The build scripts generate sensitive files in the `machines/`
-directory, including SSH host keys. The
-[README](https://github.com/EnigmaCurry/nixos-vm-template?tab=readme-ov-file#create-a-dedicated-user-account-recommended)
-recommends creating a dedicated user account so these files are
-protected from other users on your system:
-
-```bash
-sudo useradd -m -s /bin/bash libvirt-admin
-sudo usermod -aG libvirt libvirt-admin
-```
-
-Switch to this user for all of the remaining steps:
-
-```bash
-sudo -iu libvirt-admin
-```
-
 Enable Nix flakes for this user:
 
 ```bash
@@ -190,8 +171,6 @@ in VS Code with the [Remote Development
 Extension](https://code.visualstudio.com/docs/remote/remote-overview)).
 
 First, add an SSH config entry so you don't have to remember the IP:
-
-> Note: this config should be located in your normal user account, not libvirt-admin
 
 ```
 # ~/.ssh/config
