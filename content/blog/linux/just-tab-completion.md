@@ -206,6 +206,7 @@ different configurations:
 
 ```bash
 # ~/.bashrc
+source <(just --completions bash)
 source ~/git/vendor/enigmacurry/sway-home/config/bash/just-completion.sh
 
 # MrFusion Proxmox cluster
