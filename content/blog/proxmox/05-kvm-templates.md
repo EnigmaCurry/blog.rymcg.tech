@@ -140,7 +140,7 @@ DISTRO=debian TEMPLATE_ID=9001 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kv
 DISTRO=ubuntu TEMPLATE_ID=9002 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
 ```
 
-### Fedora (42)
+### Fedora (43)
 
 ```bash
 DISTRO=fedora TEMPLATE_ID=9003 STORAGE_TYPE=local STORAGE=local-lvm ./proxmox_kvm.sh template
@@ -163,7 +163,7 @@ STORAGE=local-lvm \
 ./proxmox_kvm.sh template
 ```
 
-### FreeBSD (13)
+### FreeBSD (15)
 
 FreeBSD does not allow root login, so you must choose an alternate `VM_USER`:
 
