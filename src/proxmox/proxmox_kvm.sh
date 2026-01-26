@@ -90,7 +90,13 @@ template() {
                                "sh -c \"echo 'GRUB_SERIAL_COMMAND=\\\"serial --unit=0 --speed=115200\\\"' >> /etc/default/grub\""
                                "grub-mkconfig -o /boot/grub/grub.cfg"
                               )
-        elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "bookworm" ]]; then
+        elif [[ ${DISTRO} == "debian" ]] || [[ ${DISTRO} == "trixie" ]]; then
+            _template_from_url https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
+        elif [[ ${DISTRO} == "bookworm" ]]; then
             _template_from_url https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
@@ -102,7 +108,19 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "jammy" ]]; then
+        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "plucky" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/plucky/current/plucky-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
+        elif [[ ${DISTRO} == "noble" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
+        elif [[ ${DISTRO} == "jammy" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
