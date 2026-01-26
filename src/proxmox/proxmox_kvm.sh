@@ -145,9 +145,6 @@ template() {
         elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-15" ]]; then
             # There's a lot more images to try here:  https://bsd-cloud-image.org/
             _template_from_url https://download.freebsd.org/releases/VM-IMAGES/15.0-RELEASE/amd64/Latest/FreeBSD-15.0-RELEASE-amd64-zfs.qcow2.xz
-            USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
-                               "systemctl restart sshd"
-                              )
         elif [[ ${DISTRO} == "freebsd-13" ]]; then
             # There's a lot more images to try here:  https://bsd-cloud-image.org/
             _template_from_url https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/freebsd/13.2/2023-04-21/zfs/freebsd-13.2-zfs-2023-04-21.qcow2
