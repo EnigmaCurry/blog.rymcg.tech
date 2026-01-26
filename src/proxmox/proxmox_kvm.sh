@@ -133,12 +133,12 @@ template() {
                                "systemctl start qemu-guest-agent"
                               )
         elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-43" ]]; then
-            _template_from_url https://insect.mm.fcix.net/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
             USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
                                "systemctl restart sshd"
                               )
         elif [[ ${DISTRO} == "fedora-42" ]]; then
-            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2
             USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
                                "systemctl restart sshd"
                               )
