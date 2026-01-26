@@ -108,13 +108,13 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "plucky" ]]; then
+        elif [[ ${DISTRO} == "plucky" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/plucky/current/plucky-server-cloudimg-amd64.img
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "noble" ]]; then
+        elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "noble" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
             USER_DATA_RUNCMD+=("apt-get update"
                                "apt-get install -y qemu-guest-agent"
