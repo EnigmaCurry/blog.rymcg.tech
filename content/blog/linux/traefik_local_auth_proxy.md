@@ -4,7 +4,7 @@ date: 2026-01-28T12:54:00-06:00
 tags: ['linux', 'traefik']
 ---
 
-If you need to access an HTTP service that requires authorization
+If you need to access an HTTP service that requires authentication
 (`Bearer` or `Basic` auth), but you don't want to put the API token
 anywhere near your code, you can use this script to create a
 localhost-only proxy for that service. The proxy accepts
