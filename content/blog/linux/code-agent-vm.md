@@ -312,16 +312,16 @@ The template uses composable mixin profiles. Instead of a deep
 inheritance hierarchy, you combine profiles as needed:
 
 ```
-core       → SSH daemon, user accounts, firewall (always included)
-docker     → Docker daemon + user access
-podman     → Podman + distrobox/buildah/skopeo
-nvidia     → NVIDIA GPU support (requires docker)
-python     → Python/uv development
-rust       → Rust/rustup development
-nix        → Mutable /nix overlay filesystem
-dev        → Development tools + home-manager (neovim, tmux, etc.)
-claude     → Claude Code CLI
-open-code  → OpenCode CLI
+core         → SSH daemon, user accounts, firewall (always included)
+docker       → Docker daemon + user access
+podman       → Podman + distrobox/buildah/skopeo
+nvidia       → NVIDIA GPU support (requires docker)
+python       → Python/uv development
+rust         → Rust/rustup development
+dev          → Development tools (neovim, tmux, etc.)
+home-manager → Home-manager with sway-home modules (emacs, shell config, etc.)
+claude       → Claude Code CLI
+open-code    → OpenCode CLI
 ```
 
 Profiles are specified as comma-separated lists. For example,
