@@ -100,8 +100,9 @@ profile is always implicitly included):
 just build docker
 ```
 
-This produces a NixOS image with a read-only root filesystem, and Docker
-enabled. Now create a VM from it:
+This produces a NixOS image with a read-only root filesystem, and
+Docker enabled. Now create a VM from it. Technically, the build step
+is optional, because the create command will do it implicitly anyway:
 
 ```bash
 just create apps01 docker 4096 2 50G bridge:vmbr0
@@ -338,7 +339,6 @@ PVE_BRIDGE=vmbr0
 EOF
 
 # Build and deploy
-just build docker
 just create apps01 docker 4096 2 50G bridge:vmbr0
 just start apps01
 just ssh admin@apps01

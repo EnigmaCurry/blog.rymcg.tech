@@ -71,11 +71,9 @@ you want and build:
 
 ```bash
 # For Claude Code with full dev environment:
-just build claude,dev,docker,podman
 just create claude-dev claude,dev,docker,podman 8192 4
 
 # For Open Code with full dev environment:
-just build open-code,dev,docker,podman
 just create opencode-dev open-code,dev,docker,podman 8192 4
 ```
 
