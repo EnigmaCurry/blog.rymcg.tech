@@ -1,7 +1,7 @@
 ---
 title: "NixOS VMs part 2: Bootstrapping a Docker server with immutable NixOS on Proxmox"
 date: 2026-01-23T23:00:00-06:00
-tags: ['linux', 'nixos', 'proxmox', 'docker']
+tags: ['linux', 'nixos', 'proxmox', 'docker', 'nixos-vm-template']
 ---
 
 *This is part 2 of a series on [nixos-vm-template](https://github.com/EnigmaCurry/nixos-vm-template):*

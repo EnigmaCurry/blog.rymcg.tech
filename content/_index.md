@@ -8,6 +8,10 @@ This is EnigmaCurry's dev blog.
 
 {{< tags >}}
 
+Read the new series, [nixos-vm-template](/tags/nixos-vm-template), a
+new CLI abstraction for creating virtual machines on libvirt and
+Proxmox.
+
 Check out the [Proxmox series](/tags/proxmox), build your own
 self-hosted mini virtualization cloud with Docker and other virtual
 machines.

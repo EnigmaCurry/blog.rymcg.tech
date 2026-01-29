@@ -1,7 +1,7 @@
 ---
 title: "NixOS VM part 1: Running code agents in an immutable NixOS VM"
 date: 2026-01-22T13:54:00-06:00
-tags: ['linux', 'nixos', 'libvirt', 'KVM']
+tags: ['linux', 'nixos', 'libvirt', 'nixos-vm-template']
 ---
 
 *This is part 1 of a series on [nixos-vm-template](https://github.com/EnigmaCurry/nixos-vm-template):*

@@ -1,7 +1,7 @@
 ---
 title: "NixOS VMs part 3: Mutable VMs are cool too"
 date: 2026-01-29T00:00:00-06:00
-tags: ['linux', 'nixos', 'libvirt', 'proxmox']
+tags: ['linux', 'nixos', 'libvirt', 'proxmox', 'nixos-vm-template']
 ---
 
 *This is part 3 of a series on [nixos-vm-template](https://github.com/EnigmaCurry/nixos-vm-template):*
