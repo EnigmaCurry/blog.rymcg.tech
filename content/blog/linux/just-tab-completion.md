@@ -30,6 +30,8 @@ This post covers a bash completion script that:
 Consider the `create` recipe from nixos-vm-template:
 
 ```just
+# Justfile
+
 create new_name profile="core" memory="2048" vcpus="2" var_size="30G" network="nat":
     @source {{backend_script}} && create_vm "{{new_name}}" ...
 ```
@@ -61,6 +63,8 @@ The approach has two parts:
 Here's the convention in the Justfile:
 
 ```just
+# Justfile
+
 # The main recipe with arguments
 create new_name profile="core" memory="2048" vcpus="2" var_size="30G" network="nat":
     @source {{backend_script}} && create_vm ...
@@ -202,6 +206,7 @@ different configurations:
 
 ```bash
 # ~/.bashrc
+source <(just --completions bash)
 source ~/git/vendor/enigmacurry/sway-home/config/bash/just-completion.sh
 
 # MrFusion Proxmox cluster
@@ -209,10 +214,10 @@ _justfile_alias mrfusion-proxmox \
   "$HOME/git/vendor/enigmacurry/nixos-vm-template/Justfile" \
   "$HOME/git/vendor/enigmacurry/nixos-vm-template/.env-mrfusion"
 
-# BiffCo Proxmox cluster
-_justfile_alias biffco-proxmox \
+# Flux Libvirt manager
+_justfile_alias flux-libvirt \
   "$HOME/git/vendor/enigmacurry/nixos-vm-template/Justfile" \
-  "$HOME/git/vendor/enigmacurry/nixos-vm-template/.env-biffco"
+  "$HOME/git/vendor/enigmacurry/nixos-vm-template/.env-libvirt"
 ```
 
 Each `.env` file points to a different Proxmox host:

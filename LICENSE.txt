@@ -1,6 +1,6 @@
 ---
 
-blog.rymcg.tech is Copyright © 2020-2023 EnigmaCurry.
+blog.rymcg.tech is Copyright © 2020-2026 EnigmaCurry.
 
 These materials are dual-licensed under Creative Commons CC-BY-SA and the MIT
 licenses listed below. The following disclaimer applies to both licenses:
@@ -24,7 +24,7 @@ Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 ## MIT license
 
-Copyright 2020 EnigmaCurry
+Copyright 2020-2026 EnigmaCurry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

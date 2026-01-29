@@ -108,6 +108,12 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
+        elif [[ ${DISTRO} == "plucky" ]]; then
+            _template_from_url https://cloud-images.ubuntu.com/plucky/current/plucky-server-cloudimg-amd64.img
+            USER_DATA_RUNCMD+=("apt-get update"
+                               "apt-get install -y qemu-guest-agent"
+                               "systemctl start qemu-guest-agent"
+                              )
         elif [[ ${DISTRO} == "ubuntu" ]] || [[ ${DISTRO} == "noble" ]]; then
             _template_from_url https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
             USER_DATA_RUNCMD+=("apt-get update"
@@ -126,27 +132,20 @@ template() {
                                "apt-get install -y qemu-guest-agent"
                                "systemctl start qemu-guest-agent"
                               )
-        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-42" ]]; then
-            _template_from_url https://ohioix.mm.fcix.net/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2
+        elif [[ ${DISTRO} == "fedora" ]] || [[ ${DISTRO} == "fedora-43" ]]; then
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
             USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
                                "systemctl restart sshd"
                               )
-        elif [[ ${DISTRO} == "fedora-41" ]]; then
-            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2
+        elif [[ ${DISTRO} == "fedora-42" ]]; then
+            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2
             USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
                                "systemctl restart sshd"
                               )
-        elif [[ ${DISTRO} == "fedora-40" ]]; then
-            _template_from_url https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2
-            USER_DATA_RUNCMD+=("sh -c \"echo PasswordAuthentication no > /etc/ssh/sshd_config.d/00-no-passwords.conf\""
-                               "systemctl restart sshd"
-                              )
-        elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-13" ]]; then
-            if [[ ${VM_USER} == "root" ]]; then
-                echo "For FreeBSD, VM_USER cannot be root. Use another username."
-                qm destroy ${TEMPLATE_ID}
-                exit 1
-            fi
+        elif [[ ${DISTRO} == "freebsd" ]] || [[ ${DISTRO} == "freebsd-15" ]]; then
+            # There's a lot more images to try here:  https://bsd-cloud-image.org/
+            _template_from_url https://download.freebsd.org/releases/VM-IMAGES/15.0-RELEASE/amd64/Latest/FreeBSD-15.0-RELEASE-amd64-zfs.qcow2.xz
+        elif [[ ${DISTRO} == "freebsd-13" ]]; then
             # There's a lot more images to try here:  https://bsd-cloud-image.org/
             _template_from_url https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/freebsd/13.2/2023-04-21/zfs/freebsd-13.2-zfs-2023-04-21.qcow2
         else
@@ -155,22 +154,22 @@ template() {
         fi
     fi
     (
-        set -ex
-        qm set "${TEMPLATE_ID}" \
-           --name "${VM_HOSTNAME}" \
-           --sockets "${NUM_CORES}" \
-           --memory "${MEMORY}" \
-           --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
-           --scsihw virtio-scsi-pci \
-           --scsi0 "${DISK}" \
-           --ide2 ${STORAGE}:cloudinit \
-           --sshkey "${SSH_KEYS}" \
-           --ipconfig0 ip=dhcp \
-           --boot c \
-           --bootdisk scsi0 \
-           --serial0 socket \
-           --vga serial0 \
-           --agent 1
+        COMMON_ARGS=(
+            --name "${VM_HOSTNAME}"
+            --sockets "${NUM_CORES}"
+            --memory "${MEMORY}"
+            --net0 "virtio,bridge=${PUBLIC_BRIDGE}"
+            --scsihw virtio-scsi-pci
+            --scsi0 "${DISK}"
+            --ide2 ${STORAGE}:cloudinit
+            --sshkey "${SSH_KEYS}"
+            --ipconfig0 ip=dhcp
+            --boot c
+            --bootdisk scsi0
+            --serial0 socket
+            --vga serial0
+            --agent 1
+        )
 
         pvesh set /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/options --enable 1
         pvesh create /nodes/${HOSTNAME}/qemu/${TEMPLATE_ID}/firewall/rules \
@@ -207,12 +206,13 @@ EOF
         for cmd in "${USER_DATA_RUNCMD[@]}"; do
             echo " - ${cmd}" >> ${USER_DATA}
         done
-        qm set "${TEMPLATE_ID}" --cicustom "user=local:snippets/vm-template-${TEMPLATE_ID}-user-data.yaml"
+        qm set "${TEMPLATE_ID}" "${COMMON_ARGS[@]}" --cicustom "user=local:snippets/vm-template-${TEMPLATE_ID}-user-data.yaml"
 
         ## Resize filesystem and turn into a template:
         qm resize "${TEMPLATE_ID}" scsi0 "+${FILESYSTEM_SIZE}G"
         ## chattr +i will fail on NFS but don't worry about it:
         qm template "${TEMPLATE_ID}"
+        [[ "${STORAGE_TYPE}" == "nfs" ]] && set +x && echo "\`chattr +i\` will fail on NFS but don't worry about it."
     )
 }
 
@@ -252,13 +252,38 @@ get_ip() {
 
 _template_from_url() {
     set -e
+
     IMAGE_URL=$1
     IMAGE=${IMAGE_URL##*/}
     TMP=/tmp/kvm-images
-    mkdir -p ${TMP}
-    cd ${TMP}
-    test -f ${IMAGE} || wget ${IMAGE_URL}
-    qm importdisk ${TEMPLATE_ID} ${IMAGE} ${STORAGE}
+    mkdir -p "$TMP"
+    cd "$TMP"
+
+    if [[ "$IMAGE" == *.qcow2.xz ]]; then
+        if ! command -v xz >/dev/null 2>&1; then
+            echo "Error: xz is not installed. Please install it before proceeding." >&2
+            exit 1
+        fi
+        # The source file is compressed
+        EXTRACTED=${IMAGE%.xz}
+
+        # If the extracted file already exists, skip downloading the .xz file
+        if [[ -f "${EXTRACTED}" ]]; then
+            echo "Extracted file '${EXTRACTED}' already present – skipping download of ${IMAGE}."
+        else
+            # Only download the .xz file if it doesn't already exist
+            test -f "${IMAGE}" || wget "${IMAGE_URL}"
+        fi
+        # Decompress only if the .xz file exists and the extracted file doesn't exist
+        if [[ -f "$IMAGE" ]] && [[ ! -f "${EXTRACTED}" ]]; then 
+            xz -d "$IMAGE"
+        fi
+        IMAGE=${IMAGE%.xz}
+    else
+        test -f "$IMAGE" || wget "$IMAGE_URL"
+    fi
+
+    qm importdisk "$TEMPLATE_ID" "$IMAGE" "$STORAGE"
 }
 
 if [[ $# == 0 ]]; then

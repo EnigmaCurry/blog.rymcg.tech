@@ -54,9 +54,8 @@ the project root:
 
 ```bash
 BACKEND=proxmox
-PVE_HOST=192.168.1.100
+PVE_HOST=pve
 PVE_NODE=pve
-PVE_SSH_KEY=/home/libvirt-admin/.ssh/id_ed25519
 PVE_STORAGE=local-zfs
 PVE_BRIDGE=vmbr0
 PVE_DISK_FORMAT=raw
@@ -66,11 +65,9 @@ PVE_BACKUP_STORAGE=pbs
 A few notes on these:
 
 - `BACKEND` must be set to proxmox, otherwise libvirt is the default.
-- `PVE_HOST` must be an ip address or routable domain name to the PVE
-  machine.
+- `PVE_HOST` must be the name of the SSH config entry in your `~/.ssh/config`.
 - `PVE_NODE` must match your Proxmox node's actual hostname. If your
   node is called `pve` in the web UI, put `pve` here.
-- `PVE_SSH_KEY` should point to which SSH key to use.
 - `PVE_STORAGE` is which storage system the VM disks get stored on
   (i.e., `local`, `local-zfs`, `my-nfs`).
 - `PVE_BRIDGE` is the default network bridge. You can override this
@@ -333,9 +330,8 @@ cd nixos-vm-template
 
 cat > .env << 'EOF'
 BACKEND=proxmox
-PVE_HOST=192.168.1.100
+PVE_HOST=pve
 PVE_NODE=pve
-PVE_SSH_KEY=~/.ssh/id_ed25519
 PVE_STORAGE=local-zfs
 PVE_DISK_FORMAT=raw
 PVE_BRIDGE=vmbr0
