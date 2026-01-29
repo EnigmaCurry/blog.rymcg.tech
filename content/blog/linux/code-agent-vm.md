@@ -4,6 +4,14 @@ date: 2026-01-22T13:54:00-06:00
 tags: ['linux', 'nixos', 'libvirt', 'KVM']
 ---
 
+*This is part 1 of a series on [nixos-vm-template](https://github.com/EnigmaCurry/nixos-vm-template):*
+1. *Running code agents in an immutable NixOS VM (this post)*
+2. *[Bootstrapping a Docker server with immutable NixOS on Proxmox](/blog/linux/nixos-proxmox-vm/)*
+3. *[Mutable VMs are cool too](/blog/linux/mutable-vms/)*
+4. *[Managing VMs with home-manager and sway-home](/blog/linux/nixos-vm-home-manager/)*
+
+---
+
 AI coding agents like [Claude
 Code](https://docs.anthropic.com/en/docs/claude-code) and [Open
 Code](https://github.com/sst/opencode) run in your terminal, read and
