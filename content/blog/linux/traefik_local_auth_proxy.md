@@ -7,17 +7,17 @@ tags: ['linux', 'traefik']
 If you need to access an HTTP service that requires authorization
 (`Bearer` or `Basic` auth), but you don't want to put the API token
 anywhere near your code, you can use this script to create a
-localhost-only proxy for that service. The proxy accept
-unauthenticated requests originating form 127.0.0.1, and it will
-inject the API token into your requests, and forward them to the
+localhost-only proxy for that service. The proxy accepts
+unauthenticated requests originating only from `127.0.0.1`, and it
+will inject the API token into your requests, and forward them to the
 upstream server.
 
 This kind of thing might also be useful for integration with third
 party software that doesn't support authentication. As a pilot case,
 this script was designed for the integration of Ollama with Home
-Assistant, but HA it didn't have an option to add a Bearer auth token
-for Ollama. Now HA can talk to the local proxy and the proxy injects
-the API token.
+Assistant, but HA doesn't have an option to add a Bearer auth token
+for Ollama. HA can now talk to the local proxy and the proxy injects
+the API token into the request.
 
 ## Get the script
 
