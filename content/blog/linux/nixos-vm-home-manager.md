@@ -1,5 +1,5 @@
 ---
-title: "Managing VMs with home-manager and sway-home"
+title: "NixOS VMs part 4: Managing VMs with home-manager and sway-home"
 date: 2026-01-29T00:00:01-06:00
 tags: ['linux', 'nixos', 'libvirt', 'home-manager']
 ---

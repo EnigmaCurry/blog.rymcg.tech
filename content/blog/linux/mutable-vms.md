@@ -1,5 +1,5 @@
 ---
-title: "Mutable VMs are cool too"
+title: "NixOS VMs part 3: Mutable VMs are cool too"
 date: 2026-01-29T00:00:00-06:00
 tags: ['linux', 'nixos', 'libvirt', 'proxmox']
 ---

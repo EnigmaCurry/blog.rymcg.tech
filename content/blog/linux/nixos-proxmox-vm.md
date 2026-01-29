@@ -1,5 +1,5 @@
 ---
-title: "Bootstrapping a Docker server with immutable NixOS on Proxmox"
+title: "NixOS VMs part 2: Bootstrapping a Docker server with immutable NixOS on Proxmox"
 date: 2026-01-23T23:00:00-06:00
 tags: ['linux', 'nixos', 'proxmox', 'docker']
 ---

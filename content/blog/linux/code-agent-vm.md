@@ -1,5 +1,5 @@
 ---
-title: "Running code agents in an immutable NixOS VM"
+title: "NixOS VM part 1: Running code agents in an immutable NixOS VM"
 date: 2026-01-22T13:54:00-06:00
 tags: ['linux', 'nixos', 'libvirt', 'KVM']
 ---
