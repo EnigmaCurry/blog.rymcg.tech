@@ -33,6 +33,14 @@ Make the script executable:
 chmod a+x traefik_local_auth_proxy.sh
 ```
 
+## Install Traefik
+
+If you have [Nix](https://nixos.org/download/) installed, Traefik will
+be installed automatically by the script. If not, [you can download
+the latest binary of
+Traefik](https://github.com/traefik/traefik/releases), and install it
+in your PATH (e.g., `/usr/local/bin/traefik`).
+
 ## Examples
 
 ```bash
