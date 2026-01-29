@@ -92,18 +92,12 @@ If that works, you're good.
 
 ## Build and create the Docker VM
 
-The project ships with a `docker` profile that includes the Docker
-daemon and adds the admin user to the `docker` group. It sits in the
-middle of the profile stack:
-
-```
-base → core → docker
-```
-
-For a dedicated Docker server, you don't need the development tools or
-the AI agents that we used in the last post. So let's build a
-different image with the `docker` profile, which gives you a minimal
-system with SSH, Docker, and not much else:
+The project ships with composable mixin profiles. The `docker` profile
+includes the Docker daemon and adds users to the `docker` group. For a
+dedicated Docker server, you don't need the development tools or the
+AI agents that we used in the last post. The `docker` profile gives
+you a minimal system with SSH, Docker, and not much else (the `core`
+profile is always implicitly included):
 
 ```bash
 just build docker
@@ -241,14 +235,15 @@ add
 # profiles/docker.nix
 { config, pkgs, ... }:
 {
-  imports = [ ./core.nix ];
+  config = {
+    virtualisation.docker.enable = true;
+    users.users.${config.core.adminUser}.extraGroups = [ "docker" ];
+    users.users.${config.core.regularUser}.extraGroups = [ "docker" ];
 
-  virtualisation.docker.enable = true;
-  users.users.${config.core.adminUser}.extraGroups = [ "docker" ];
-
-  environment.systemPackages = with pkgs; [
-    lazydocker
-  ];
+    environment.systemPackages = with pkgs; [
+      lazydocker
+    ];
+  };
 }
 ```
 

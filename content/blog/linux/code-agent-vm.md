@@ -63,19 +63,20 @@ git clone https://github.com/EnigmaCurry/nixos-vm-template \
 cd ~/nixos-vm-template
 ```
 
-The template ships with both a `claude` profile and an `open-code`
-profile. Both include Node.js, git, Docker, Rust, Python, and various
-development tools. The agent itself gets installed via npm on first
-login. Pick the one you want and build:
+The template ships with composable profiles that you combine as needed.
+For a full development environment with a code agent, combine the
+`claude` (or `open-code`) profile with `dev`, `docker`, and `podman`.
+The agent itself gets installed via npm on first login. Pick the one
+you want and build:
 
 ```bash
-# For Claude Code:
-just build claude
-just create claude-dev claude 8192 4
+# For Claude Code with full dev environment:
+just build claude,dev,docker,podman
+just create claude-dev claude,dev,docker,podman 8192 4
 
-# For Open Code:
-just build open-code
-just create opencode-dev open-code 8192 4
+# For Open Code with full dev environment:
+just build open-code,dev,docker,podman
+just create opencode-dev open-code,dev,docker,podman 8192 4
 ```
 
 This creates a VM with 8GB RAM and 4 CPUs. The root filesystem is
@@ -309,45 +310,46 @@ there's nothing to snapshot there.
 
 ## Upgrades and profiles
 
-The template uses a layered profile system. Each profile imports the one
-below it, adding packages and services:
+The template uses composable mixin profiles. Instead of a deep
+inheritance hierarchy, you combine profiles as needed:
 
 ```
-base        → vim, curl, htop, git, ripgrep, jq, just
-└── core    → SSH daemon, user accounts, firewall
-    └── docker → Docker daemon
-        └── dev       → neovim, tmux, rust, python, docker
-            ├── claude    → nodejs, auto-installs claude-code
-            └── open-code → nodejs, auto-installs opencode-ai
+core       → SSH daemon, user accounts, firewall (always included)
+docker     → Docker daemon + user access
+podman     → Podman + distrobox/buildah/skopeo
+nvidia     → NVIDIA GPU support (requires docker)
+python     → Python/uv development
+rust       → Rust/rustup development
+nix        → Mutable /nix overlay filesystem
+dev        → Development tools + home-manager (neovim, tmux, etc.)
+claude     → Claude Code CLI
+open-code  → OpenCode CLI
 ```
 
-Each agent profile inherits everything from `dev`, which inherits
-from `docker`, and so on. When you run `just build claude` or
-`just build open-code`, you get the full stack. Each VM's selected
-profile is stored in
-`machines/<name>/profile`, which is set during `just create` and read
-by `just upgrade` to know which image to rebuild. To switch a VM to a
-different profile, edit that file and put the name of the profile you
-want in it (one word, e.g. `claude`), then run `just upgrade <name>`.
+Profiles are specified as comma-separated lists. For example,
+`claude,dev,docker,podman` gives you Claude Code with the full
+development environment, Docker, and Podman. Each VM's selected
+profiles are stored in `machines/<name>/profile`, which is set during
+`just create` and read by `just upgrade` to know which image to
+rebuild. To change a VM's profiles, edit that file and put the
+comma-separated list you want, then run `just upgrade <name>`.
 
-To add packages, edit the profile file in `profiles/`. For example, to
-add `go` to a profile:
+To add packages, edit the relevant profile file in `profiles/`, or
+create your own. For example, to add `go` to the dev profile:
 
 ```nix
-# profiles/claude.nix (or open-code.nix)
+# profiles/dev.nix
 { pkgs, ... }:
 {
-  imports = [ ./dev.nix ];
-
   environment.systemPackages = with pkgs; [
-    nodejs
+    neovim
+    tmux
     go  # add new packages here
   ];
 }
 ```
 
-Or create your own profile that imports either agent profile and adds
-whatever you need. After editing, rebuild and upgrade:
+After editing, rebuild and upgrade:
 
 ```bash
 just upgrade claude-dev    # build and install new image, preserving /var
@@ -373,7 +375,7 @@ agent's commits from a desktop on the same network without going
 through GitHub, you can use bridged networking:
 
 ```bash
-just create claude-dev claude 8192 4 20G bridge
+just create claude-dev claude,dev,docker,podman 8192 4 20G bridge
 ```
 
 The VM will get an IP from your LAN's DHCP server and be directly
