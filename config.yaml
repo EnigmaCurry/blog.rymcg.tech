@@ -1,14 +1,14 @@
 author: EnigmaCurry
 baseurl: https://blog.rymcg.tech/
 canonifyurls: true
-copyright: 'Copyright © 2020-2024, EnigmaCurry'
+copyright: 'Copyright © 2020-2026, EnigmaCurry'
 theme: alageek
 title: blog.rymcg.tech
 enableGitInfo: true
 pagination:
   pagerSize: 5
 params:
-  copyright: '© 2020-2024 EnigmaCurry'
+  copyright: '© 2020-2026 EnigmaCurry'
   copyrightUrl: 'https://blog.rymcg.tech'
   description: 'Self-hosted, Open Source, Freedom'
   faviconfile: '/img/favicon.png'
