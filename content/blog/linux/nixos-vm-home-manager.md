@@ -91,11 +91,15 @@ this:
 
 ```bash
 vm list                    # List all VMs
-vm create myvm docker,dev  # Create a VM
-vm start myvm              # Start it
+vm create                  # Create a VM (interactive wizard)
 vm ssh myvm                # SSH in
 vm upgrade myvm            # Upgrade to new image
 ```
+
+The `vm create` command runs an interactive configuration wizard that
+prompts for the VM name, profiles, memory, CPUs, disk size, and
+network mode. After configuration, it builds the image, creates the
+VM, and starts it automatically.
 
 The `vm` command operates on the local machine's libvirt backend.
 
@@ -108,9 +112,9 @@ _justfile_alias vm \
   "$HOME/.config/nixos-vm-template/env"
 ```
 
-This gives you full tab completion for recipes, machine names, and
-profile names. Press Tab after `vm create myvm` and you'll see the
-available profiles.
+This gives you full tab completion for recipes and machine names.
+Tab completion works for commands like `vm ssh`, `vm status`, and
+`vm upgrade` that take a VM name as an argument.
 
 ### The nix store binding
 
@@ -173,11 +177,8 @@ But you can also run home-manager **inside the VM** to manage the user
 environment there.
 
 To get home-manager inside a VM, include the `home-manager` profile when
-creating it:
-
-```bash
-vm create myvm dev,docker,home-manager 8192 4
-```
+creating it. Run `vm create` and select the `home-manager` profile
+along with your other desired profiles (e.g., `dev`, `docker`).
 
 The `home-manager` profile installs sway-home's configuration inside the
 VM, giving you the same shell setup, editor config, and tools. This is
@@ -234,12 +235,13 @@ _justfile_alias pve \
 Now you have two aliases:
 
 ```bash
-vm create myvm docker      # Creates on local libvirt
-pve create myvm docker     # Creates on Proxmox server
+vm create       # Creates on local libvirt (interactive)
+pve create      # Creates on Proxmox server (interactive)
 ```
 
-Both use the same nixos-vm-template codebase but target different
-backends with different configurations.
+Both use the same nixos-vm-template codebase and run the same
+interactive configuration wizard, but target different backends with
+different configurations.
 
 ## Disk space and garbage collection
 
@@ -287,8 +289,10 @@ hm-pull && hm-upgrade
 # Check what version of nixos-vm-template you're running
 hm-metadata | grep nixos-vm-template
 
-# Create a VM for a new project (with home-manager for full sway-home inside)
-vm create project-foo claude,dev,docker,home-manager 8192 4
+# Create a VM for a new project (interactive wizard)
+vm create
+# Enter: project-foo, claude/dev/docker/home-manager, 8192, 4, etc.
+# The VM starts automatically after creation
 
 # Work on the project...
 vm ssh user@project-foo
@@ -297,9 +301,10 @@ vm ssh user@project-foo
 # Later, upgrade the VM to pick up profile changes
 vm upgrade project-foo
 
-# Deploy to production on Proxmox
-pve create project-foo docker
-pve start project-foo
+# Deploy to production on Proxmox (interactive wizard)
+pve create
+# Enter: project-foo, docker, etc.
+# The VM starts automatically
 
 # Clean up old images
 vm clean

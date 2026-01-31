@@ -73,16 +73,18 @@ machine.
 
 ## Creating a mutable VM
 
-For a new VM, create the machine config directory and drop a `mutable`
-file in it:
+Run the interactive create command:
 
 ```bash
-mkdir -p machines/myvm
-echo "true" > machines/myvm/mutable
-just create myvm docker,dev
+just create
 ```
 
-Or use the interactive command on an existing machine config:
+When prompted, enter the VM name and select your desired profiles
+(e.g., `docker`, `dev`). The wizard will also ask whether you want a
+mutable or immutable VM - select mutable mode when prompted.
+
+Alternatively, you can enable mutable mode on an existing machine
+config:
 
 ```bash
 just mutable myvm      # prompts to enable/disable
@@ -93,15 +95,8 @@ The `just mutable` command shows you the current status, explains what
 mutable mode does, and asks for confirmation. If you enable it, the next
 `just create` or `just recreate` will build a mutable image.
 
-This works on both backends:
-
-```bash
-# Libvirt
-just create myvm docker,dev
-
-# Proxmox
-BACKEND=proxmox just create myvm docker,dev
-```
+This works on both backends - just set `BACKEND=proxmox` in your `.env`
+file or environment before running `just create`.
 
 ## What's different inside
 

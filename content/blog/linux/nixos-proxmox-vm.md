@@ -45,15 +45,20 @@ The tool now has a `BACKEND` variable. Set it to `libvirt` or
 
 ```bash
 # Local libvirt (the default)
-just create myvm docker 4096 2
+just create
 
 # Remote Proxmox
-BACKEND=proxmox just create myvm docker 4096 2
+BACKEND=proxmox just create
 ```
 
+The `just create` command runs an interactive configuration wizard
+that prompts for the VM name, profiles, memory, CPUs, disk size, and
+network mode. After configuration, it builds the image, creates the
+VM, and starts it automatically.
+
 You can also put `BACKEND=proxmox` in a `.env` file and forget about
-it. The commands are identical - `just start`, `just stop`, `just
-upgrade`, `just ssh` - they just talk to different backends.
+it. The commands are identical - `just stop`, `just upgrade`, `just
+ssh` - they just talk to different backends.
 
 ## Set up the Proxmox connection
 
@@ -102,31 +107,33 @@ includes the Docker daemon and adds users to the `docker` group. For a
 dedicated Docker server, you don't need the development tools or the
 AI agents that we used in the last post. The `docker` profile gives
 you a minimal system with SSH, Docker, and not much else (the `core`
-profile is always implicitly included):
+profile is always implicitly included).
+
+Run the interactive create command:
 
 ```bash
-just build docker
+just create
 ```
 
-This produces a NixOS image with a read-only root filesystem, and
-Docker enabled. Now create a VM from it. Technically, the build step
-is optional, because the create command will do it implicitly anyway:
+The wizard prompts you for:
+- **VM name**: e.g., `apps01`
+- **Profiles**: select `docker`
+- **Memory**: e.g., `4096` (4GB)
+- **CPUs**: e.g., `2`
+- **Var disk size**: e.g., `50G`
+- **Network mode**: select `bridge` and enter `vmbr0`
 
-```bash
-just create apps01 docker 4096 2 50G bridge:vmbr0
-```
-
-This creates a VM named `apps01` with 4GB RAM, 2 CPUs, a 50GB `/var`
-disk, bridged networking on `vmbr0`, and a firewall. The image gets
-built locally, transferred to your PVE node via rsync, and imported as
-a Proxmox VM. The whole process is non-interactive.
-
-The `bridge:vmbr0` syntax lets you specify a Proxmox bridge directly.
+After configuration, `just create` builds the NixOS image with a
+read-only root filesystem and Docker enabled, transfers it to your PVE
+node via rsync, imports it as a Proxmox VM, and starts it
+automatically.
 
 ## First boot
 
+The VM starts automatically after `just create` completes. Check its
+status:
+
 ```bash
-just start apps01
 just status apps01
 ```
 
@@ -271,10 +278,11 @@ Need another Docker server with the same setup? Clone it:
 
 ```bash
 just clone apps01 apps02
-
-## Optionally specify new hardware config (but no disk resize):
-## just clone apps01 apps03 4096 2 bridge:vmbr0
 ```
+
+The clone command prompts for the new VM name and optionally lets you
+adjust hardware settings (memory, CPUs, network) while keeping the
+same profile and disk contents.
 
 This makes a full clone of the VM on Proxmox, generates fresh identity
 files (new hostname, machine-id, MAC address, SSH host keys), and
@@ -346,9 +354,11 @@ PVE_DISK_FORMAT=raw
 PVE_BRIDGE=vmbr0
 EOF
 
-# Build and deploy
-just create apps01 docker 4096 2 50G bridge:vmbr0
-just start apps01
+# Build and deploy (interactive wizard)
+just create
+# Enter: apps01, docker, 4096, 2, 50G, bridge, vmbr0
+
+# The VM starts automatically, then SSH in:
 just ssh admin@apps01
 
 # On the VM

@@ -27,27 +27,29 @@ This post covers a bash completion script that:
 
 ## The problem
 
-Consider the `create` recipe from nixos-vm-template:
+Consider recipes in nixos-vm-template that take VM names as arguments:
 
 ```just
 # Justfile
 
-create new_name profile="core" memory="2048" vcpus="2" var_size="30G" network="nat":
-    @source {{backend_script}} && create_vm "{{new_name}}" ...
+status name:
+    @source {{backend_script}} && status_vm "{{name}}"
+
+ssh target:
+    @source {{backend_script}} && ssh_vm "{{target}}"
 ```
 
-When you type `just create dev-01 ` and hit tab, nothing happens. Just
-knows about recipe names, but it doesn't know that the second argument
-is called `profile` or that valid profiles are `core`, `docker`,
-`claude`, etc.
+When you type `just status ` and hit tab, nothing happens. Just
+knows about recipe names, but it doesn't know that the argument
+is a VM name or what VMs exist.
 
 I wanted this:
 
 ```
-$ mrfusion-proxmox create dev
-Next arg: profile (default "core")
+$ mrfusion-proxmox status
+Next arg: name (required)
 
-base        claude      core        dev         docker      docker-dev  open-code   python      rust        ssh
+apps01      claude-dev  docker-test
 ```
 
 ## The solution: a completion convention
@@ -65,24 +67,24 @@ Here's the convention in the Justfile:
 ```just
 # Justfile
 
-# The main recipe with arguments
-create new_name profile="core" memory="2048" vcpus="2" var_size="30G" network="nat":
-    @source {{backend_script}} && create_vm ...
+# Recipes that take arguments
+status name:
+    @source {{backend_script}} && status_vm "{{name}}"
+
+ssh target:
+    @source {{backend_script}} && ssh_vm "{{target}}"
 
 # Completion providers - one per argument type
-_completion_profile:
-    @shopt -s nullglob; for f in profiles/*.nix; do basename "$f" .nix; done
-
-_completion_network:
-    @printf "nat\nbridge\n"
-
 _completion_name:
     @shopt -s nullglob; for f in machines/*; do basename $f; done
+
+_completion_target:
+    @shopt -s nullglob; for f in machines/*; do n=$(basename $f); printf "user@%s\nadmin@%s\n" "$n" "$n"; done
 ```
 
-The completion script sees that you're on argument index 1 of `create`,
-looks up the signature to find that argument is named `profile`, then
-runs `just _completion_profile` to get the valid values.
+The completion script sees that you're on argument index 0 of `status`,
+looks up the signature to find that argument is named `name`, then
+runs `just _completion_name` to get the valid values.
 
 ## Setting up the alias
 
@@ -115,27 +117,27 @@ completion.
 When you type `mrfusion-proxmox ` and hit tab, you get recipe names
 (delegated to just's built-in completion).
 
-When you type `mrfusion-proxmox create dev-01 ` and hit tab:
+When you type `mrfusion-proxmox status ` and hit tab:
 
-1. The script sees you're completing argument index 1 (0-indexed) of the
-   `create` recipe.
+1. The script sees you're completing argument index 0 (0-indexed) of the
+   `status` recipe.
 
-2. It runs `just --show create` to get the recipe signature:
+2. It runs `just --show status` to get the recipe signature:
    ```
-   create new_name profile="core" memory="2048" vcpus="2" var_size="30G" network="nat":
+   status name:
    ```
 
-3. It parses this to find that argument index 1 is `profile="core"`.
+3. It parses this to find that argument index 0 is `name`.
 
-4. It extracts the parameter name `profile` and runs
-   `just _completion_profile` to get candidates.
+4. It extracts the parameter name `name` and runs
+   `just _completion_name` to get candidates.
 
 5. If your cursor is on an empty token, it also prints a hint:
    ```
-   Next arg: profile (default "core")
+   Next arg: name (required)
    ```
 
-6. The candidates (`base`, `claude`, `core`, etc.) populate the
+6. The candidates (`apps01`, `claude-dev`, etc.) populate the
    completion list.
 
 For arguments without a `_completion_<name>` recipe, you still get the
@@ -299,8 +301,9 @@ The complete script is available in my dotfiles:
 
 This setup has made working with nixos-vm-template much smoother. I can
 manage VMs across multiple Proxmox clusters from any terminal, with full
-tab completion for profiles, VM names, and network modes. The same
-pattern works for any Justfile with discoverable argument values.
+tab completion for VM names when running commands like `status`, `ssh`,
+`upgrade`, and `stop`. The same pattern works for any Justfile with
+discoverable argument values.
 
 The key insight is that the Justfile itself can provide completion
 candidates through hidden recipes. The bash completion script just needs

@@ -75,24 +75,29 @@ The template ships with composable profiles that you combine as needed.
 For a full development environment with a code agent, combine the
 `claude` (or `open-code`) profile with `dev`, `docker`, and `podman`.
 The agent itself gets installed via npm on first login. Pick the one
-you want and build:
+you want and create a VM:
 
 ```bash
 # For Claude Code with full dev environment:
-just create claude-dev claude,dev,docker,podman 8192 4
+just create
 
-# For Open Code with full dev environment:
-just create opencode-dev open-code,dev,docker,podman 8192 4
+# When prompted, enter the VM name (e.g., "claude-dev")
+# Select profiles: claude, dev, docker, podman
+# Configure memory (8192), CPUs (4), and other settings
 ```
 
-This creates a VM with 8GB RAM and 4 CPUs. The root filesystem is
+The `just create` command runs an interactive configuration wizard
+that guides you through all the options, then builds the image,
+creates the VM, and starts it automatically. The root filesystem is
 read-only (immutable), and all mutable state lives on a separate
 `/var` disk. Home directories are bind-mounted from `/var/home`.
 
 ## First boot
 
+The VM starts automatically after `just create` completes. Check its
+status and connect:
+
 ```bash
-just start claude-dev       # or opencode-dev
 just status claude-dev      # prints the IP address
 just ssh claude-dev         # SSH into the VM with the 'user' account
 ```
@@ -378,11 +383,8 @@ one.
 By default VMs use NAT, which means they're accessible from the host
 but not from other machines on your LAN. If you want to pull the
 agent's commits from a desktop on the same network without going
-through GitHub, you can use bridged networking:
-
-```bash
-just create claude-dev claude,dev,docker,podman 8192 4 20G bridge
-```
+through GitHub, you can use bridged networking. When running `just
+create`, select "bridge" for the network mode when prompted.
 
 The VM will get an IP from your LAN's DHCP server and be directly
 reachable from other machines.
