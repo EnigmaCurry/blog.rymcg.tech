@@ -145,18 +145,20 @@ It is already installed if you use my
 [sway-home](https://github.com/EnigmaCurry/sway-home) config. But
 assuming you don't, here's how to install it by hand:
 
-1. Download the script (link at the bottom of this post)
-2. Make it executable: `chmod +x git_extensions.sh`
-3. Create symlinks in your PATH:
-
 ```bash
-ln -s /path/to/git_extensions.sh ~/.local/bin/git-vendor
-ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy
-ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy-key
-ln -s /path/to/git_extensions.sh ~/.local/bin/git-remote-proto
+## Download the script and make it executable:
+curl -Lo ~/.local/bin/git_extensions.sh \
+  https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/git/git_extensions.sh
+chmod +x ~/.local/bin/git_extensions.sh
+
+## Create symlinks for each extension:
+ln -s git_extensions.sh ~/.local/bin/git-vendor
+ln -s git_extensions.sh ~/.local/bin/git-deploy
+ln -s git_extensions.sh ~/.local/bin/git-deploy-key
+ln -s git_extensions.sh ~/.local/bin/git-remote-proto
 ```
 
-4. Verify: `git vendor --help`
+Verify: `git vendor --help`
 
 Now go forth and clone responsibly.
 
