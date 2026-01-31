@@ -9,8 +9,10 @@
 # The script detects the command from the symlink name.
 #
 # Supported extensions:
+#   - vendor: Clone repositories to ~/git/vendor/{org}/{repo}
 #   - deploy: Clone repositories using deploy key authentication
 #   - deploy-key: Manage deploy keys (list, show, remove)
+#   - remote-proto: Convert remote URL protocol (https, git, ssh)
 #
 ######################################################
 
@@ -71,6 +73,47 @@ check_deps(){
     if [[ -n "$missing" ]]; then fault "Missing dependencies:${missing}"; fi
 }
 
+# Prompt for yes/no confirmation
+# Returns 0 for yes, 1 for no
+ask_yes_no() {
+    local prompt="$1"
+    local default="${2:-}"
+    local reply
+
+    while true; do
+        if [[ "$default" == "y" ]]; then
+            read -r -p "${prompt} [Y/n] " reply
+            reply="${reply:-y}"
+        elif [[ "$default" == "n" ]]; then
+            read -r -p "${prompt} [y/N] " reply
+            reply="${reply:-n}"
+        else
+            read -r -p "${prompt} [y/n] " reply
+        fi
+
+        case "${reply,,}" in
+            y|yes) return 0 ;;
+            n|no) return 1 ;;
+            *) echo "Please answer yes or no." ;;
+        esac
+    done
+}
+
+# Prompt for text input
+ask_input() {
+    local prompt="$1"
+    local default="${2:-}"
+    local reply
+
+    if [[ -n "$default" ]]; then
+        read -r -p "${prompt} [${default}] " reply
+        echo "${reply:-$default}"
+    else
+        read -r -p "${prompt} " reply
+        echo "$reply"
+    fi
+}
+
 #===========================================================
 #                    DEPLOY EXTENSION
 #===========================================================
@@ -119,6 +162,36 @@ __deploy_parse_remote_url() {
     else
         return 1
     fi
+}
+
+# Derive default destination path from URL: ~/git/vendor/{ORG}/{REPO}
+__deploy_default_destination() {
+    local url="$1"
+    local host path
+
+    if ! __deploy_parse_remote_url "$url" host path; then
+        # Fallback to just repo name in current dir
+        echo "$(__deploy_repo_name_from_url "$url")"
+        return
+    fi
+
+    # path is typically "org/repo" or just "repo"
+    # Remove any leading slashes
+    path="${path#/}"
+
+    # Extract org and repo from path
+    local org repo
+    if [[ "$path" == */* ]]; then
+        org="${path%%/*}"
+        repo="${path#*/}"
+        # Handle nested paths (e.g., gitlab subgroups) - just use last component as repo
+        repo="${repo##*/}"
+    else
+        org="unknown"
+        repo="$path"
+    fi
+
+    echo "${HOME}/git/vendor/${org}/${repo}"
 }
 
 # Extract repository name from URL for default destination
@@ -509,10 +582,12 @@ __deploy_help() {
 ## git deploy - Clone a repository using a deploy key
 
 Usage: git deploy <repo-url[#branch]> [destination] [options]
+       git deploy <path> [options]
 
 Arguments:
     repo-url        Repository URL (supports #branch suffix)
-    destination     Local directory (default: derived from repo name)
+    destination     Local directory (default: ~/git/vendor/{ORG}/{REPO})
+    path            Path to existing git repo (converts remote to deploy key)
 
 Options:
     --remote <name>    Remote name (default: origin)
@@ -520,7 +595,16 @@ Options:
     -h, --help         Show this help message
 
 Description:
-    Clones a repository using a dedicated deploy key for authentication.
+    Clones a repository using a dedicated deploy key for authentication,
+    or converts an existing repository's remote to use a deploy key.
+
+    When given a URL:
+    - Creates a new clone using a deploy key for authentication
+
+    When given a path to an existing git repository:
+    - Offers to convert the existing remote to use a deploy key
+    - If no remote exists, prompts for a URL
+    - If already configured, tests the deploy key
 
     If the deploy key is already authorized:
     - Discovers the default branch automatically (if not specified)
@@ -548,10 +632,14 @@ Examples:
     # Clone to specific directory
     git deploy git@github.com:user/repo.git ~/projects/myrepo
 
+    # Convert existing repo's remote to use deploy key
+    git deploy /path/to/existing/repo
+    git deploy .
+
 Workflow:
-    1. Run 'git deploy <url>'
+    1. Run 'git deploy <url>' or 'git deploy <path>'
     2. If key not yet authorized, add the printed key to your git server
-    3. Re-run 'git deploy <url>' - repository will be cloned
+    3. Re-run the command - repository will be cloned/configured
 EOF
 }
 
@@ -566,6 +654,8 @@ __deploy_main() {
     local destination=""
     local remote_name="origin"
     local branch_override=""
+    local convert_mode=false
+    local already_configured=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -601,7 +691,65 @@ __deploy_main() {
         esac
     done
 
-    check_var __deploy_help repo_spec
+    # No argument provided - show help
+    if [[ -z "$repo_spec" ]]; then
+        __deploy_help
+        exit 0
+    fi
+
+    # Check if repo_spec is an existing directory (convert mode)
+    if [[ -d "$repo_spec" ]]; then
+        :  # Fall through to directory handling below
+    elif [[ "$repo_spec" =~ ^(git@|ssh://|https?://) ]]; then
+        :  # Looks like a URL, fall through to clone logic
+    else
+        fault "Invalid argument: '${repo_spec}' is not a directory or a valid URL"
+    fi
+
+    if [[ -d "$repo_spec" ]]; then
+        local target_dir
+        target_dir=$(cd "$repo_spec" && pwd)
+
+        # Check if it's a git repository
+        if ! git -C "$target_dir" rev-parse --git-dir >/dev/null 2>&1; then
+            fault "Directory is not a git repository: ${target_dir}"
+        fi
+
+        local existing_url
+        existing_url=$(git -C "$target_dir" remote get-url "$remote_name" 2>/dev/null) || existing_url=""
+
+        if [[ -z "$existing_url" ]]; then
+            # No remote configured - prompt for URL
+            echo ""
+            echo "Repository has no '${remote_name}' remote configured."
+            echo ""
+
+            repo_spec=$(ask_input "Enter repository URL:")
+            if [[ -z "$repo_spec" ]]; then
+                fault "No URL provided"
+            fi
+        elif __deploy_is_alias_url "$existing_url"; then
+            # Already using deploy key
+            repo_spec="$existing_url"
+            already_configured=true
+        else
+            # Has remote, confirm conversion
+            echo ""
+            echo "Found existing remote '${remote_name}':"
+            echo "  ${existing_url}"
+            echo ""
+
+            if ask_yes_no "Convert this remote to use a deploy key?" "y"; then
+                repo_spec="$existing_url"
+            else
+                echo "Aborted."
+                exit 0
+            fi
+        fi
+
+        convert_mode=true
+        destination="$target_dir"
+    fi
 
     # Parse repo spec
     __deploy_parse_repo_spec "$repo_spec"
@@ -611,33 +759,43 @@ __deploy_main() {
         REPO_BRANCH="$branch_override"
     fi
 
-    # Normalize URL to SSH format
-    REPO_URL=$(__deploy_normalize_url "$REPO_URL")
-
-    # Derive destination from repo name if not specified
-    if [[ -z "$destination" ]]; then
-        destination=$(__deploy_repo_name_from_url "$REPO_URL")
+    # Skip normalization if already configured (URL is already in deploy-key format)
+    if [[ "$already_configured" != "true" ]]; then
+        # Normalize URL to SSH format
+        REPO_URL=$(__deploy_normalize_url "$REPO_URL")
     fi
 
-    # Convert to absolute path
-    if [[ "$destination" != /* ]]; then
+    # Derive destination from URL if not specified: ~/git/vendor/{ORG}/{REPO}
+    if [[ -z "$destination" ]]; then
+        destination=$(__deploy_default_destination "$REPO_URL")
+    elif [[ "$destination" != /* ]]; then
+        # Convert relative path to absolute
         destination="$(pwd)/${destination}"
     fi
 
+    stderr ""
     stderr "## Repository URL: ${REPO_URL}"
     stderr "## Destination: ${destination}"
     [[ -n "$REPO_BRANCH" ]] && stderr "## Branch: ${REPO_BRANCH}"
     stderr ""
 
-    # Initialize the repository
-    __deploy_init_repo "$destination" "$REPO_URL" "$remote_name"
+    if [[ "$already_configured" == "true" ]]; then
+        # Already configured - just need to get the key file path for potential error messages
+        local existing_alias
+        existing_alias=$(__deploy_extract_alias_from_url "$REPO_URL")
+        KEY_FILE=$(__deploy_key_file_path "$existing_alias")
+        stderr "## Deploy key already configured: ${existing_alias}"
+    else
+        # Initialize the repository (or update existing)
+        __deploy_init_repo "$destination" "$REPO_URL" "$remote_name"
 
-    # Setup deploy key
-    stderr ""
-    stderr "## Setting up deploy key..."
-    KEY_FILE=""
-    KEY_CREATED=false
-    __deploy_setup_key "$remote_name" >/dev/null
+        # Setup deploy key
+        stderr ""
+        stderr "## Setting up deploy key..."
+        KEY_FILE=""
+        KEY_CREATED=false
+        __deploy_setup_key "$remote_name" >/dev/null
+    fi
 
     # Test deploy key
     stderr ""
@@ -646,34 +804,48 @@ __deploy_main() {
     if __deploy_test_key "$remote_name"; then
         stderr "## Deploy key is working!"
 
-        # If no branch specified, discover the default branch
-        if [[ -z "$REPO_BRANCH" ]]; then
-            stderr "## Discovering default branch..."
-            REPO_BRANCH=$(__deploy_get_default_branch "$remote_name")
-            if [[ -n "$REPO_BRANCH" ]]; then
-                stderr "## Default branch: ${REPO_BRANCH}"
+        if [[ "$convert_mode" == "true" ]]; then
+            # Converting existing repo - don't fetch/checkout, just confirm
+            stderr ""
+            stderr "========================================"
+            if [[ "$already_configured" == "true" ]]; then
+                stderr "## Deploy key is working!"
             else
-                fault "Could not determine default branch from remote"
+                stderr "## Remote converted to deploy key successfully!"
             fi
+            stderr "## Location: ${destination}"
+            stderr "========================================"
+        else
+            # Cloning new repo - fetch and checkout
+            # If no branch specified, discover the default branch
+            if [[ -z "$REPO_BRANCH" ]]; then
+                stderr "## Discovering default branch..."
+                REPO_BRANCH=$(__deploy_get_default_branch "$remote_name")
+                if [[ -n "$REPO_BRANCH" ]]; then
+                    stderr "## Default branch: ${REPO_BRANCH}"
+                else
+                    fault "Could not determine default branch from remote"
+                fi
+            fi
+
+            # Fetch from remote
+            stderr "## Fetching from ${remote_name}..."
+            git fetch "$remote_name"
+
+            # Checkout the branch
+            stderr "## Checking out branch '${REPO_BRANCH}'..."
+            git checkout "$REPO_BRANCH"
+
+            # Ensure tracking is configured
+            git branch --set-upstream-to="${remote_name}/${REPO_BRANCH}" "$REPO_BRANCH" 2>/dev/null || true
+
+            stderr ""
+            stderr "========================================"
+            stderr "## Repository cloned successfully!"
+            stderr "## Location: ${destination}"
+            stderr "## Branch: ${REPO_BRANCH}"
+            stderr "========================================"
         fi
-
-        # Fetch from remote
-        stderr "## Fetching from ${remote_name}..."
-        git fetch "$remote_name"
-
-        # Checkout the branch
-        stderr "## Checking out branch '${REPO_BRANCH}'..."
-        git checkout "$REPO_BRANCH"
-
-        # Ensure tracking is configured
-        git branch --set-upstream-to="${remote_name}/${REPO_BRANCH}" "$REPO_BRANCH" 2>/dev/null || true
-
-        stderr ""
-        stderr "========================================"
-        stderr "## Repository cloned successfully!"
-        stderr "## Location: ${destination}"
-        stderr "## Branch: ${REPO_BRANCH}"
-        stderr "========================================"
     else
         # Key not working - show instructions and exit with error
         if [[ -n "$KEY_FILE" ]] && [[ -f "${KEY_FILE}.pub" ]]; then
@@ -686,7 +858,11 @@ __deploy_main() {
         stderr ""
         stderr "## Repository prepared at: ${destination}"
         stderr "## After adding the deploy key, run this command again:"
-        stderr "##   git deploy ${ORIGINAL_ARGS}"
+        if [[ "$convert_mode" == "true" ]]; then
+            stderr "##   git deploy"
+        else
+            stderr "##   git deploy ${ORIGINAL_ARGS}"
+        fi
         stderr ""
 
         exit 1
@@ -917,6 +1093,424 @@ __deploy_key_main() {
 }
 
 #===========================================================
+#                    VENDOR EXTENSION
+#===========================================================
+# Clone repositories to ~/git/vendor/{org}/{repo} with flexible URL parsing
+
+# Default domain when not specified
+VENDOR_DEFAULT_DOMAIN="github.com"
+
+#-----------------------------------------------------------
+# Vendor URL Parsing
+#-----------------------------------------------------------
+
+# Parse a git repository reference into components
+# Sets: VENDOR_DOMAIN, VENDOR_ORG, VENDOR_REPO, VENDOR_USE_SSH, VENDOR_SSH_PORT
+__vendor_parse_ref() {
+    local input="$1"
+
+    # Reset state
+    VENDOR_DOMAIN=""
+    VENDOR_ORG=""
+    VENDOR_REPO=""
+    VENDOR_USE_SSH=false
+    VENDOR_SSH_PORT=""
+
+    # Remove trailing slashes
+    input="${input%/}"
+
+    # https://domain/org/repo or https://domain/org/repo.git
+    if [[ "$input" =~ ^https?://([^/]+)/([^/]+)/([^/]+)/?$ ]]; then
+        VENDOR_DOMAIN="${BASH_REMATCH[1]}"
+        VENDOR_ORG="${BASH_REMATCH[2]}"
+        VENDOR_REPO="${BASH_REMATCH[3]}"
+
+    # ssh://[git@]domain[:port]/org/repo
+    elif [[ "$input" =~ ^ssh://(git@)?([^/:]+)(:([0-9]+))?/([^/]+)/(.+)$ ]]; then
+        VENDOR_DOMAIN="${BASH_REMATCH[2]}"
+        VENDOR_SSH_PORT="${BASH_REMATCH[4]}"
+        VENDOR_ORG="${BASH_REMATCH[5]}"
+        VENDOR_REPO="${BASH_REMATCH[6]}"
+        VENDOR_USE_SSH=true
+
+    # git@domain:org/repo.git or git@domain:org/repo
+    elif [[ "$input" =~ ^git@([^:]+):([^/]+)/(.+)$ ]]; then
+        VENDOR_DOMAIN="${BASH_REMATCH[1]}"
+        VENDOR_ORG="${BASH_REMATCH[2]}"
+        VENDOR_REPO="${BASH_REMATCH[3]}"
+        VENDOR_USE_SSH=true
+
+    # domain/org/repo (three path components with dots in first)
+    elif [[ "$input" =~ ^([a-zA-Z0-9.-]+\.[a-zA-Z]+)/([^/]+)/([^/]+)$ ]]; then
+        VENDOR_DOMAIN="${BASH_REMATCH[1]}"
+        VENDOR_ORG="${BASH_REMATCH[2]}"
+        VENDOR_REPO="${BASH_REMATCH[3]}"
+
+    # org/repo (two components, assume default domain)
+    elif [[ "$input" =~ ^([^/]+)/([^/]+)$ ]]; then
+        VENDOR_DOMAIN="$VENDOR_DEFAULT_DOMAIN"
+        VENDOR_ORG="${BASH_REMATCH[1]}"
+        VENDOR_REPO="${BASH_REMATCH[2]}"
+
+    else
+        return 1
+    fi
+
+    # Normalize: remove .git suffix from repo name
+    VENDOR_REPO="${VENDOR_REPO%.git}"
+
+    # Normalize: lowercase the org name for consistent directory structure
+    VENDOR_ORG="${VENDOR_ORG,,}"
+
+    return 0
+}
+
+# Build the clone URL from parsed components
+__vendor_build_url() {
+    if [[ "$VENDOR_USE_SSH" == true ]]; then
+        if [[ -n "$VENDOR_SSH_PORT" ]]; then
+            echo "ssh://git@${VENDOR_DOMAIN}:${VENDOR_SSH_PORT}/${VENDOR_ORG}/${VENDOR_REPO}.git"
+        else
+            echo "git@${VENDOR_DOMAIN}:${VENDOR_ORG}/${VENDOR_REPO}.git"
+        fi
+    else
+        echo "https://${VENDOR_DOMAIN}/${VENDOR_ORG}/${VENDOR_REPO}"
+    fi
+}
+
+#-----------------------------------------------------------
+# Vendor Help
+#-----------------------------------------------------------
+
+__vendor_help() {
+    cat <<EOF
+## git vendor - Clone repositories to ~/git/vendor/{org}/{repo}
+
+Usage: git vendor <repository>
+
+Arguments:
+    repository      Repository reference in any supported format
+
+Supported Formats:
+    org/repo                          Uses github.com by default
+    github.com/org/repo               Domain with path
+    https://github.com/org/repo       HTTPS URL
+    git@github.com:org/repo.git       SSH URL
+    ssh://git@host:port/org/repo      SSH URL with custom port
+
+Options:
+    -h, --help      Show this help message
+
+Description:
+    Clones a repository to ~/git/vendor/{org}/{repo}.
+    The org name is lowercased for consistent directory structure.
+
+    If the repository already exists, reports the location and exits.
+
+Examples:
+    git vendor enigmacurry/sway-home
+    git vendor github.com/enigmacurry/sway-home
+    git vendor https://github.com/EnigmaCurry/sway-home.git
+    git vendor git@github.com:EnigmaCurry/sway-home.git
+    git vendor ssh://git@github.com:22/EnigmaCurry/sway-home.git
+EOF
+}
+
+#-----------------------------------------------------------
+# Vendor Main
+#-----------------------------------------------------------
+
+__vendor_main() {
+    check_deps git
+
+    local repo_ref=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                __vendor_help
+                exit 0
+                ;;
+            -*)
+                error "Unknown option: $1"
+                __vendor_help
+                exit 1
+                ;;
+            *)
+                if [[ -z "$repo_ref" ]]; then
+                    repo_ref="$1"
+                else
+                    error "Too many arguments"
+                    __vendor_help
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$repo_ref" ]]; then
+        __vendor_help
+        exit 0
+    fi
+
+    # Parse the repository reference
+    if ! __vendor_parse_ref "$repo_ref"; then
+        error "Invalid repository format: $repo_ref"
+        echo ""
+        echo "Supported formats:"
+        echo "  org/repo"
+        echo "  github.com/org/repo"
+        echo "  https://github.com/org/repo"
+        echo "  git@github.com:org/repo.git"
+        echo "  ssh://git@host:port/org/repo"
+        exit 1
+    fi
+
+    # Build the clone URL
+    local clone_url
+    clone_url=$(__vendor_build_url)
+
+    # Define the target directory
+    local vendor_dir="${HOME}/git/vendor"
+    local target_dir="${vendor_dir}/${VENDOR_ORG}/${VENDOR_REPO}"
+
+    # Check if already cloned
+    if [[ -d "$target_dir" ]]; then
+        echo "Repository already exists: ${target_dir}"
+        exit 0
+    fi
+
+    # Ensure the parent directory exists
+    mkdir -p "${vendor_dir}/${VENDOR_ORG}"
+
+    # Clone the repository
+    echo "Cloning ${clone_url}"
+    echo "     to ${target_dir}"
+    echo ""
+
+    if git clone "$clone_url" "$target_dir"; then
+        echo ""
+        echo "Repository cloned: ${target_dir}"
+    else
+        fault "Clone failed"
+    fi
+}
+
+#===========================================================
+#                  REMOTE-PROTO EXTENSION
+#===========================================================
+# Convert git remote URLs between protocols (https, git, ssh)
+
+#-----------------------------------------------------------
+# Remote-Proto URL Parsing
+#-----------------------------------------------------------
+
+# Parse a git remote URL into components
+# Sets: REMOTE_PROTO_HOST, REMOTE_PROTO_ORG, REMOTE_PROTO_REPO, REMOTE_PROTO_PORT
+__remote_proto_parse_url() {
+    local url="$1"
+
+    # Reset state
+    REMOTE_PROTO_HOST=""
+    REMOTE_PROTO_ORG=""
+    REMOTE_PROTO_REPO=""
+    REMOTE_PROTO_PORT=""
+
+    # Remove trailing .git if present (we'll add it back as needed)
+    url="${url%.git}"
+
+    # https://host/org/repo
+    if [[ "$url" =~ ^https?://([^/]+)/([^/]+)/([^/]+)/?$ ]]; then
+        REMOTE_PROTO_HOST="${BASH_REMATCH[1]}"
+        REMOTE_PROTO_ORG="${BASH_REMATCH[2]}"
+        REMOTE_PROTO_REPO="${BASH_REMATCH[3]}"
+
+    # ssh://[git@]host[:port]/org/repo
+    elif [[ "$url" =~ ^ssh://(git@)?([^/:]+)(:([0-9]+))?/([^/]+)/([^/]+)/?$ ]]; then
+        REMOTE_PROTO_HOST="${BASH_REMATCH[2]}"
+        REMOTE_PROTO_PORT="${BASH_REMATCH[4]}"
+        REMOTE_PROTO_ORG="${BASH_REMATCH[5]}"
+        REMOTE_PROTO_REPO="${BASH_REMATCH[6]}"
+
+    # git@host:org/repo
+    elif [[ "$url" =~ ^git@([^:]+):([^/]+)/([^/]+)$ ]]; then
+        REMOTE_PROTO_HOST="${BASH_REMATCH[1]}"
+        REMOTE_PROTO_ORG="${BASH_REMATCH[2]}"
+        REMOTE_PROTO_REPO="${BASH_REMATCH[3]}"
+
+    else
+        return 1
+    fi
+
+    return 0
+}
+
+# Build URL in the specified protocol
+__remote_proto_build_url() {
+    local protocol="$1"
+
+    case "$protocol" in
+        http|https)
+            echo "https://${REMOTE_PROTO_HOST}/${REMOTE_PROTO_ORG}/${REMOTE_PROTO_REPO}.git"
+            ;;
+        git)
+            echo "git@${REMOTE_PROTO_HOST}:${REMOTE_PROTO_ORG}/${REMOTE_PROTO_REPO}.git"
+            ;;
+        ssh)
+            if [[ -n "$REMOTE_PROTO_PORT" ]]; then
+                echo "ssh://git@${REMOTE_PROTO_HOST}:${REMOTE_PROTO_PORT}/${REMOTE_PROTO_ORG}/${REMOTE_PROTO_REPO}.git"
+            else
+                echo "ssh://git@${REMOTE_PROTO_HOST}/${REMOTE_PROTO_ORG}/${REMOTE_PROTO_REPO}.git"
+            fi
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+#-----------------------------------------------------------
+# Remote-Proto Help
+#-----------------------------------------------------------
+
+__remote_proto_help() {
+    cat <<EOF
+## git remote-proto - Convert remote URL protocol
+
+Usage: git remote-proto <protocol> [options]
+
+Arguments:
+    protocol        Target protocol: http, https, git, or ssh
+
+Protocols:
+    http, https     https://{host}/{org}/{repo}.git
+    git             git@{host}:{org}/{repo}.git
+    ssh             ssh://git@{host}[:port]/{org}/{repo}.git
+
+Options:
+    --remote <name>    Remote name (default: origin)
+    --port <port>      SSH port (only used with ssh protocol)
+    -h, --help         Show this help message
+
+Description:
+    Converts the remote URL to use a different protocol while
+    preserving the host, organization, and repository.
+
+Examples:
+    # Convert origin to SSH (git@) format
+    git remote-proto git
+
+    # Convert origin to HTTPS format
+    git remote-proto https
+
+    # Convert to ssh:// format with custom port
+    git remote-proto ssh --port 2222
+
+    # Convert a specific remote
+    git remote-proto ssh --remote upstream
+EOF
+}
+
+#-----------------------------------------------------------
+# Remote-Proto Main
+#-----------------------------------------------------------
+
+__remote_proto_main() {
+    check_deps git
+
+    local protocol=""
+    local remote_name="origin"
+    local port_override=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --remote)
+                remote_name="$2"
+                shift 2
+                ;;
+            --port)
+                port_override="$2"
+                shift 2
+                ;;
+            -h|--help)
+                __remote_proto_help
+                exit 0
+                ;;
+            -*)
+                error "Unknown option: $1"
+                __remote_proto_help
+                exit 1
+                ;;
+            *)
+                if [[ -z "$protocol" ]]; then
+                    protocol="$1"
+                else
+                    error "Too many arguments"
+                    __remote_proto_help
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$protocol" ]]; then
+        __remote_proto_help
+        exit 0
+    fi
+
+    # Validate protocol
+    case "$protocol" in
+        http|https|git|ssh)
+            ;;
+        *)
+            fault "Invalid protocol: $protocol (must be http, https, git, or ssh)"
+            ;;
+    esac
+
+    # Warn if --port used with non-ssh protocol
+    if [[ -n "$port_override" && "$protocol" != "ssh" ]]; then
+        stderr "Warning: --port is only used with ssh protocol, ignoring"
+    fi
+
+    # Check we're in a git repo
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        fault "Not a git repository"
+    fi
+
+    # Get current remote URL
+    local current_url
+    current_url=$(git remote get-url "$remote_name" 2>/dev/null) || fault "Remote '${remote_name}' not found"
+
+    echo "Current: ${current_url}"
+
+    # Parse the URL
+    if ! __remote_proto_parse_url "$current_url"; then
+        fault "Cannot parse remote URL: ${current_url}"
+    fi
+
+    # Apply port override for ssh protocol
+    if [[ "$protocol" == "ssh" && -n "$port_override" ]]; then
+        REMOTE_PROTO_PORT="$port_override"
+    fi
+
+    # Build new URL
+    local new_url
+    new_url=$(__remote_proto_build_url "$protocol") || fault "Failed to build URL for protocol: ${protocol}"
+
+    # Check if already using this protocol
+    if [[ "$current_url" == "$new_url" ]]; then
+        echo "Already using ${protocol} protocol"
+        exit 0
+    fi
+
+    # Update the remote
+    git remote set-url "$remote_name" "$new_url"
+    echo "Updated: ${new_url}"
+}
+
+#===========================================================
 #                    MAIN DISPATCHER
 #===========================================================
 
@@ -928,29 +1522,41 @@ Usage: git <extension> [args...]
    or: git-<extension> [args...]
 
 Available extensions:
+    vendor        Clone repositories to ~/git/vendor/{org}/{repo}
     deploy        Clone repositories using deploy key authentication
     deploy-key    Manage deploy keys (list, show, remove)
+    remote-proto  Convert remote URL protocol (https, git, ssh)
 
 Run 'git <extension> --help' for extension-specific help.
 
 Setup:
     Create symlinks in your PATH:
+        ln -s /path/to/git_extensions.sh ~/.local/bin/git-vendor
         ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy
         ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy-key
+        ln -s /path/to/git_extensions.sh ~/.local/bin/git-remote-proto
 
     Then use as:
+        git vendor org/repo
         git deploy <repo-url>
         git deploy-key list
+        git remote-proto ssh
 EOF
 }
 
 # Dispatch to the appropriate extension
 case "$EXTENSION_CMD" in
+    vendor)
+        __vendor_main "$@"
+        ;;
     deploy)
         __deploy_main "$@"
         ;;
     deploy-key)
         __deploy_key_main "$@"
+        ;;
+    remote-proto)
+        __remote_proto_main "$@"
         ;;
     -h|--help|help|"")
         __main_help
