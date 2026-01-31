@@ -652,11 +652,8 @@ main() {
         stderr "##   git deploy ${ORIGINAL_ARGS}"
         stderr ""
 
-        echo "$destination"
         exit 1
     fi
-
-    echo "$destination"
 }
 
 main "$@"
