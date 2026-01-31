@@ -41,6 +41,10 @@ check_deps(){
     if [[ -n "$missing" ]]; then fault "Missing dependencies:${missing}"; fi
 }
 
+#-----------------------------------------------------------
+# URL Parsing
+#-----------------------------------------------------------
+
 # Parse repository URL with optional branch
 # Format: url[#branch]
 # Returns: Sets REPO_URL and REPO_BRANCH variables
@@ -53,6 +57,32 @@ __parse_repo_spec() {
     else
         REPO_URL="$spec"
         REPO_BRANCH=""
+    fi
+}
+
+# Parse a git remote URL and extract host and path components
+__parse_remote_url() {
+    local url="$1"
+    local -n _host=$2
+    local -n _path=$3
+
+    # Remove trailing .git if present
+    url="${url%.git}"
+
+    if [[ "$url" =~ ^git@([^:]+):(.+)$ ]]; then
+        # git@host:user/repo format
+        _host="${BASH_REMATCH[1]}"
+        _path="${BASH_REMATCH[2]}"
+    elif [[ "$url" =~ ^ssh://([^@]+@)?([^/]+)/(.+)$ ]]; then
+        # ssh://[user@]host/path format
+        _host="${BASH_REMATCH[2]}"
+        _path="${BASH_REMATCH[3]}"
+    elif [[ "$url" =~ ^https?://([^/]+)/(.+)$ ]]; then
+        # https://host/path format
+        _host="${BASH_REMATCH[1]}"
+        _path="${BASH_REMATCH[2]}"
+    else
+        return 1
     fi
 }
 
@@ -106,12 +136,239 @@ __normalize_url() {
     fi
 }
 
-# Initialize the repository and configure remote/branch
+# Check if URL is already using a deploy key alias
+__is_deploy_alias_url() {
+    local url="$1"
+    if [[ "$url" =~ ^git@deploy-[^:]+: ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Extract the existing alias from a deploy-key URL
+__extract_alias_from_url() {
+    local url="$1"
+    if [[ "$url" =~ ^git@([^:]+): ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+}
+
+# Convert a remote URL to use the deploy key alias
+__convert_remote_url() {
+    local url="$1"
+    local alias="$2"
+    local host path
+
+    if ! __parse_remote_url "$url" host path; then
+        fault "Cannot parse remote URL: $url"
+    fi
+
+    # Return in git@alias:path format
+    echo "git@${alias}:${path}.git"
+}
+
+#-----------------------------------------------------------
+# SSH Key Management
+#-----------------------------------------------------------
+
+__ssh_config_file() {
+    echo "${HOME}/.ssh/config"
+}
+
+__ssh_keys_dir() {
+    local dir="${HOME}/.ssh/deploy-keys"
+    mkdir -p "$dir"
+    chmod 700 "$dir"
+    echo "$dir"
+}
+
+# Generate SSH host alias name from repo
+__generate_alias() {
+    local host="$1"
+    local path="$2"
+    echo "deploy--${host}--${path}" | tr '/' '-' | tr -s '-'
+}
+
+# Get key file path for an alias
+__key_file_path() {
+    local alias="$1"
+    local keys_dir
+    keys_dir=$(__ssh_keys_dir)
+    echo "${keys_dir}/${alias}"
+}
+
+# Check if SSH host alias exists in config
+__host_alias_exists() {
+    local alias="$1"
+    local config_file
+    config_file=$(__ssh_config_file)
+
+    if [[ -f "$config_file" ]]; then
+        grep -q "^Host ${alias}$" "$config_file" 2>/dev/null
+    else
+        return 1
+    fi
+}
+
+# Add SSH host alias to config
+__add_host_alias() {
+    local alias="$1"
+    local real_host="$2"
+    local key_file="$3"
+    local config_file
+    config_file=$(__ssh_config_file)
+
+    mkdir -p "$(dirname "$config_file")"
+
+    # Add newline if file exists and doesn't end with one
+    if [[ -f "$config_file" ]] && [[ -s "$config_file" ]]; then
+        if [[ $(tail -c1 "$config_file" | wc -l) -eq 0 ]]; then
+            echo "" >> "$config_file"
+        fi
+        echo "" >> "$config_file"
+    fi
+
+    cat >> "$config_file" <<EOF
+Host ${alias}
+    HostName ${real_host}
+    User git
+    IdentityFile ${key_file}
+    IdentitiesOnly yes
+EOF
+
+    chmod 600 "$config_file"
+    stderr "## Added SSH host alias '${alias}'"
+}
+
+# Remove SSH host alias from config
+__remove_host_alias() {
+    local alias="$1"
+    local config_file
+    config_file=$(__ssh_config_file)
+
+    if [[ ! -f "$config_file" ]]; then
+        return 0
+    fi
+
+    local tmp_file
+    tmp_file=$(mktemp)
+    awk -v alias="$alias" '
+        BEGIN { skip=0 }
+        /^Host / {
+            if ($2 == alias) {
+                skip=1
+                next
+            } else {
+                skip=0
+            }
+        }
+        !skip { print }
+    ' "$config_file" > "$tmp_file"
+
+    mv "$tmp_file" "$config_file"
+    chmod 600 "$config_file"
+}
+
+# Update SSH host alias in config
+__update_host_alias() {
+    local alias="$1"
+    local real_host="$2"
+    local key_file="$3"
+
+    __remove_host_alias "$alias"
+    __add_host_alias "$alias" "$real_host" "$key_file"
+}
+
+# Generate a new deploy key
+__generate_key() {
+    local key_file="$1"
+    local comment="$2"
+
+    ssh-keygen -t ed25519 -f "$key_file" -N "" -C "$comment" >/dev/null 2>&1
+    chmod 600 "$key_file"
+    chmod 644 "${key_file}.pub"
+    stderr "## Generated new deploy key: ${key_file}"
+}
+
+#-----------------------------------------------------------
+# Deploy Key Setup
+#-----------------------------------------------------------
+
+# Setup deploy key for a remote - returns the alias name
+# Sets KEY_FILE and KEY_CREATED variables
+__setup_deploy_key() {
+    local remote_name="${1:-origin}"
+
+    local remote_url
+    remote_url=$(git remote get-url "$remote_name" 2>/dev/null) || fault "Remote '${remote_name}' not found"
+
+    # Check if already using a deploy key alias
+    if __is_deploy_alias_url "$remote_url"; then
+        local existing_alias
+        existing_alias=$(__extract_alias_from_url "$remote_url")
+        KEY_FILE=$(__key_file_path "$existing_alias")
+        KEY_CREATED=false
+
+        stderr "## Already configured with deploy key: ${existing_alias}"
+        echo "$existing_alias"
+        return 0
+    fi
+
+    # Parse the remote URL
+    local host path
+    if ! __parse_remote_url "$remote_url" host path; then
+        fault "Cannot parse remote URL: ${remote_url}"
+    fi
+
+    stderr "## Host: ${host}"
+    stderr "## Path: ${path}"
+
+    # Generate alias and key file path
+    local alias
+    alias=$(__generate_alias "$host" "$path")
+    KEY_FILE=$(__key_file_path "$alias")
+
+    stderr "## SSH alias: ${alias}"
+    stderr "## Key file: ${KEY_FILE}"
+
+    KEY_CREATED=false
+
+    # Check if key already exists
+    if [[ -f "$KEY_FILE" ]]; then
+        stderr "## Deploy key already exists"
+    else
+        __generate_key "$KEY_FILE" "deploy-key@${HOSTNAME:-localhost} ${host}:${path}"
+        KEY_CREATED=true
+    fi
+
+    # Setup or update SSH host alias
+    if __host_alias_exists "$alias"; then
+        stderr "## SSH host alias already configured"
+    else
+        __add_host_alias "$alias" "$host" "$KEY_FILE"
+    fi
+
+    # Update the git remote to use the alias
+    local new_url
+    new_url=$(__convert_remote_url "$remote_url" "$alias")
+
+    if [[ "$remote_url" != "$new_url" ]]; then
+        git remote set-url "$remote_name" "$new_url"
+        stderr "## Updated remote URL to use deploy key"
+    fi
+
+    echo "$alias"
+}
+
+#-----------------------------------------------------------
+# Repository Setup
+#-----------------------------------------------------------
+
+# Initialize the repository and configure remote
 __init_repo() {
     local dest="$1"
     local url="$2"
-    local branch="$3"
-    local remote_name="${4:-origin}"
+    local remote_name="${3:-origin}"
 
     # Create destination directory
     if [[ -d "$dest" ]]; then
@@ -133,9 +390,8 @@ __init_repo() {
         git init --quiet
         stderr "## Initialized empty git repository"
 
-        # Point HEAD to a placeholder branch to prevent confusing "master has no commits" errors
-        # This makes it clear the repo needs 'git fetch && git checkout <branch>'
-        git symbolic-ref HEAD refs/heads/__you_need_to_run_git_fetch_and_then_checkout_a_branch__
+        # Point HEAD to a placeholder branch
+        git symbolic-ref HEAD refs/heads/__deploy_pending__
     fi
 
     # Configure remote
@@ -151,25 +407,11 @@ __init_repo() {
     git config checkout.defaultRemote "$remote_name"
 }
 
-# Find git-deploy-key command
-__find_deploy_key_cmd() {
-    # Check if git-deploy-key is in PATH
-    if command -v git-deploy-key >/dev/null 2>&1; then
-        echo "git-deploy-key"
-        return 0
-    fi
-    return 1
-}
-
 # Test if the deploy key works by trying to access the remote
 __test_deploy_key() {
     local remote_name="$1"
     local timeout_secs="${2:-10}"
 
-    local remote_url
-    remote_url=$(git remote get-url "$remote_name" 2>/dev/null) || return 1
-
-    # Try git ls-remote which requires authentication
     if timeout "$timeout_secs" git ls-remote --heads "$remote_name" >/dev/null 2>&1; then
         return 0
     fi
@@ -180,7 +422,6 @@ __test_deploy_key() {
 __get_default_branch() {
     local remote_name="$1"
 
-    # Try to get the default branch via symbolic ref
     local default_ref
     default_ref=$(git ls-remote --symref "$remote_name" HEAD 2>/dev/null | grep "^ref:" | awk '{print $2}' | sed 's|refs/heads/||')
 
@@ -200,27 +441,7 @@ __get_default_branch() {
         fi
     done
 
-    # Last resort: first branch listed
     echo "$branches" | head -1
-}
-
-# Get the deploy key file path from git config or derive it
-__get_deploy_key_file() {
-    local remote_name="$1"
-
-    local remote_url
-    remote_url=$(git remote get-url "$remote_name" 2>/dev/null) || return 1
-
-    # Extract the alias from URL like git@deploy--host--path:path.git
-    if [[ "$remote_url" =~ ^git@(deploy-[^:]+): ]]; then
-        local alias="${BASH_REMATCH[1]}"
-        local key_file="${HOME}/.ssh/deploy-keys/${alias}"
-        if [[ -f "$key_file" ]]; then
-            echo "$key_file"
-            return 0
-        fi
-    fi
-    return 1
 }
 
 # Show the public key and instructions
@@ -244,20 +465,9 @@ __show_key_instructions() {
     echo ""
 }
 
-# Configure branch tracking
-__configure_branch() {
-    local branch="$1"
-    local remote_name="$2"
-
-    git config deploy.branch "$branch"
-    git symbolic-ref HEAD "refs/heads/${branch}"
-
-    # Pre-configure tracking so 'git pull' works after first checkout
-    git config "branch.${branch}.remote" "$remote_name"
-    git config "branch.${branch}.merge" "refs/heads/${branch}"
-
-    stderr "## Configured branch '${branch}' to track '${remote_name}/${branch}'"
-}
+#-----------------------------------------------------------
+# Main
+#-----------------------------------------------------------
 
 __help() {
     local script
@@ -313,7 +523,7 @@ EOF
 }
 
 main() {
-    check_deps git
+    check_deps git ssh-keygen
 
     local repo_spec=""
     local destination=""
@@ -382,21 +592,17 @@ main() {
     [[ -n "$REPO_BRANCH" ]] && stderr "## Branch: ${REPO_BRANCH}"
     stderr ""
 
-    # Initialize the repository (without branch config yet)
-    __init_repo "$destination" "$REPO_URL" "" "$remote_name"
+    # Initialize the repository
+    __init_repo "$destination" "$REPO_URL" "$remote_name"
 
     # Setup deploy key
-    local deploy_key_cmd
-    if deploy_key_cmd=$(__find_deploy_key_cmd); then
-        stderr ""
-        stderr "## Setting up deploy key..."
-        $deploy_key_cmd --remote "$remote_name" --no-test
-    else
-        stderr ""
-        stderr "## Warning: git-deploy-key not found, skipping deploy key setup"
-        stderr "## You may need to configure SSH authentication manually"
-    fi
+    stderr ""
+    stderr "## Setting up deploy key..."
+    KEY_FILE=""
+    KEY_CREATED=false
+    __setup_deploy_key "$remote_name" >/dev/null
 
+    # Test deploy key
     stderr ""
     stderr "## Testing deploy key..."
 
@@ -418,7 +624,7 @@ main() {
         stderr "## Fetching from ${remote_name}..."
         git fetch "$remote_name"
 
-        # Checkout the branch (creates local tracking branch from remote)
+        # Checkout the branch
         stderr "## Checking out branch '${REPO_BRANCH}'..."
         git checkout "$REPO_BRANCH"
 
@@ -433,34 +639,23 @@ main() {
         stderr "========================================"
     else
         # Key not working - show instructions and exit with error
-        local key_file
-        if key_file=$(__get_deploy_key_file "$remote_name"); then
-            __show_key_instructions "$key_file"
+        if [[ -n "$KEY_FILE" ]] && [[ -f "${KEY_FILE}.pub" ]]; then
+            __show_key_instructions "$KEY_FILE"
         else
             stderr ""
             stderr "## Deploy key not working and key file not found."
-            stderr "## Run 'git deploy-key --show' to see the public key."
         fi
 
         stderr ""
         stderr "## Repository prepared at: ${destination}"
         stderr "## After adding the deploy key, run this command again:"
         stderr "##   git deploy ${ORIGINAL_ARGS}"
-        stderr "##"
-        stderr "## Or, set it up manually for a specific branch:"
-        stderr "##   cd ${destination}"
-        stderr "##   git fetch"
-        stderr "##   git checkout -b dev origin/dev"
         stderr ""
 
-        stderr ""
-
-        # Still output destination but exit with error
         echo "$destination"
         exit 1
     fi
 
-    # Output destination for use by other scripts
     echo "$destination"
 }
 
