@@ -435,3 +435,107 @@ hr {
     width: 100%;
     font-size: 0.85em;
 }
+
+
+
+
+/* === Dark table styling === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+
+  background: #0b1220;           /* table surface */
+  color: #e6edf3;                /* text */
+  border: 1px solid #2a3343;     /* outer border */
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 600;
+  padding: 0.75rem 0.9rem;
+  color: #e6edf3;
+}
+
+thead th {
+  background: #111a2e;           /* header surface */
+  color: #e6edf3;
+  font-weight: 600;
+  text-align: left;
+  vertical-align: bottom;
+
+  border-bottom: 2px solid #2a3343;
+  padding: 0.65rem 0.8rem;
+  white-space: nowrap;
+}
+
+tbody td,
+tbody th {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #243041;  /* row separators */
+  vertical-align: top;
+}
+
+th, td {
+  border-right: 1px solid #243041;  /* column separators */
+}
+
+th:last-child,
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #0e1730;           /* zebra */
+}
+
+tbody tr:hover {
+  background: #14224a;           /* hover highlight */
+}
+
+tbody tr:last-child td,
+tbody tr:last-child th {
+  border-bottom: none;
+}
+
+/* Links inside tables */
+table a {
+  color: #7ab7ff;
+  text-decoration: none;
+}
+table a:hover {
+  text-decoration: underline;
+}
+
+/* Code-ish cells */
+td code, th code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+  padding: 0.12em 0.35em !important;
+  border-radius: 6px;
+  background: #0a1020;
+  border: 1px solid #22304a;
+  color: #d7e3ff;
+}
+
+/* Optional numeric alignment: add class="num" to th/td */
+td.num, th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive wrapper */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+}
+.table-wrap > table {
+  min-width: 640px; /* tweak */
+}
