@@ -10,6 +10,7 @@
 #
 # Supported extensions:
 #   - deploy: Clone repositories using deploy key authentication
+#   - deploy-key: Manage deploy keys (list, show, remove)
 #
 ######################################################
 
@@ -693,6 +694,229 @@ __deploy_main() {
 }
 
 #===========================================================
+#                  DEPLOY-KEY EXTENSION
+#===========================================================
+# Manage deploy keys: list, show, remove
+
+#-----------------------------------------------------------
+# Deploy-Key List
+#-----------------------------------------------------------
+
+__deploy_key_list() {
+    local keys_dir="${HOME}/.ssh/deploy-keys"
+    local config_file="${HOME}/.ssh/config"
+
+    if [[ ! -d "$keys_dir" ]]; then
+        echo "No deploy keys found."
+        return 0
+    fi
+
+    local keys=()
+    while IFS= read -r -d '' key_file; do
+        local alias
+        alias=$(basename "$key_file")
+        # Skip .pub files
+        [[ "$alias" == *.pub ]] && continue
+        keys+=("$alias")
+    done < <(find "$keys_dir" -maxdepth 1 -type f -print0 2>/dev/null)
+
+    if [[ ${#keys[@]} -eq 0 ]]; then
+        echo "No deploy keys found."
+        return 0
+    fi
+
+    echo "Deploy keys:"
+    echo ""
+
+    for alias in "${keys[@]}"; do
+        local key_file="${keys_dir}/${alias}"
+        local pub_file="${key_file}.pub"
+        local in_config="no"
+        local hostname=""
+
+        # Check if alias exists in ssh config
+        if [[ -f "$config_file" ]] && grep -q "^Host ${alias}$" "$config_file" 2>/dev/null; then
+            in_config="yes"
+            # Extract HostName from config
+            hostname=$(awk -v alias="$alias" '
+                BEGIN { found=0 }
+                /^Host / { found = ($2 == alias) }
+                found && /HostName/ { print $2; exit }
+            ' "$config_file")
+        fi
+
+        echo "  ${alias}"
+        [[ -n "$hostname" ]] && echo "    Host: ${hostname}"
+        echo "    Key:  ${key_file}"
+        echo "    SSH config: ${in_config}"
+
+        if [[ -f "$pub_file" ]]; then
+            local fingerprint
+            fingerprint=$(ssh-keygen -lf "$pub_file" 2>/dev/null | awk '{print $2}')
+            [[ -n "$fingerprint" ]] && echo "    Fingerprint: ${fingerprint}"
+        fi
+
+        echo ""
+    done
+}
+
+#-----------------------------------------------------------
+# Deploy-Key Show
+#-----------------------------------------------------------
+
+__deploy_key_show() {
+    local alias="$1"
+    local keys_dir="${HOME}/.ssh/deploy-keys"
+    local key_file="${keys_dir}/${alias}"
+    local pub_file="${key_file}.pub"
+
+    if [[ -z "$alias" ]]; then
+        error "Missing alias argument"
+        __deploy_key_help
+        exit 1
+    fi
+
+    if [[ ! -f "$pub_file" ]]; then
+        fault "Deploy key not found: ${alias}"
+    fi
+
+    echo "Public key for ${alias}:"
+    echo ""
+    cat "$pub_file"
+    echo ""
+}
+
+#-----------------------------------------------------------
+# Deploy-Key Remove
+#-----------------------------------------------------------
+
+__deploy_key_remove() {
+    local alias="$1"
+    local keys_dir="${HOME}/.ssh/deploy-keys"
+    local config_file="${HOME}/.ssh/config"
+    local key_file="${keys_dir}/${alias}"
+    local pub_file="${key_file}.pub"
+
+    if [[ -z "$alias" ]]; then
+        error "Missing alias argument"
+        __deploy_key_help
+        exit 1
+    fi
+
+    local found=false
+
+    # Remove from SSH config
+    if [[ -f "$config_file" ]] && grep -q "^Host ${alias}$" "$config_file" 2>/dev/null; then
+        local tmp_file
+        tmp_file=$(mktemp)
+        awk -v alias="$alias" '
+            BEGIN { skip=0 }
+            /^Host / {
+                if ($2 == alias) {
+                    skip=1
+                    next
+                } else {
+                    skip=0
+                }
+            }
+            !skip { print }
+        ' "$config_file" > "$tmp_file"
+
+        mv "$tmp_file" "$config_file"
+        chmod 600 "$config_file"
+        echo "Removed SSH config entry: ${alias}"
+        found=true
+    fi
+
+    # Remove key files
+    if [[ -f "$key_file" ]]; then
+        rm -f "$key_file"
+        echo "Removed private key: ${key_file}"
+        found=true
+    fi
+
+    if [[ -f "$pub_file" ]]; then
+        rm -f "$pub_file"
+        echo "Removed public key: ${pub_file}"
+        found=true
+    fi
+
+    if [[ "$found" == "false" ]]; then
+        fault "Deploy key not found: ${alias}"
+    fi
+
+    echo ""
+    echo "Deploy key '${alias}' removed successfully."
+    echo ""
+    echo "Note: If any repositories are using this key, you'll need to"
+    echo "update their remote URLs or create a new deploy key."
+}
+
+#-----------------------------------------------------------
+# Deploy-Key Help
+#-----------------------------------------------------------
+
+__deploy_key_help() {
+    cat <<EOF
+## git deploy-key - Manage deploy keys
+
+Usage: git deploy-key <command> [args]
+
+Commands:
+    list              List all deploy keys
+    show <alias>      Show the public key for an alias
+    remove <alias>    Remove a deploy key and its SSH config entry
+
+Options:
+    -h, --help        Show this help message
+
+Examples:
+    # List all deploy keys
+    git deploy-key list
+
+    # Show a specific key's public key (for adding to git server)
+    git deploy-key show deploy--github.com--user-repo
+
+    # Remove a deploy key
+    git deploy-key remove deploy--github.com--user-repo
+
+Files:
+    Keys:   ~/.ssh/deploy-keys/
+    Config: ~/.ssh/config
+EOF
+}
+
+#-----------------------------------------------------------
+# Deploy-Key Main
+#-----------------------------------------------------------
+
+__deploy_key_main() {
+    local subcommand="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcommand" in
+        list|ls)
+            __deploy_key_list
+            ;;
+        show|cat)
+            __deploy_key_show "$@"
+            ;;
+        remove|rm|delete)
+            __deploy_key_remove "$@"
+            ;;
+        -h|--help|help|"")
+            __deploy_key_help
+            exit 0
+            ;;
+        *)
+            error "Unknown command: $subcommand"
+            __deploy_key_help
+            exit 1
+            ;;
+    esac
+}
+
+#===========================================================
 #                    MAIN DISPATCHER
 #===========================================================
 
@@ -704,16 +928,19 @@ Usage: git <extension> [args...]
    or: git-<extension> [args...]
 
 Available extensions:
-    deploy    Clone repositories using deploy key authentication
+    deploy        Clone repositories using deploy key authentication
+    deploy-key    Manage deploy keys (list, show, remove)
 
 Run 'git <extension> --help' for extension-specific help.
 
 Setup:
     Create symlinks in your PATH:
         ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy
+        ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy-key
 
     Then use as:
         git deploy <repo-url>
+        git deploy-key list
 EOF
 }
 
@@ -721,6 +948,9 @@ EOF
 case "$EXTENSION_CMD" in
     deploy)
         __deploy_main "$@"
+        ;;
+    deploy-key)
+        __deploy_key_main "$@"
         ;;
     -h|--help|help|"")
         __main_help
