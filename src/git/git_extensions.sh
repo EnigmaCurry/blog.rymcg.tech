@@ -1,18 +1,46 @@
 #!/bin/bash
 
 ######################################################
-#     Git Deploy - Clone with Deploy Key Auth       #
+#              Git Extensions Framework              #
+######################################################
+#
+# A multi-command git extension framework.
+# Create symlinks like `git-deploy` pointing to this script.
+# The script detects the command from the symlink name.
+#
+# Supported extensions:
+#   - deploy: Clone repositories using deploy key authentication
+#
 ######################################################
 
 set -eo pipefail
 
 ORIGINAL_ARGS="${@}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_NAME="$(basename "$0")"
+
+# Extract command from script name (git-deploy -> deploy)
+if [[ "$SCRIPT_NAME" == git-* ]]; then
+    EXTENSION_CMD="${SCRIPT_NAME#git-}"
+elif [[ "$SCRIPT_NAME" == "git_extensions.sh" ]]; then
+    # Called directly - first argument is the command
+    EXTENSION_CMD="${1:-}"
+    shift 2>/dev/null || true
+else
+    EXTENSION_CMD="$SCRIPT_NAME"
+fi
+
+#-----------------------------------------------------------
+# Common Utilities
+#-----------------------------------------------------------
 
 stderr(){ echo "$@" >/dev/stderr; }
 error(){ stderr "Error: $@"; }
 fault(){ test -n "$1" && error "$1"; stderr "Exiting."; exit 1; }
+
 check_var() {
+    local help_func="${1:-__help}"
+    shift
     local missing=()
     for varname in "$@"; do
         if [[ -z "${!varname}" ]]; then
@@ -21,7 +49,7 @@ check_var() {
     done
     if [[ ${#missing[@]} -gt 0 ]]; then
         echo ""
-        __help
+        $help_func
         echo ""
         echo "## Error: Missing:"
         for var in "${missing[@]}"; do
@@ -31,6 +59,7 @@ check_var() {
         exit 1
     fi
 }
+
 check_deps(){
     local missing=""
     for dep in "$@"; do
@@ -41,6 +70,11 @@ check_deps(){
     if [[ -n "$missing" ]]; then fault "Missing dependencies:${missing}"; fi
 }
 
+#===========================================================
+#                    DEPLOY EXTENSION
+#===========================================================
+# Clone repositories using deploy key authentication
+
 #-----------------------------------------------------------
 # URL Parsing
 #-----------------------------------------------------------
@@ -48,7 +82,7 @@ check_deps(){
 # Parse repository URL with optional branch
 # Format: url[#branch]
 # Returns: Sets REPO_URL and REPO_BRANCH variables
-__parse_repo_spec() {
+__deploy_parse_repo_spec() {
     local spec="$1"
 
     if [[ "$spec" =~ ^(.+)#([^#]+)$ ]]; then
@@ -61,7 +95,7 @@ __parse_repo_spec() {
 }
 
 # Parse a git remote URL and extract host and path components
-__parse_remote_url() {
+__deploy_parse_remote_url() {
     local url="$1"
     local -n _host=$2
     local -n _path=$3
@@ -87,7 +121,7 @@ __parse_remote_url() {
 }
 
 # Extract repository name from URL for default destination
-__repo_name_from_url() {
+__deploy_repo_name_from_url() {
     local url="$1"
     local name
 
@@ -107,7 +141,7 @@ __repo_name_from_url() {
 }
 
 # Normalize URL to SSH format for consistency
-__normalize_url() {
+__deploy_normalize_url() {
     local url="$1"
 
     # Remove trailing .git if present, we'll add it back
@@ -137,7 +171,7 @@ __normalize_url() {
 }
 
 # Check if URL is already using a deploy key alias
-__is_deploy_alias_url() {
+__deploy_is_alias_url() {
     local url="$1"
     if [[ "$url" =~ ^git@deploy-[^:]+: ]]; then
         return 0
@@ -146,7 +180,7 @@ __is_deploy_alias_url() {
 }
 
 # Extract the existing alias from a deploy-key URL
-__extract_alias_from_url() {
+__deploy_extract_alias_from_url() {
     local url="$1"
     if [[ "$url" =~ ^git@([^:]+): ]]; then
         echo "${BASH_REMATCH[1]}"
@@ -154,12 +188,12 @@ __extract_alias_from_url() {
 }
 
 # Convert a remote URL to use the deploy key alias
-__convert_remote_url() {
+__deploy_convert_remote_url() {
     local url="$1"
     local alias="$2"
     local host path
 
-    if ! __parse_remote_url "$url" host path; then
+    if ! __deploy_parse_remote_url "$url" host path; then
         fault "Cannot parse remote URL: $url"
     fi
 
@@ -171,11 +205,11 @@ __convert_remote_url() {
 # SSH Key Management
 #-----------------------------------------------------------
 
-__ssh_config_file() {
+__deploy_ssh_config_file() {
     echo "${HOME}/.ssh/config"
 }
 
-__ssh_keys_dir() {
+__deploy_ssh_keys_dir() {
     local dir="${HOME}/.ssh/deploy-keys"
     mkdir -p "$dir"
     chmod 700 "$dir"
@@ -183,25 +217,25 @@ __ssh_keys_dir() {
 }
 
 # Generate SSH host alias name from repo
-__generate_alias() {
+__deploy_generate_alias() {
     local host="$1"
     local path="$2"
     echo "deploy--${host}--${path}" | tr '/' '-' | tr -s '-'
 }
 
 # Get key file path for an alias
-__key_file_path() {
+__deploy_key_file_path() {
     local alias="$1"
     local keys_dir
-    keys_dir=$(__ssh_keys_dir)
+    keys_dir=$(__deploy_ssh_keys_dir)
     echo "${keys_dir}/${alias}"
 }
 
 # Check if SSH host alias exists in config
-__host_alias_exists() {
+__deploy_host_alias_exists() {
     local alias="$1"
     local config_file
-    config_file=$(__ssh_config_file)
+    config_file=$(__deploy_ssh_config_file)
 
     if [[ -f "$config_file" ]]; then
         grep -q "^Host ${alias}$" "$config_file" 2>/dev/null
@@ -211,12 +245,12 @@ __host_alias_exists() {
 }
 
 # Add SSH host alias to config
-__add_host_alias() {
+__deploy_add_host_alias() {
     local alias="$1"
     local real_host="$2"
     local key_file="$3"
     local config_file
-    config_file=$(__ssh_config_file)
+    config_file=$(__deploy_ssh_config_file)
 
     mkdir -p "$(dirname "$config_file")"
 
@@ -241,10 +275,10 @@ EOF
 }
 
 # Remove SSH host alias from config
-__remove_host_alias() {
+__deploy_remove_host_alias() {
     local alias="$1"
     local config_file
-    config_file=$(__ssh_config_file)
+    config_file=$(__deploy_ssh_config_file)
 
     if [[ ! -f "$config_file" ]]; then
         return 0
@@ -270,17 +304,17 @@ __remove_host_alias() {
 }
 
 # Update SSH host alias in config
-__update_host_alias() {
+__deploy_update_host_alias() {
     local alias="$1"
     local real_host="$2"
     local key_file="$3"
 
-    __remove_host_alias "$alias"
-    __add_host_alias "$alias" "$real_host" "$key_file"
+    __deploy_remove_host_alias "$alias"
+    __deploy_add_host_alias "$alias" "$real_host" "$key_file"
 }
 
 # Generate a new deploy key
-__generate_key() {
+__deploy_generate_key() {
     local key_file="$1"
     local comment="$2"
 
@@ -296,17 +330,17 @@ __generate_key() {
 
 # Setup deploy key for a remote - returns the alias name
 # Sets KEY_FILE and KEY_CREATED variables
-__setup_deploy_key() {
+__deploy_setup_key() {
     local remote_name="${1:-origin}"
 
     local remote_url
     remote_url=$(git remote get-url "$remote_name" 2>/dev/null) || fault "Remote '${remote_name}' not found"
 
     # Check if already using a deploy key alias
-    if __is_deploy_alias_url "$remote_url"; then
+    if __deploy_is_alias_url "$remote_url"; then
         local existing_alias
-        existing_alias=$(__extract_alias_from_url "$remote_url")
-        KEY_FILE=$(__key_file_path "$existing_alias")
+        existing_alias=$(__deploy_extract_alias_from_url "$remote_url")
+        KEY_FILE=$(__deploy_key_file_path "$existing_alias")
         KEY_CREATED=false
 
         stderr "## Already configured with deploy key: ${existing_alias}"
@@ -316,7 +350,7 @@ __setup_deploy_key() {
 
     # Parse the remote URL
     local host path
-    if ! __parse_remote_url "$remote_url" host path; then
+    if ! __deploy_parse_remote_url "$remote_url" host path; then
         fault "Cannot parse remote URL: ${remote_url}"
     fi
 
@@ -325,8 +359,8 @@ __setup_deploy_key() {
 
     # Generate alias and key file path
     local alias
-    alias=$(__generate_alias "$host" "$path")
-    KEY_FILE=$(__key_file_path "$alias")
+    alias=$(__deploy_generate_alias "$host" "$path")
+    KEY_FILE=$(__deploy_key_file_path "$alias")
 
     stderr "## SSH alias: ${alias}"
     stderr "## Key file: ${KEY_FILE}"
@@ -337,20 +371,20 @@ __setup_deploy_key() {
     if [[ -f "$KEY_FILE" ]]; then
         stderr "## Deploy key already exists"
     else
-        __generate_key "$KEY_FILE" "deploy-key@${HOSTNAME:-localhost} ${host}:${path}"
+        __deploy_generate_key "$KEY_FILE" "deploy-key@${HOSTNAME:-localhost} ${host}:${path}"
         KEY_CREATED=true
     fi
 
     # Setup or update SSH host alias
-    if __host_alias_exists "$alias"; then
+    if __deploy_host_alias_exists "$alias"; then
         stderr "## SSH host alias already configured"
     else
-        __add_host_alias "$alias" "$host" "$KEY_FILE"
+        __deploy_add_host_alias "$alias" "$host" "$KEY_FILE"
     fi
 
     # Update the git remote to use the alias
     local new_url
-    new_url=$(__convert_remote_url "$remote_url" "$alias")
+    new_url=$(__deploy_convert_remote_url "$remote_url" "$alias")
 
     if [[ "$remote_url" != "$new_url" ]]; then
         git remote set-url "$remote_name" "$new_url"
@@ -365,7 +399,7 @@ __setup_deploy_key() {
 #-----------------------------------------------------------
 
 # Initialize the repository and configure remote
-__init_repo() {
+__deploy_init_repo() {
     local dest="$1"
     local url="$2"
     local remote_name="${3:-origin}"
@@ -408,7 +442,7 @@ __init_repo() {
 }
 
 # Test if the deploy key works by trying to access the remote
-__test_deploy_key() {
+__deploy_test_key() {
     local remote_name="$1"
     local timeout_secs="${2:-10}"
 
@@ -419,7 +453,7 @@ __test_deploy_key() {
 }
 
 # Get the default branch from the remote
-__get_default_branch() {
+__deploy_get_default_branch() {
     local remote_name="$1"
 
     local default_ref
@@ -445,7 +479,7 @@ __get_default_branch() {
 }
 
 # Show the public key and instructions
-__show_key_instructions() {
+__deploy_show_key_instructions() {
     local key_file="$1"
 
     echo ""
@@ -466,16 +500,14 @@ __show_key_instructions() {
 }
 
 #-----------------------------------------------------------
-# Main
+# Deploy Help
 #-----------------------------------------------------------
 
-__help() {
-    local script
-    script=$(basename "$0")
+__deploy_help() {
     cat <<EOF
 ## git deploy - Clone a repository using a deploy key
 
-Usage: ${script} <repo-url[#branch]> [destination] [options]
+Usage: git deploy <repo-url[#branch]> [destination] [options]
 
 Arguments:
     repo-url        Repository URL (supports #branch suffix)
@@ -522,7 +554,11 @@ Workflow:
 EOF
 }
 
-main() {
+#-----------------------------------------------------------
+# Deploy Main
+#-----------------------------------------------------------
+
+__deploy_main() {
     check_deps git ssh-keygen
 
     local repo_spec=""
@@ -541,12 +577,12 @@ main() {
                 shift 2
                 ;;
             -h|--help)
-                __help
+                __deploy_help
                 exit 0
                 ;;
             -*)
                 error "Unknown option: $1"
-                __help
+                __deploy_help
                 exit 1
                 ;;
             *)
@@ -556,7 +592,7 @@ main() {
                     destination="$1"
                 else
                     error "Too many arguments"
-                    __help
+                    __deploy_help
                     exit 1
                 fi
                 shift
@@ -564,10 +600,10 @@ main() {
         esac
     done
 
-    check_var repo_spec
+    check_var __deploy_help repo_spec
 
     # Parse repo spec
-    __parse_repo_spec "$repo_spec"
+    __deploy_parse_repo_spec "$repo_spec"
 
     # Apply branch override if specified
     if [[ -n "$branch_override" ]]; then
@@ -575,11 +611,11 @@ main() {
     fi
 
     # Normalize URL to SSH format
-    REPO_URL=$(__normalize_url "$REPO_URL")
+    REPO_URL=$(__deploy_normalize_url "$REPO_URL")
 
     # Derive destination from repo name if not specified
     if [[ -z "$destination" ]]; then
-        destination=$(__repo_name_from_url "$REPO_URL")
+        destination=$(__deploy_repo_name_from_url "$REPO_URL")
     fi
 
     # Convert to absolute path
@@ -593,26 +629,26 @@ main() {
     stderr ""
 
     # Initialize the repository
-    __init_repo "$destination" "$REPO_URL" "$remote_name"
+    __deploy_init_repo "$destination" "$REPO_URL" "$remote_name"
 
     # Setup deploy key
     stderr ""
     stderr "## Setting up deploy key..."
     KEY_FILE=""
     KEY_CREATED=false
-    __setup_deploy_key "$remote_name" >/dev/null
+    __deploy_setup_key "$remote_name" >/dev/null
 
     # Test deploy key
     stderr ""
     stderr "## Testing deploy key..."
 
-    if __test_deploy_key "$remote_name"; then
+    if __deploy_test_key "$remote_name"; then
         stderr "## Deploy key is working!"
 
         # If no branch specified, discover the default branch
         if [[ -z "$REPO_BRANCH" ]]; then
             stderr "## Discovering default branch..."
-            REPO_BRANCH=$(__get_default_branch "$remote_name")
+            REPO_BRANCH=$(__deploy_get_default_branch "$remote_name")
             if [[ -n "$REPO_BRANCH" ]]; then
                 stderr "## Default branch: ${REPO_BRANCH}"
             else
@@ -640,7 +676,7 @@ main() {
     else
         # Key not working - show instructions and exit with error
         if [[ -n "$KEY_FILE" ]] && [[ -f "${KEY_FILE}.pub" ]]; then
-            __show_key_instructions "$KEY_FILE"
+            __deploy_show_key_instructions "$KEY_FILE"
         else
             stderr ""
             stderr "## Deploy key not working and key file not found."
@@ -656,4 +692,43 @@ main() {
     fi
 }
 
-main "$@"
+#===========================================================
+#                    MAIN DISPATCHER
+#===========================================================
+
+__main_help() {
+    cat <<EOF
+## Git Extensions Framework
+
+Usage: git <extension> [args...]
+   or: git-<extension> [args...]
+
+Available extensions:
+    deploy    Clone repositories using deploy key authentication
+
+Run 'git <extension> --help' for extension-specific help.
+
+Setup:
+    Create symlinks in your PATH:
+        ln -s /path/to/git_extensions.sh ~/.local/bin/git-deploy
+
+    Then use as:
+        git deploy <repo-url>
+EOF
+}
+
+# Dispatch to the appropriate extension
+case "$EXTENSION_CMD" in
+    deploy)
+        __deploy_main "$@"
+        ;;
+    -h|--help|help|"")
+        __main_help
+        exit 0
+        ;;
+    *)
+        error "Unknown extension: $EXTENSION_CMD"
+        __main_help
+        exit 1
+        ;;
+esac
