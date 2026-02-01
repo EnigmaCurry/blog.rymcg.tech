@@ -191,6 +191,9 @@ __deploy_default_destination() {
         repo="$path"
     fi
 
+    # Normalize: lowercase the org name for consistent directory structure
+    org="${org,,}"
+
     echo "${HOME}/git/vendor/${org}/${repo}"
 }
 
