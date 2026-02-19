@@ -173,13 +173,16 @@ populate_v4_rules() {
   # Allow exceptions (resolved at enable time)
   local ip p
   for ip in "${EXC_V4[@]:-}"; do
+    [[ -z "$ip" ]] && continue
     if [[ "${#EXCEPTION_TCP_PORTS[@]}" -eq 0 && "${#EXCEPTION_UDP_PORTS[@]}" -eq 0 ]]; then
       iptables -A "$CHAIN_V4" -d "$ip" -j ACCEPT
     else
       for p in "${EXCEPTION_TCP_PORTS[@]:-}"; do
+        [[ -z "$p" ]] && continue
         iptables -A "$CHAIN_V4" -p tcp -d "$ip" --dport "$p" -j ACCEPT
       done
       for p in "${EXCEPTION_UDP_PORTS[@]:-}"; do
+        [[ -z "$p" ]] && continue
         iptables -A "$CHAIN_V4" -p udp -d "$ip" --dport "$p" -j ACCEPT
       done
     fi
@@ -203,13 +206,16 @@ populate_v6_rules() {
   # Allow exceptions
   local ip p
   for ip in "${EXC_V6[@]:-}"; do
+    [[ -z "$ip" ]] && continue
     if [[ "${#EXCEPTION_TCP_PORTS[@]}" -eq 0 && "${#EXCEPTION_UDP_PORTS[@]}" -eq 0 ]]; then
       ip6tables -A "$CHAIN_V6" -d "$ip" -j ACCEPT
     else
       for p in "${EXCEPTION_TCP_PORTS[@]:-}"; do
+        [[ -z "$p" ]] && continue
         ip6tables -A "$CHAIN_V6" -p tcp -d "$ip" --dport "$p" -j ACCEPT
       done
       for p in "${EXCEPTION_UDP_PORTS[@]:-}"; do
+        [[ -z "$p" ]] && continue
         ip6tables -A "$CHAIN_V6" -p udp -d "$ip" --dport "$p" -j ACCEPT
       done
     fi
@@ -253,6 +259,7 @@ do_off() {
 }
 
 do_status() {
+  need_root "$@"
   have iptables || { echo "iptables not found." >&2; exit 1; }
 
   if v4_active; then
@@ -277,7 +284,7 @@ main() {
   case "$1" in
     on) do_on "$@" ;;
     off) do_off "$@" ;;
-    status) do_status ;;
+    status) do_status "$@" ;;
     -h|--help|help) usage ;;
     *) usage; exit 1 ;;
   esac
