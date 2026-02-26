@@ -836,28 +836,35 @@ __deploy_main() {
                 REPO_BRANCH=$(__deploy_get_default_branch "$remote_name")
                 if [[ -n "$REPO_BRANCH" ]]; then
                     stderr "## Default branch: ${REPO_BRANCH}"
-                else
-                    fault "Could not determine default branch from remote"
                 fi
             fi
 
-            # Fetch from remote
-            stderr "## Fetching from ${remote_name}..."
-            git fetch "$remote_name"
+            if [[ -z "$REPO_BRANCH" ]]; then
+                # Remote has no branches (empty repo)
+                stderr ""
+                stderr "========================================"
+                stderr "## Repository is empty (no branches on remote)"
+                stderr "## Location: ${destination}"
+                stderr "========================================"
+            else
+                # Fetch from remote
+                stderr "## Fetching from ${remote_name}..."
+                git fetch "$remote_name"
 
-            # Checkout the branch
-            stderr "## Checking out branch '${REPO_BRANCH}'..."
-            git checkout "$REPO_BRANCH"
+                # Checkout the branch
+                stderr "## Checking out branch '${REPO_BRANCH}'..."
+                git checkout "$REPO_BRANCH"
 
-            # Ensure tracking is configured
-            git branch --set-upstream-to="${remote_name}/${REPO_BRANCH}" "$REPO_BRANCH" 2>/dev/null || true
+                # Ensure tracking is configured
+                git branch --set-upstream-to="${remote_name}/${REPO_BRANCH}" "$REPO_BRANCH" 2>/dev/null || true
 
-            stderr ""
-            stderr "========================================"
-            stderr "## Repository cloned successfully!"
-            stderr "## Location: ${destination}"
-            stderr "## Branch: ${REPO_BRANCH}"
-            stderr "========================================"
+                stderr ""
+                stderr "========================================"
+                stderr "## Repository cloned successfully!"
+                stderr "## Location: ${destination}"
+                stderr "## Branch: ${REPO_BRANCH}"
+                stderr "========================================"
+            fi
         fi
     else
         # Key not working - show instructions and exit with error
