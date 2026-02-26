@@ -218,7 +218,6 @@ __deploy_repo_name_from_url() {
 }
 
 # Normalize URL to SSH format for consistency
-# Sets REPO_PORT as a side effect when ssh:// URL contains a port
 __deploy_normalize_url() {
     local url="$1"
 
@@ -237,9 +236,8 @@ __deploy_normalize_url() {
         # ssh://[user@]host[:port]/path format, convert to git@ format
         local rest="${url#ssh://}"
         rest="${rest#*@}"  # Remove user@ if present
-        # Extract host, optional port, and path
+        # Extract host, optional port, and path (port is stripped here, handled via SSH config)
         if [[ "$rest" =~ ^([^:/]+)(:([0-9]+))?/(.+)$ ]]; then
-            REPO_PORT="${BASH_REMATCH[3]}"
             echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[4]}.git"
         else
             echo "${url}.git"
@@ -772,7 +770,11 @@ __deploy_main() {
     # Skip normalization if already configured (URL is already in deploy-key format)
     REPO_PORT=""
     if [[ "$already_configured" != "true" ]]; then
-        # Normalize URL to SSH format (sets REPO_PORT for ssh:// URLs with ports)
+        # Extract port from ssh:// URLs before normalization (which runs in a subshell)
+        if [[ "$REPO_URL" =~ ^ssh://([^@]+@)?([^:/]+):([0-9]+)/ ]]; then
+            REPO_PORT="${BASH_REMATCH[3]}"
+        fi
+        # Normalize URL to SSH format
         REPO_URL=$(__deploy_normalize_url "$REPO_URL")
     fi
 
