@@ -218,6 +218,7 @@ __deploy_repo_name_from_url() {
 }
 
 # Normalize URL to SSH format for consistency
+# Sets REPO_PORT as a side effect when ssh:// URL contains a port
 __deploy_normalize_url() {
     local url="$1"
 
@@ -233,11 +234,13 @@ __deploy_normalize_url() {
         # Already SSH format
         echo "${url}.git"
     elif [[ "$url" =~ ^ssh:// ]]; then
-        # ssh:// format, convert to git@ format
+        # ssh://[user@]host[:port]/path format, convert to git@ format
         local rest="${url#ssh://}"
         rest="${rest#*@}"  # Remove user@ if present
-        if [[ "$rest" =~ ^([^/]+)/(.+)$ ]]; then
-            echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[2]}.git"
+        # Extract host, optional port, and path
+        if [[ "$rest" =~ ^([^:/]+)(:([0-9]+))?/(.+)$ ]]; then
+            REPO_PORT="${BASH_REMATCH[3]}"
+            echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[4]}.git"
         else
             echo "${url}.git"
         fi
@@ -326,6 +329,7 @@ __deploy_add_host_alias() {
     local alias="$1"
     local real_host="$2"
     local key_file="$3"
+    local port="${4:-}"
     local config_file
     config_file=$(__deploy_ssh_config_file)
 
@@ -339,13 +343,14 @@ __deploy_add_host_alias() {
         echo "" >> "$config_file"
     fi
 
-    cat >> "$config_file" <<EOF
-Host ${alias}
-    HostName ${real_host}
-    User git
-    IdentityFile ${key_file}
-    IdentitiesOnly yes
-EOF
+    {
+        echo "Host ${alias}"
+        echo "    HostName ${real_host}"
+        [[ -n "$port" ]] && echo "    Port ${port}"
+        echo "    User git"
+        echo "    IdentityFile ${key_file}"
+        echo "    IdentitiesOnly yes"
+    } >> "$config_file"
 
     chmod 600 "$config_file"
     stderr "## Added SSH host alias '${alias}'"
@@ -385,9 +390,10 @@ __deploy_update_host_alias() {
     local alias="$1"
     local real_host="$2"
     local key_file="$3"
+    local port="${4:-}"
 
     __deploy_remove_host_alias "$alias"
-    __deploy_add_host_alias "$alias" "$real_host" "$key_file"
+    __deploy_add_host_alias "$alias" "$real_host" "$key_file" "$port"
 }
 
 # Generate a new deploy key
@@ -456,7 +462,7 @@ __deploy_setup_key() {
     if __deploy_host_alias_exists "$alias"; then
         stderr "## SSH host alias already configured"
     else
-        __deploy_add_host_alias "$alias" "$host" "$KEY_FILE"
+        __deploy_add_host_alias "$alias" "$host" "$KEY_FILE" "$REPO_PORT"
     fi
 
     # Update the git remote to use the alias
@@ -624,6 +630,7 @@ URL Formats:
     git@github.com:user/repo.git#main
     https://github.com/user/repo
     https://github.com/user/repo#develop
+    ssh://git@host:port/user/repo.git
 
 Examples:
     # Clone using remote's default branch
@@ -763,8 +770,9 @@ __deploy_main() {
     fi
 
     # Skip normalization if already configured (URL is already in deploy-key format)
+    REPO_PORT=""
     if [[ "$already_configured" != "true" ]]; then
-        # Normalize URL to SSH format
+        # Normalize URL to SSH format (sets REPO_PORT for ssh:// URLs with ports)
         REPO_URL=$(__deploy_normalize_url "$REPO_URL")
     fi
 
