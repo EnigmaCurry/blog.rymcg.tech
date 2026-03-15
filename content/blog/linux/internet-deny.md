@@ -45,7 +45,7 @@ connectivity.
 
 Download the script and make it executable:
 
-```
+```bash
 wget https://raw.githubusercontent.com/EnigmaCurry/blog.rymcg.tech/master/src/network/internet-deny.sh
 chmod +x internet-deny.sh
 ```
@@ -55,7 +55,7 @@ chmod +x internet-deny.sh
 To allowlist specific hosts, edit the `EXCEPTIONS` array near the top
 of the script:
 
-```bash
+```
 EXCEPTIONS=(
   "example.com"
   "1.1.1.1"
@@ -66,7 +66,7 @@ EXCEPTIONS=(
 Hostnames are resolved at enable time. To restrict exception hosts to
 specific ports:
 
-```bash
+```
 EXCEPTION_TCP_PORTS=(
   443 22
 )
