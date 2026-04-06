@@ -89,10 +89,15 @@ List available disks and identify your target drive:
 lsblk -d -o NAME,SIZE,MODEL
 ```
 
-Set your disk as a temporary environment variable:
+Set your disk and partition prefix as environment variables. NVMe
+drives use a `p` separator (e.g. `nvme0n1p1`), while other drives
+don't (e.g. `vda1`, `sda1`):
 
 ```bash
 DISK=/dev/nvme0n1
+PART=${DISK}p     # for NVMe: /dev/nvme0n1p1, /dev/nvme0n1p2
+# DISK=/dev/vda
+# PART=${DISK}    # for virtio/SATA: /dev/vda1, /dev/vda2
 ```
 
 ### Erase the Disk
@@ -132,9 +137,9 @@ parted -s ${DISK} print
 cryptsetup benchmark  # loads kernel crypto modules
 
 cryptsetup --verbose --type luks1 --cipher serpent-xts-plain64 --key-size 512 \
-  --hash sha512 --iter-time 10000 --use-random --verify-passphrase luksFormat ${DISK}p2
+  --hash sha512 --iter-time 10000 --use-random --verify-passphrase luksFormat ${PART}2
 
-cryptsetup luksOpen ${DISK}p2 lvm-system
+cryptsetup luksOpen ${PART}2 lvm-system
 ```
 
 ### LVM Setup
@@ -151,7 +156,7 @@ lvcreate --contiguous y --extents +100%FREE lvmSystem --name volRoot
 ### Format Partitions
 
 ```bash
-mkfs.fat -F32 -n ESP ${DISK}p1
+mkfs.fat -F32 -n ESP ${PART}1
 mkfs.ext4 -L BOOT /dev/lvmSystem/volBoot
 mkswap -L SWAP /dev/lvmSystem/volSwap   # note the UUID printed here
 mkfs.ext4 -L ROOT /dev/lvmSystem/volRoot
@@ -165,7 +170,7 @@ mount /dev/lvmSystem/volRoot /mnt
 mkdir /mnt/boot
 mount /dev/lvmSystem/volBoot /mnt/boot
 mkdir /mnt/boot/efi
-mount ${DISK}p1 /mnt/boot/efi
+mount ${PART}1 /mnt/boot/efi
 ```
 
 ## Install Base System
@@ -287,7 +292,7 @@ mkinitcpio -p linux-hardened
 ### GRUB Configuration
 
 ```bash
-LUKS_UUID=$(blkid -s UUID -o value /dev/nvme0n1p2)
+LUKS_UUID=$(blkid -s UUID -o value ${PART}2)
 SWAP_UUID=$(blkid -s UUID -o value /dev/lvmSystem/volSwap)
 
 sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${LUKS_UUID}:lvm-system:allow-discards loglevel=3 quiet resume=UUID=${SWAP_UUID} net.ifnames=0\"/" /etc/default/grub
@@ -620,10 +625,10 @@ after upgrades). Boot from live USB, decrypt and mount, chroot, re-add
 ```bash
 sudo su
 cryptsetup benchmark
-cryptsetup luksOpen /dev/nvme0n1p2 lvm-system
+cryptsetup luksOpen ${PART}2 lvm-system
 vgchange -ay lvmSystem
 mount /dev/lvmSystem/volRoot /mnt
 mount /dev/lvmSystem/volBoot /mnt/boot
-mount /dev/nvme0n1p1 /mnt/boot/efi
+mount ${PART}1 /mnt/boot/efi
 artix-chroot /mnt /bin/bash
 ```
