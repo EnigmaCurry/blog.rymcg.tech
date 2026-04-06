@@ -44,12 +44,12 @@ or `dd`:
 
 ## Boot Live Environment
 
-Login as `root` with password `artix`.
+Login as `artix` with password `artix`.
 
 ### Connect to WiFi
 
 ```bash
-nmtui
+sudo nmtui
 ```
 
 Select "Activate a connection" and configure WiFi.
@@ -57,7 +57,7 @@ Select "Activate a connection" and configure WiFi.
 ### Enable SSH
 
 ```bash
-dinitctl start sshd
+sudo dinitctl start sshd
 ```
 
 Find the IP address:
@@ -69,7 +69,8 @@ ip a
 SSH in from another machine (password `artix`):
 
 ```bash
-ssh root@<ip-address>
+ssh artix@<ip-address>
+sudo su
 ```
 
 ## Disk Partitioning
