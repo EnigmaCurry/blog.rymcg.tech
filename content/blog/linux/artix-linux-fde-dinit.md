@@ -575,7 +575,7 @@ sudo mkdir -p /usr/share/wayland-sessions
 sudo tee /usr/share/wayland-sessions/sway.desktop <<'EOF'
 [Desktop Entry]
 Name=Sway
-Exec=sway
+Exec=bash --login -c sway
 Type=Application
 EOF
 ```
