@@ -1,20 +1,21 @@
 ---
-title: "Artix Linux with Full Disk Encryption and dinit"
+title: "Artix Linux Workstation with Dinit and Sway"
 date: 2026-04-05T00:00:00-06:00
-tags: ['linux', 'artix', 'sway-home']
+tags: ['linux', 'artix', 'home-manager', 'sway']
 ---
 
 This guide documents setting up [Artix Linux](https://artixlinux.org/)
 with [dinit](https://github.com/davmac314/dinit) on a ThinkPad X1
-Carbon laptop. Artix is an Arch-based distribution that uses dinit
-instead of systemd. The setup includes full disk encryption with LUKS +
-LVM (including encrypted `/boot`), a sway Wayland desktop managed by
-Nix home-manager, and rootless Podman containers.
+Carbon laptop. Artix is an Arch-based distribution that does not use systemd. This setup includes full disk encryption with LUKS +
+LVM (including encrypted `/boot`), a sway Wayland desktop managed by Nix home-manager
+([sway-home](https://github.com/EnigmaCurry/sway-home)), and a
+setup for development with rootless Podman containers and libvirt QEMU
+virtual machines.
 
 ## Hardware
 
 - ThinkPad X1 Carbon (i7-10610U, 16GB RAM)
-- Samsung MZVLB1T0HALR 1TB NVMe SSD (`/dev/nvme0n1`)
+- 1TB NVMe SSD (`/dev/nvme0n1`)
 
 ## Partition Layout
 
@@ -35,7 +36,8 @@ the initramfs `encrypt` hook (to mount root).
 ## Create Bootable USB
 
 Download the base ISO and write it with
-[Fedora Media Writer](https://flathub.org/apps/org.fedoraproject.MediaWriter):
+[Fedora Media Writer](https://flathub.org/apps/org.fedoraproject.MediaWriter)
+or `dd`:
 
 - ISO: `artix-base-dinit-20260402-x86_64.iso`
 - Mirror: `https://mirror.math.princeton.edu/pub/artixlinux/`
@@ -74,9 +76,16 @@ pacman -Sy --noconfirm gptfdisk parted cryptsetup lvm2 dosfstools
 
 ### Set Variables
 
+List available disks and identify your target drive:
+
+```bash
+lsblk -d -o NAME,SIZE,MODEL
+```
+
+Set your disk as a temporary environment variable:
+
 ```bash
 DISK=/dev/nvme0n1
-USERNAME=ryan
 ```
 
 ### Erase the Disk
@@ -90,7 +99,7 @@ blkdiscard ${DISK}
 
 This wipes the partition table and TRIMs the entire SSD. LUKS encryption
 makes remaining data inaccessible. A full `dd if=/dev/urandom` overwrite
-is unnecessary for a fresh install and adds significant SSD wear.
+is unnecessary for a fresh install and would add significant SSD wear.
 
 ### Create Partitions
 
@@ -194,7 +203,7 @@ echo 'tmpfs    /tmp    tmpfs    rw,nosuid,nodev,relatime,size=8G,mode=1777    0 
 
 ```bash
 artix-chroot /mnt /bin/bash --login
-export USERNAME=ryan
+export USERNAME=ryan  # set your desired username
 ```
 
 ### Set root password
@@ -222,7 +231,7 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 ### Timezone
 
 ```bash
-ln -sf /usr/share/zoneinfo/Region/City /etc/localtime
+ln -sf /usr/share/zoneinfo/US/Mountain /etc/localtime
 hwclock --systohc
 ```
 
@@ -479,6 +488,7 @@ mv ~/.bash_profile ~/.bash_profile.orig 2>/dev/null
 
 mkdir -p ~/.config/nix
 echo 'experimental-features = nix-command flakes' > ~/.config/nix/nix.conf
+
 mkdir -p ~/git/vendor/enigmacurry
 git clone https://github.com/enigmacurry/sway-home \
   ~/git/vendor/enigmacurry/sway-home
