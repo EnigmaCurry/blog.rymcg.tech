@@ -1,4 +1,6 @@
-author: EnigmaCurry
+author:
+  name: EnigmaCurry
+  email: ryan-blog@rymcg.tech
 baseurl: https://blog.rymcg.tech/
 canonifyurls: true
 copyright: 'Copyright © 2020-2026, EnigmaCurry'
