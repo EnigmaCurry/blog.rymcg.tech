@@ -218,6 +218,9 @@ artix-chroot /mnt /bin/bash --login
 export USERNAME=ryan  # set your desired username
 ```
 
+You may see `tty: ttyname error: No such device` — this is harmless
+and can be ignored.
+
 ### Set root password
 
 ```bash
