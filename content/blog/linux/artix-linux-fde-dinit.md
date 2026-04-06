@@ -60,6 +60,12 @@ Select "Activate a connection" and configure WiFi.
 dinitctl start sshd
 ```
 
+Find the IP address:
+
+```bash
+ip a
+```
+
 SSH in from another machine (password `artix`):
 
 ```bash
