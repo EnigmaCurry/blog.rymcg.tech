@@ -537,7 +537,7 @@ EOF
 Enable and start the service:
 
 ```bash
-sudo dinitctl enable --auto greetd
+sudo dinitctl enable greetd
 sudo dinitctl start greetd
 ```
 
