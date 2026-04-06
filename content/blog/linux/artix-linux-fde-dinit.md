@@ -554,6 +554,23 @@ needs a one-time setup to finish installing packages:
 3. Relaunch Emacs from rofi (`Super+d`, type `emacs`)
 4. Wait for Emacs to finish installing packages (~5 minutes)
 
+## Flatpak
+
+```bash
+sudo pacman -S --noconfirm flatpak xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+Log out and back in so `XDG_DATA_DIRS` picks up the Flatpak path
+from `/etc/profile.d/flatpak.sh`.
+
+Some useful Flatpak apps:
+
+```bash
+flatpak install flathub org.fedoraproject.MediaWriter
+flatpak install flathub io.github.kolunmi.Bazaar
+```
+
 ## Using Sway
 
 Sway is a tiling Wayland compositor with vim-style keybindings. The
