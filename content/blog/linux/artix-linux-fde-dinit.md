@@ -44,6 +44,8 @@ or `dd`:
 
 ## Boot Live Environment
 
+Login as `root` with password `artix`.
+
 ### Connect to WiFi
 
 ```bash
@@ -58,9 +60,7 @@ Select "Activate a connection" and configure WiFi.
 dinitctl start sshd
 ```
 
-Default live credentials: `artix` / `artix` (or `root` / `artix`).
-
-SSH in from another machine:
+SSH in from another machine (password `artix`):
 
 ```bash
 ssh root@<ip-address>
