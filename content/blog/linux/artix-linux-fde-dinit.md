@@ -220,7 +220,11 @@ artix-chroot /mnt /bin/bash --login
 You may see `tty: ttyname error: No such device` — this is harmless
 and can be ignored.
 
+Re-set the variables from earlier (these are lost when entering the chroot):
+
 ```bash
+DISK=/dev/nvme0n1
+PART=${DISK}p     # NVMe; use PART=${DISK} for virtio/SATA
 export USERNAME=ryan  # set your desired username
 ```
 
