@@ -496,11 +496,53 @@ cd ~/git/vendor/enigmacurry/sway-home
 just hm-install
 ```
 
-Restart your shell session, then launch sway:
+Restart your shell session to pick up the new environment.
+
+## Login Manager (greetd + tuigreet)
+
+[greetd](https://git.sr.ht/~kennylevinsen/greetd) is a minimal login
+daemon, and [tuigreet](https://github.com/apognu/tuigreet) gives it a
+clean console TUI where you select your user and session (sway, shell,
+etc.).
 
 ```bash
-sway
+sudo pacman -S --noconfirm greetd greetd-tuigreet greetd-dinit
 ```
+
+Configure greetd to use tuigreet with sway as the default session:
+
+```bash
+sudo tee /etc/greetd/config.toml <<'EOF'
+[terminal]
+vt = 7
+
+[default_session]
+command = "tuigreet --time --remember --remember-session --sessions /usr/share/wayland-sessions"
+user = "greeter"
+EOF
+```
+
+Create a sway desktop entry so tuigreet can discover it:
+
+```bash
+sudo mkdir -p /usr/share/wayland-sessions
+sudo tee /usr/share/wayland-sessions/sway.desktop <<'EOF'
+[Desktop Entry]
+Name=Sway
+Exec=sway
+Type=Application
+EOF
+```
+
+Enable and start the service:
+
+```bash
+sudo ln -s /etc/dinit.d/greetd /etc/dinit.d/boot.d/
+sudo dinitctl start greetd
+```
+
+You should now see the tuigreet login screen. Select `Sway` as your
+session and log in.
 
 ## Troubleshooting
 
