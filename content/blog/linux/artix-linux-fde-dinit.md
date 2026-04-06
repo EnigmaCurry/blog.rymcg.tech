@@ -479,47 +479,6 @@ sudo pacman -S --noconfirm pipewire pipewire-pulse wireplumber pavucontrol
 sudo pacman -S --noconfirm pipewire-dinit wireplumber-dinit
 ```
 
-### User-level dinit for PipeWire
-
-Artix with dinit needs a per-user dinit instance to manage PipeWire
-services. Set up the user boot service and symlinks:
-
-```bash
-mkdir -p ~/.config/dinit.d/boot.d
-cat > ~/.config/dinit.d/boot <<'EOF'
-type = internal
-waits-for.d = boot.d
-EOF
-ln -s /etc/dinit.d/user/dbus ~/.config/dinit.d/boot.d/
-ln -s /etc/dinit.d/user/pipewire ~/.config/dinit.d/boot.d/
-ln -s /etc/dinit.d/user/wireplumber ~/.config/dinit.d/boot.d/
-```
-
-Create a user dinit service for pipewire-pulse (PulseAudio compatibility):
-
-```bash
-sudo tee /etc/dinit.d/user/pipewire-pulse <<'EOF'
-type = process
-command = /usr/bin/pipewire-pulse
-depends-on = pipewire
-EOF
-ln -s /etc/dinit.d/user/pipewire-pulse ~/.config/dinit.d/boot.d/
-```
-
-Start user dinit on TTY login (before sway):
-
-```bash
-sudo tee /etc/profile.d/dinit-user.sh <<'EOF'
-# Start user-level dinit instance on TTY login (non-systemd)
-if command -v dinit >/dev/null 2>&1 && ! command -v systemctl >/dev/null 2>&1; then
-    if ! dinitctl list >/dev/null 2>&1; then
-        rm -f /run/user/$(id -u)/dinitctl
-        dinit --user --ready-fd 3 3>/dev/null &
-    fi
-fi
-EOF
-```
-
 ### Install sway-home
 
 [sway-home](https://github.com/EnigmaCurry/sway-home) manages dotfiles
@@ -543,6 +502,33 @@ just hm-install
 ```
 
 Restart your shell session to pick up the new environment.
+
+### User-level dinit for PipeWire
+
+sway-home starts a user-level dinit instance automatically on launch.
+Set up the user boot service and symlinks so dinit knows what to run:
+
+```bash
+mkdir -p ~/.config/dinit.d/boot.d
+cat > ~/.config/dinit.d/boot <<'EOF'
+type = internal
+waits-for.d = boot.d
+EOF
+ln -s /etc/dinit.d/user/dbus ~/.config/dinit.d/boot.d/
+ln -s /etc/dinit.d/user/pipewire ~/.config/dinit.d/boot.d/
+ln -s /etc/dinit.d/user/wireplumber ~/.config/dinit.d/boot.d/
+```
+
+Create a user dinit service for pipewire-pulse (PulseAudio compatibility):
+
+```bash
+sudo tee /etc/dinit.d/user/pipewire-pulse <<'EOF'
+type = process
+command = /usr/bin/pipewire-pulse
+depends-on = pipewire
+EOF
+ln -s /etc/dinit.d/user/pipewire-pulse ~/.config/dinit.d/boot.d/
+```
 
 ## Login Manager (greetd + tuigreet)
 
