@@ -477,6 +477,7 @@ Install sway and audio stack from pacman (they need system-level access):
 sudo pacman -S --noconfirm sway xorg-xwayland dunst libnotify lxsession ttf-font-awesome
 sudo pacman -S --noconfirm pipewire pipewire-pulse wireplumber pavucontrol
 sudo pacman -S --noconfirm pipewire-dinit wireplumber-dinit
+sudo pacman -S --noconfirm xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
 ```
 
 ### Install sway-home
@@ -594,7 +595,7 @@ dependencies, so they work across any distro. Browse and install apps
 from [Flathub](https://flathub.org/), the main Flatpak app store.
 
 ```bash
-sudo pacman -S --noconfirm flatpak xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
+sudo pacman -S --noconfirm flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 ```
 
