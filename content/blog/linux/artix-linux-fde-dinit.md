@@ -396,7 +396,6 @@ ssh ${USERNAME}@<ip-address>
 ```
 
 ```bash
-sudo swapon /dev/lvmSystem/volSwap
 sudo pacman -Syu --noconfirm
 ```
 
