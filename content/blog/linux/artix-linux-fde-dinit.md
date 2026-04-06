@@ -407,6 +407,26 @@ grep "^HOOKS" /etc/mkinitcpio.conf
 # If not, re-add them and run: mkinitcpio -p linux-hardened
 ```
 
+### Disable SSH Password Authentication
+
+Copy your SSH public key to the machine, then disable password login:
+
+```bash
+ssh-copy-id ${USERNAME}@<ip-address>
+```
+
+```bash
+sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo dinitctl restart sshd
+```
+
+If you don't need SSH running on your laptop, disable it entirely:
+
+```bash
+sudo dinitctl disable sshd
+sudo dinitctl stop sshd
+```
+
 ## Rootless Podman
 
 ```bash
