@@ -1,6 +1,6 @@
 ---
 title: "Artix Linux with Full Disk Encryption and dinit"
-date: 2026-04-06T00:00:00-06:00
+date: 2026-04-05T00:00:00-06:00
 tags: ['linux', 'artix', 'sway-home']
 ---
 
