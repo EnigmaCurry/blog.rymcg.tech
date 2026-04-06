@@ -416,13 +416,6 @@ sudo dinitctl start libvirtd
 User is not added to the `libvirt` group. virt-manager will prompt for
 a password via polkit (lxpolkit) when connecting to `qemu:///system`.
 
-### VM Install Notes
-
-When creating a VM in virt-manager, check **Customize configuration
-before install**. In the overview screen, change the **Firmware** to
-`OVMF_CODE.fd` (UEFI without Secure Boot). Do not use
-`OVMF_CODE.secboot.fd` as Artix does not support Secure Boot.
-
 ## Nix Package Manager
 
 Artix repos don't have a nix package, so use the single-user install.
@@ -639,3 +632,12 @@ mount /dev/lvmSystem/volBoot /mnt/boot
 mount ${PART}1 /mnt/boot/efi
 artix-chroot /mnt /bin/bash
 ```
+
+## Appendix: Installing in a VM
+
+This guide targets bare metal, but you can also test it in a VM. When
+creating a VM in virt-manager, check **Customize configuration before
+install**. In the overview screen, change the **Firmware** to
+`OVMF_CODE.fd` (UEFI without Secure Boot). Do not use
+`OVMF_CODE.secboot.fd` as Artix does not support Secure Boot. The host
+needs `edk2-ovmf` installed (`pacman -S edk2-ovmf`).
