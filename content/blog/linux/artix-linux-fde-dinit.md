@@ -537,7 +537,7 @@ EOF
 Enable and start the service:
 
 ```bash
-sudo ln -s /etc/dinit.d/greetd /etc/dinit.d/boot.d/
+sudo dinitctl enable --auto greetd
 sudo dinitctl start greetd
 ```
 
