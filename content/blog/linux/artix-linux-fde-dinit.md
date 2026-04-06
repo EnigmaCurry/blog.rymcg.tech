@@ -556,15 +556,19 @@ needs a one-time setup to finish installing packages:
 
 ## Flatpak
 
+[Flatpak](https://flatpak.org/) is a sandboxed package manager for
+desktop Linux apps. It runs apps in isolated containers with their own
+dependencies, so they work across any distro. Browse and install apps
+from [Flathub](https://flathub.org/), the main Flatpak app store.
+
 ```bash
 sudo pacman -S --noconfirm flatpak xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 ```
 
 Log out and back in so `XDG_DATA_DIRS` picks up the Flatpak path
-from `/etc/profile.d/flatpak.sh`.
-
-Some useful Flatpak apps:
+from `/etc/profile.d/flatpak.sh`. Then install apps by their Flathub
+app ID:
 
 ```bash
 flatpak install flathub org.fedoraproject.MediaWriter
