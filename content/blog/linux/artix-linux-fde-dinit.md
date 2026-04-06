@@ -351,6 +351,7 @@ pacman -S --noconfirm rsync nmap inetutils net-tools whois
 ## Create User Account
 
 ```bash
+: ${USERNAME:?must be set}
 useradd -m -G wheel -s /bin/bash ${USERNAME}
 passwd ${USERNAME}
 ```
