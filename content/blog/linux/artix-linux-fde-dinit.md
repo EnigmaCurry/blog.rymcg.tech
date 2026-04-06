@@ -389,7 +389,11 @@ reboot
 
 ## First Boot
 
-After logging in:
+SSH in with the username and password you set during install:
+
+```bash
+ssh ${USERNAME}@<ip-address>
+```
 
 ```bash
 sudo swapon /dev/lvmSystem/volSwap
