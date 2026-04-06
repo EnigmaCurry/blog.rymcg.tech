@@ -475,7 +475,7 @@ Install sway and audio stack from pacman (they need system-level access):
 
 ```bash
 sudo pacman -S --noconfirm sway xorg-xwayland dunst libnotify lxsession ttf-font-awesome
-sudo pacman -S --noconfirm pipewire pipewire-pulse wireplumber pavucontrol
+sudo pacman -S --noconfirm pipewire pipewire-pulse wireplumber pavucontrol sof-firmware
 sudo pacman -S --noconfirm pipewire-dinit wireplumber-dinit
 sudo pacman -S --noconfirm xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
 ```
