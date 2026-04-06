@@ -1,8 +1,7 @@
 ---
 title: "Artix Linux with Full Disk Encryption and dinit"
 date: 2026-04-06T00:00:00-06:00
-tags: ['linux', 'artix', 'encryption', 'dinit', 'sway', 'nix']
-draft: true
+tags: ['linux', 'artix', 'sway-home']
 ---
 
 This guide documents setting up [Artix Linux](https://artixlinux.org/)
