@@ -408,13 +408,20 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 ## QEMU/libvirt
 
 ```bash
-sudo pacman -S --noconfirm qemu-full virt-manager libvirt libvirt-dinit dnsmasq
+sudo pacman -S --noconfirm qemu-full virt-manager libvirt libvirt-dinit dnsmasq edk2-ovmf
 sudo dinitctl enable libvirtd
 sudo dinitctl start libvirtd
 ```
 
 User is not added to the `libvirt` group. virt-manager will prompt for
 a password via polkit (lxpolkit) when connecting to `qemu:///system`.
+
+### VM Install Notes
+
+When creating a VM in virt-manager, check **Customize configuration
+before install**. In the overview screen, change the **Firmware** to
+`OVMF_CODE.fd` (UEFI without Secure Boot). Do not use
+`OVMF_CODE.secboot.fd` as Artix does not support Secure Boot.
 
 ## Nix Package Manager
 
