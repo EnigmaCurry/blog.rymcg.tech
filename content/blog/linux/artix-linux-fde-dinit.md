@@ -544,6 +544,16 @@ sudo dinitctl start greetd
 You should now see the tuigreet login screen. Select `Sway` as your
 session and log in.
 
+## First Login to Sway
+
+On first login, sway launches Emacs and Firefox side by side. Emacs
+needs a one-time setup to finish installing packages:
+
+1. In Emacs, run `M-x my/machine-labels-enable-all`
+2. Close Emacs with `C-x C-c`
+3. Relaunch Emacs from rofi (`Super+d`, type `emacs`)
+4. Wait for Emacs to finish installing packages (~5 minutes)
+
 ## Troubleshooting
 
 ### "device '/dev/mapper/lvmSystem-volRoot' not found. Skipping fsck."
