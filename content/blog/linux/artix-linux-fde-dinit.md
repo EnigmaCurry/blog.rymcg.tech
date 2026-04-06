@@ -554,6 +554,31 @@ needs a one-time setup to finish installing packages:
 3. Relaunch Emacs from rofi (`Super+d`, type `emacs`)
 4. Wait for Emacs to finish installing packages (~5 minutes)
 
+## Using Sway
+
+Sway is a tiling Wayland compositor with vim-style keybindings. The
+modifier key (`$mod`) is `Super` (the Windows/Logo key). Here are the
+essential shortcuts:
+
+| Shortcut | Action |
+|---|---|
+| `$mod+Enter` | Open terminal |
+| `$mod+d` | App launcher (rofi) |
+| `$mod+Shift+q` | Kill focused window |
+| `$mod+h/j/k/l` | Focus left/down/up/right |
+| `$mod+Shift+h/j/k/l` | Move window left/down/up/right |
+| `$mod+1`–`$mod+9` | Switch to workspace 1–9 |
+| `$mod+Shift+1`–`$mod+Shift+9` | Move window to workspace 1–9 |
+| `$mod+b` | Split horizontal |
+| `$mod+v` | Split vertical |
+| `$mod+f` | Toggle fullscreen |
+| `$mod+Shift+Space` | Toggle floating |
+| `$mod+Shift+c` | Reload sway config |
+| `$mod+Shift+e` | Exit sway |
+
+See the [Sway wiki](https://github.com/swaywm/sway/wiki) for the full
+documentation, and `man 5 sway` for config file reference.
+
 ## Troubleshooting
 
 ### "device '/dev/mapper/lvmSystem-volRoot' not found. Skipping fsck."
