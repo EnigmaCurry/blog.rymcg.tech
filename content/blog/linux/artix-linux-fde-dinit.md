@@ -215,11 +215,14 @@ echo 'tmpfs    /tmp    tmpfs    rw,nosuid,nodev,relatime,size=8G,mode=1777    0 
 
 ```bash
 artix-chroot /mnt /bin/bash --login
-export USERNAME=ryan  # set your desired username
 ```
 
 You may see `tty: ttyname error: No such device` — this is harmless
 and can be ignored.
+
+```bash
+export USERNAME=ryan  # set your desired username
+```
 
 ### Set root password
 
