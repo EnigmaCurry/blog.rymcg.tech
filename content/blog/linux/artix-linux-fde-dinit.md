@@ -4,6 +4,12 @@ date: 2026-04-05T00:00:00-06:00
 tags: ['linux', 'artix', 'home-manager', 'sway']
 ---
 
+{{< alert >}}
+This post documents the manual installation commands. An automated
+installer is now available:
+[artix-dev](https://github.com/EnigmaCurry/artix-dev).
+{{< /alert >}}
+
 This guide documents setting up [Artix Linux](https://artixlinux.org/)
 with [dinit](https://github.com/davmac314/dinit) on a ThinkPad X1
 Carbon laptop. Artix is an Arch-based distribution that does not use systemd. This setup includes full disk encryption with LUKS +
