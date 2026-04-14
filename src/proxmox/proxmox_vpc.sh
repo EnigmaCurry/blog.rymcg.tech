@@ -77,6 +77,9 @@ create_router() {
        --name "${ROUTER_HOSTNAME}" \
        --sockets ${ROUTER_CORES} \
        --memory ${ROUTER_MEMORY} \
+       --bios ovmf \
+       --efidisk0 ${STORAGE}:0,efitype=4m,pre-enrolled-keys=0 \
+       --machine q35 \
        --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
        --net1 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
@@ -112,6 +115,9 @@ create_vm() {
        --name "${CLIENT_HOSTNAME}" \
        --sockets ${CLIENT_CORES} \
        --memory ${CLIENT_MEMORY} \
+       --bios ovmf \
+       --efidisk0 ${STORAGE}:0,efitype=4m,pre-enrolled-keys=0 \
+       --machine q35 \
        --net0 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
        --ide2 none,media=cdrom \
