@@ -81,8 +81,6 @@ create_router() {
        --net1 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
        --ide2 none,media=cdrom \
-       --serial0 socket \
-       --vga serial0 \
        --onboot 1
 
     ## Allocate a blank disk:
@@ -117,8 +115,6 @@ create_vm() {
        --net0 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
        --ide2 none,media=cdrom \
-       --serial0 socket \
-       --vga serial0 \
        --onboot 1
 
     ## Allocate a blank disk:
