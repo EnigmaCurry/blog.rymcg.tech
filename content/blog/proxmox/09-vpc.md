@@ -85,8 +85,26 @@ running `./proxmox_vpc.sh` with no arguments. To override settings,
 export them before running commands:
 
 ```bash
-export VPC_BRIDGE=vmbr50
-export VPC_HOST_CIDR=172.16.0.2/24
+## VPC Bridge:
+export VPC_BRIDGE=vmbr99
+export VPC_HOST_CIDR=10.99.0.2/24
+
+## Router VM:
+export ROUTER_VM_ID=200
+export ROUTER_HOSTNAME=router
+export ROUTER_DISK_SIZE=32G
+export ROUTER_MEMORY=2048
+export ROUTER_CORES=1
+export PUBLIC_BRIDGE=vmbr0
+
+## Client VM:
+export CLIENT_VM_ID=201
+export CLIENT_HOSTNAME=client
+export CLIENT_DISK_SIZE=32G
+export CLIENT_MEMORY=2048
+export CLIENT_CORES=1
+
+## Storage:
 export STORAGE=local-lvm
 ```
 
