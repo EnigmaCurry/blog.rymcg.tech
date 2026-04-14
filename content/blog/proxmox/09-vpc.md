@@ -80,37 +80,22 @@ current configuration:
 ## Configuration
 
 All settings are controlled by environment variables with sensible
-defaults. Override any of them before running the script:
+defaults. You can see the full list and their current values by
+running `./proxmox_vpc.sh` with no arguments. To override a setting,
+pass it inline with the command:
 
-```env
-## VPC Bridge:
-VPC_BRIDGE=vmbr99
-VPC_HOST_CIDR=10.99.0.2/24
-
-## Router VM:
-ROUTER_VM_ID=200
-ROUTER_HOSTNAME=router
-ROUTER_DISK_SIZE=32G
-ROUTER_MEMORY=2048
-ROUTER_CORES=1
-PUBLIC_BRIDGE=vmbr0
-
-## Client VM:
-CLIENT_VM_ID=201
-CLIENT_HOSTNAME=client
-CLIENT_DISK_SIZE=32G
-CLIENT_MEMORY=2048
-CLIENT_CORES=1
-
-## Storage:
-STORAGE=local-lvm
+```bash
+VPC_BRIDGE=vmbr50 VPC_HOST_CIDR=172.16.0.2/24 ./proxmox_vpc.sh create_vpc
 ```
 
-For example, to create a VPC on `vmbr50` with a different subnet:
+Or export variables to apply them to multiple commands:
 
 ```bash
 export VPC_BRIDGE=vmbr50
 export VPC_HOST_CIDR=172.16.0.2/24
+./proxmox_vpc.sh create_vpc
+./proxmox_vpc.sh create_router
+./proxmox_vpc.sh create_vm
 ```
 
 ## Create the VPC
