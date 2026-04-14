@@ -80,6 +80,7 @@ create_router() {
        --net0 "virtio,bridge=${PUBLIC_BRIDGE}" \
        --net1 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
+       --ide2 none,media=cdrom \
        --serial0 socket \
        --vga serial0 \
        --onboot 1
@@ -100,7 +101,7 @@ create_router() {
     echo "  Disk: ${ROUTER_DISK_SIZE} on ${STORAGE}"
     echo
     echo "Next steps:"
-    echo "  1. Attach an OS ISO via the Proxmox GUI (Hardware > CD/DVD Drive)"
+    echo "  1. Load an OS ISO into the CD/DVD drive via the Proxmox GUI"
     echo "  2. Start the VM and install the OS"
     echo "  3. Configure NAT/masquerade inside the router (see blog post)"
 }
@@ -115,6 +116,7 @@ create_vm() {
        --memory ${CLIENT_MEMORY} \
        --net0 "virtio,bridge=${VPC_BRIDGE}" \
        --scsihw virtio-scsi-pci \
+       --ide2 none,media=cdrom \
        --serial0 socket \
        --vga serial0 \
        --onboot 1

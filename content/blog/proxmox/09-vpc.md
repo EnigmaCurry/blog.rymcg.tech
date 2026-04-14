@@ -144,12 +144,12 @@ This creates a VM with:
  * **net1** on `vmbr99` (VPC private side)
  * A blank disk (no OS installed)
 
-### Attach an OS ISO
+### Load an OS ISO
 
-In the Proxmox GUI:
+The VM is created with an empty CD/DVD drive. In the Proxmox GUI:
 
  * Select VM **200** (router)
- * Go to **Hardware** → **CD/DVD Drive**
+ * Go to **Hardware** → double-click the **CD/DVD Drive**
  * Select an ISO image (any Linux distribution will work)
  * Go to **Options** → **Boot Order** and ensure the CD/DVD drive is
    first for the initial install
@@ -320,7 +320,7 @@ This creates a VM with:
    exclusively to the VPC bridge
  * A blank disk (no OS installed)
 
-Attach an OS ISO in the Proxmox GUI and install the OS, just as you
+Load an OS ISO into the CD/DVD drive in the Proxmox GUI and install the OS, just as you
 did for the router. During network configuration:
 
  * If the router is running dnsmasq: configure DHCP
