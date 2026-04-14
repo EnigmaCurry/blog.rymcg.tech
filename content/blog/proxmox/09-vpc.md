@@ -129,12 +129,6 @@ This is the key difference from
 is just a Layer 2 switch. It connects VMs to each other, but provides
 no path to the internet on its own.
 
-You may need to activate the new bridge:
-
-```bash
-ifup ${VPC_BRIDGE:-vmbr99}
-```
-
 ## Create the router VM
 
 The router VM has one foot in each network: `vmbr0` for internet

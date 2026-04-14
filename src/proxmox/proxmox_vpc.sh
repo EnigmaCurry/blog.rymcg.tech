@@ -67,9 +67,6 @@ create_vpc() {
     echo "Created VPC bridge: ${VPC_BRIDGE}"
     echo "  Host management IP: ${VPC_HOST_CIDR}"
     echo "  No masquerade, no ip_forward — routing is handled by the router VM."
-    echo
-    echo "NOTE: You may need to reboot the Proxmox host, or run:"
-    echo "  ifup ${VPC_BRIDGE}"
 }
 
 create_router() {
