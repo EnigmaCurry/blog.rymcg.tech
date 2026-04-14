@@ -81,21 +81,12 @@ current configuration:
 
 All settings are controlled by environment variables with sensible
 defaults. You can see the full list and their current values by
-running `./proxmox_vpc.sh` with no arguments. To override a setting,
-pass it inline with the command:
-
-```bash
-VPC_BRIDGE=vmbr50 VPC_HOST_CIDR=172.16.0.2/24 ./proxmox_vpc.sh create_vpc
-```
-
-Or export variables to apply them to multiple commands:
+running `./proxmox_vpc.sh` with no arguments. To override settings,
+export them before running commands:
 
 ```bash
 export VPC_BRIDGE=vmbr50
 export VPC_HOST_CIDR=172.16.0.2/24
-./proxmox_vpc.sh create_vpc
-./proxmox_vpc.sh create_router
-./proxmox_vpc.sh create_vm
 ```
 
 ## Create the VPC
