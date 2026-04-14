@@ -87,6 +87,7 @@ export them before running commands:
 ```bash
 export VPC_BRIDGE=vmbr50
 export VPC_HOST_CIDR=172.16.0.2/24
+export STORAGE=local-lvm
 ```
 
 ## Create the VPC
