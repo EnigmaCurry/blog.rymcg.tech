@@ -76,4 +76,11 @@ install TrueNAS Core as a Network Attached Storage service, useful for
 sharing files, and for remounting via NFS to provision other VM disks
 on the same proxmox host.
 
+In [part nine: Virtual Private Cloud
+(VPC)](/blog/proxmox/09-vpc) we create an isolated private network
+where VMs have no direct internet access. A dedicated router VM
+running [nifty-filter](https://github.com/EnigmaCurry/nifty-filter)
+provides the only path to the outside world, giving you full control
+over egress traffic.
+
 {{< about_footer >}}
