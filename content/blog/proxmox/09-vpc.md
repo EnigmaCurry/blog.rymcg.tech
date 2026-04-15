@@ -2,7 +2,6 @@
 title: "Proxmox part 9: Virtual Private Cloud (VPC)"
 date: 2026-04-14T00:01:00-06:00
 tags: ['proxmox']
-draft: true
 ---
 
 In [part 2](/blog/proxmox/02-networking), we set up NAT bridges where
