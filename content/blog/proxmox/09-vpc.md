@@ -154,156 +154,66 @@ The VM is created with an empty CD/DVD drive. In the Proxmox GUI:
  * Go to **Options** → **Boot Order** and ensure the CD/DVD drive is
    first for the initial install
 
-Start the VM and install your chosen operating system. During
-installation, configure the network interfaces:
+## Install nifty-filter on the router VM
 
- * **net0** (the internet-facing NIC): DHCP or a static IP on your
-   LAN, depending on your `vmbr0` setup
- * **net1** (the VPC NIC): static IP `10.99.0.1/24` (this will be the
-   gateway for client VMs)
+[nifty-filter](https://github.com/EnigmaCurry/nifty-filter) is an
+immutable NixOS router distribution that provides everything the
+router VM needs: nftables firewall, DHCP server, DNS server, and
+network routing. It runs on a read-only root filesystem with
+configuration stored on a read-write `/var` partition.
 
-## Configure NAT inside the router VM
+### Build the ISO
 
-After installing the OS on the router VM, you need to enable IP
-forwarding and masquerading so that client VMs can reach the internet
-through it.
+On a machine with Nix installed, clone and build the nifty-filter ISO:
 
-### Enable IP forwarding
+```bash
+git clone https://github.com/EnigmaCurry/nifty-filter.git
+cd nifty-filter
+nix build .#iso
+```
+
+Upload the resulting ISO to the Proxmox host's ISO storage (or use
+the Proxmox GUI to upload it).
+
+### Install nifty-filter
+
+ * Load the nifty-filter ISO into the router VM's CD/DVD drive
+ * Start the VM and open the console
+ * Log in with the default credentials: `admin` / `nifty`
+ * Run the interactive installer:
+
+```bash
+nifty-install
+```
+
+The installer will prompt you for:
+
+ * **Hostname** — e.g., `router`
+ * **Disk** — select the virtual disk to install to
+ * **WAN interface** — the upstream interface (net0, connected to
+   `vmbr0`)
+ * **LAN interface** — the VPC interface (net1, connected to the
+   VPC bridge)
+ * **Subnet configuration** — use `10.99.0.1/24` for the VPC side
+ * **DNS servers** — upstream DNS resolvers
+
+After installation, reboot the VM. nifty-filter will automatically
+configure IP forwarding, nftables masquerade, DHCP, and DNS for the
+VPC network.
+
+### Configure nifty-filter
+
+After the initial install, you can reconfigure at any time:
 
 ```bash
 # Run this inside the router VM:
-echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-ip-forward.conf
-sysctl --load /etc/sysctl.d/99-ip-forward.conf
+nifty-config
 ```
 
-### Configure nftables
+Or edit the configuration files directly in `/var/nifty-filter/`:
 
-Install nftables if it is not already present, and create the firewall
-rules. Replace `eth0` and `eth1` with the actual interface names on
-your system (check with `ip link`):
-
-```bash
-# Run this inside the router VM:
-cat <<'EOF' > /etc/nftables.conf
-#!/usr/bin/nft -f
-
-define PUBLIC_INTERFACE = { eth0 }
-define VPC_INTERFACE = { eth1 }
-
-flush ruleset
-
-table inet filter {
-  chain input {
-    type filter hook input priority filter; policy drop;
-
-    ct state invalid drop
-    iif lo accept
-    ct state { established, related } accept
-
-    ## Allow ICMP/ICMPv6:
-    ip protocol icmp accept
-    ip6 nexthdr icmpv6 accept
-
-    ## Allow SSH on all interfaces:
-    tcp dport 22 accept
-
-    ## Allow DNS and DHCP from VPC clients:
-    iifname $VPC_INTERFACE tcp dport 53 accept
-    iifname $VPC_INTERFACE udp dport { 53, 67 } accept
-
-    ## Reject everything else:
-    reject with icmpx type admin-prohibited
-  }
-
-  chain forward {
-    type filter hook forward priority filter; policy drop;
-
-    ct state invalid drop
-    ct state { established, related } accept
-
-    ## Allow VPC clients to reach the internet:
-    iifname $VPC_INTERFACE oifname $PUBLIC_INTERFACE accept
-  }
-
-  chain output {
-    type filter hook output priority filter; policy accept;
-  }
-}
-
-table ip nat {
-  chain postrouting {
-    type nat hook postrouting priority srcnat;
-    iifname $VPC_INTERFACE oifname $PUBLIC_INTERFACE masquerade
-  }
-}
-EOF
-```
-
-Enable and start nftables:
-
-```bash
-# Run this inside the router VM:
-systemctl enable --now nftables
-systemctl restart nftables
-```
-
-Verify the rules:
-
-```bash
-# Run this inside the router VM:
-nft list ruleset
-```
-
-For a more comprehensive nftables configuration with traffic counters
-and per-interface controls, see
-[part 6](/blog/proxmox/06-router/#create-nftables-rules).
-
-### Optional: DHCP server for VPC clients
-
-If you want client VMs to automatically receive IP addresses instead
-of configuring static IPs, you can run dnsmasq on the router's VPC
-interface.
-
-On Debian/Ubuntu:
-
-```bash
-# Run this inside the router VM:
-apt-get update && apt-get install -y dnsmasq
-```
-
-On Arch Linux:
-
-```bash
-# Run this inside the router VM:
-pacman -S --noconfirm dnsmasq
-```
-
-Create the configuration:
-
-```bash
-# Run this inside the router VM:
-# (Replace eth1 with your VPC interface name)
-cat <<'EOF' > /etc/dnsmasq.d/vpc.conf
-interface=eth1
-except-interface=lo
-bind-interfaces
-listen-address=10.99.0.1
-domain=vpc
-server=1.1.1.1
-server=8.8.8.8
-dhcp-range=10.99.0.10,10.99.0.250,255.255.255.0,1h
-dhcp-option=3,10.99.0.1
-dhcp-option=6,10.99.0.1
-EOF
-```
-
-Enable and start dnsmasq:
-
-```bash
-# Run this inside the router VM:
-systemctl enable --now dnsmasq
-systemctl restart dnsmasq
-```
+ * `router.env` — firewall rules and interface configuration
+ * `dhcp.env` — DHCP pool settings and DNS configuration
 
 ## Create a client VM
 
@@ -320,12 +230,11 @@ This creates a VM with:
    exclusively to the VPC bridge
  * A blank disk (no OS installed)
 
-Load an OS ISO into the CD/DVD drive in the Proxmox GUI and install the OS, just as you
-did for the router. During network configuration:
-
- * If the router is running dnsmasq: configure DHCP
- * If not: set a static IP on the `10.99.0.0/24` network with
-   `10.99.0.1` as the gateway and DNS server (or use `1.1.1.1`)
+Load an OS ISO into the CD/DVD drive in the Proxmox GUI and install
+the OS, just as you did for the router. The nifty-filter DHCP server
+will automatically assign an IP address and configure the default
+gateway, so the client should be able to use DHCP with no additional
+configuration.
 
 ### Creating additional client VMs
 
@@ -338,8 +247,7 @@ CLIENT_VM_ID=203 CLIENT_HOSTNAME=client3 ./proxmox_vpc.sh create_vm
 
 ## Testing
 
-Once both VMs are running with their operating systems installed and
-configured, verify the setup from inside the client VM:
+Once both VMs are running, verify the setup from inside the client VM:
 
 ```bash
 # Run this inside the client VM:
@@ -350,7 +258,7 @@ ping -c 3 10.99.0.1
 ## Test internet access through the router:
 ping -c 3 1.1.1.1
 
-## Test DNS (if dnsmasq is running on the router):
+## Test DNS resolution:
 ping -c 3 google.com
 ```
 
