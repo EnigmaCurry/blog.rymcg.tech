@@ -40,6 +40,10 @@ REMOTE_BIN_DIR="${HOME}/.local/bin"
 REMOTE_OPEN_LOCAL="${REMOTE_BIN_DIR}/open-local"
 REMOTE_XDG_SHIM="${REMOTE_BIN_DIR}/xdg-open"
 
+# local handler script
+LOCAL_BIN_DIR="${HOME}/.local/bin"
+LOCAL_HANDLER="${LOCAL_BIN_DIR}/ssh-remote-xdg-open-handler"
+
 # systemd unit filenames
 SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
 SOCKET_UNIT_NAME="ssh_remote_xdg_open.socket"
@@ -59,6 +63,106 @@ ensure_dir() {
 
 local_socket_path() {
   printf '%s' "${SSH_OPENURL_SOCKET:-$SOCKET_PATH_DEFAULT}"
+}
+
+# Write the local handler script
+write_local_handler() {
+  ensure_dir "$LOCAL_BIN_DIR"
+
+  info "Writing local handler to $LOCAL_HANDLER"
+  cat > "$LOCAL_HANDLER" <<'HANDLER_EOF'
+#!/bin/sh
+# ssh-remote-xdg-open-handler
+# Reads NUL-delimited "host\turl" messages from stdin.
+# For localhost URLs, sets up an SSH local port forward via control socket
+# and rewrites the URL to a deterministic 127.x.x.x address.
+set -eu
+
+# Hash a string to a deterministic 127.x.x.x address (avoiding 127.0.0.1)
+host_to_loopback() {
+  _alias="$1"
+  _hash=$(printf '%s' "$_alias" | cksum | cut -d' ' -f1)
+  _b1=$(( (_hash >> 16) % 254 + 1 ))  # 1-254
+  _b2=$(( (_hash >> 8)  % 256 ))      # 0-255
+  _b3=$(( _hash         % 254 + 1 ))  # 1-254 (avoid .0)
+  # Avoid 127.0.0.1
+  if [ "$_b1" -eq 0 ] && [ "$_b2" -eq 0 ] && [ "$_b3" -eq 1 ]; then
+    _b3=2
+  fi
+  printf '127.%d.%d.%d' "$_b1" "$_b2" "$_b3"
+}
+
+# Extract scheme, host, port, and path from a URL
+parse_url() {
+  _url="$1"
+  URL_SCHEME="${_url%%://*}"
+  _rest="${_url#*://}"
+  _hostport="${_rest%%/*}"
+  URL_PATH="/${_rest#*/}"
+  # Handle URLs with no path (e.g., http://localhost:8080)
+  case "$_rest" in
+    */*) URL_PATH="/${_rest#*/}" ;;
+    *)   URL_PATH="" ;;
+  esac
+  # Split host:port
+  case "$_hostport" in
+    *:*) URL_HOST="${_hostport%%:*}"; URL_PORT="${_hostport##*:}" ;;
+    *)   URL_HOST="$_hostport"; URL_PORT="" ;;
+  esac
+}
+
+# Check if a host is localhost
+is_localhost() {
+  case "$1" in
+    localhost|127.0.0.1|"[::1]"|::1) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Try to set up an SSH local port forward via control socket
+setup_forward() {
+  _ssh_host="$1"
+  _local_addr="$2"
+  _port="$3"
+  # -O forward uses the existing multiplexed connection
+  ssh -O forward -L "${_local_addr}:${_port}:localhost:${_port}" "$_ssh_host" 2>/dev/null || true
+}
+
+# Process a single host\turl message
+handle_message() {
+  _msg="$1"
+  # Split on tab
+  _host_alias="${_msg%%	*}"
+  _url="${_msg#*	}"
+
+  # If no tab was found (backwards compat: bare URL), just open it
+  if [ "$_host_alias" = "$_url" ]; then
+    xdg-open "$_url"
+    return
+  fi
+
+  parse_url "$_url"
+
+  if is_localhost "$URL_HOST" && [ -n "$URL_PORT" ] && [ -n "$_host_alias" ]; then
+    _local_addr=$(host_to_loopback "$_host_alias")
+    setup_forward "$_host_alias" "$_local_addr" "$URL_PORT"
+    _new_url="${URL_SCHEME}://${_local_addr}:${URL_PORT}${URL_PATH}"
+    xdg-open "$_new_url"
+  else
+    xdg-open "$_url"
+  fi
+}
+
+# Read NUL-delimited messages from stdin
+# Using tr to convert NUL to newline, then process line by line
+tr '\0' '\n' | while IFS= read -r msg; do
+  [ -z "$msg" ] && continue
+  handle_message "$msg"
+done
+HANDLER_EOF
+
+  chmod +x "$LOCAL_HANDLER"
+  info "Handler installed."
 }
 
 # Write local user systemd units
@@ -86,14 +190,14 @@ WantedBy=default.target
 EOF
 
   info "Writing systemd user service to $service_file"
-  cat > "$service_file" <<'EOF'
+  cat > "$service_file" <<EOF
 [Unit]
 Description=Local "open URL" service instance
 
 [Service]
-# Read NUL-separated URLs from socket and open them locally.
-# Using xargs -0 -n1 xdg-open : one xdg-open per URL
-ExecStart=/bin/sh -lc 'xargs -0 -n1 xdg-open'
+# Read NUL-separated host\\turl messages from socket and handle them.
+# The handler sets up SSH port forwards for localhost URLs.
+ExecStart=/bin/sh -lc '${LOCAL_HANDLER}'
 StandardInput=socket
 EOF
 
@@ -121,6 +225,8 @@ uninstall_local() {
   info "Removing systemd unit files"
   rm -f -- "$SYSTEMD_USER_DIR/$SOCKET_UNIT_NAME" "$SYSTEMD_USER_DIR/$SERVICE_UNIT_NAME"
   systemctl --user daemon-reload
+  info "Removing local handler"
+  rm -f -- "$LOCAL_HANDLER"
   info "Removed."
 }
 
@@ -140,17 +246,26 @@ configure_ssh() {
 
   want_rf="RemoteForward 127.0.0.1:${remote_port} ${socket_path}"
   want_eo="ExitOnForwardFailure yes"
+  want_cm="ControlMaster auto"
+  want_cp="ControlPath ~/.ssh/sockets/%r@%h-%p"
+  want_cps="ControlPersist 10m"
+
+  # Ensure the control socket directory exists
+  ensure_dir "${HOME}/.ssh/sockets"
 
   # Merge/update while preserving formatting. We:
   #  - Find exact "Host <remote_host>" stanza.
-  #  - Insert our two managed lines immediately after the Host line.
-  #  - Indent with the stanza's first directive indent if present, else 2 spaces.
+  #  - Insert our managed lines immediately after the Host line.
+  #  - Indent with the first directive indent of the stanza if present, else 2 spaces.
   #  - Move leading blank/comment lines to *after* our insert.
   #  - Skip any old managed lines elsewhere in the stanza.
   awk -v tgt="$remote_host" \
-      -v rf="$want_rf" -v eo="$want_eo" -v tag="$managed_tag" '
+      -v rf="$want_rf" -v eo="$want_eo" \
+      -v cm="$want_cm" -v cp="$want_cp" -v cps="$want_cps" \
+      -v tag="$managed_tag" '
     function ltrim(s){ sub(/^[ \t]+/, "", s); return s }
     function leadws(s,   m){ if (match(s, /^[ \t]*/)) return substr(s,1,RLENGTH); return "" }
+    function is_managed(s){ return (s ~ /[ \t]*#[ \t]*ssh_remote_xdg_open: managed[ \t]*$/) }
 
     BEGIN{
       in_tgt=0; saw_any=0; inserted=0; indent="  "
@@ -167,6 +282,9 @@ configure_ssh() {
         # insert our managed lines right after Host line
         print indent rf "  " tag
         print indent eo "  " tag
+        print indent cm "  " tag
+        print indent cp "  " tag
+        print indent cps "  " tag
         inserted=1
         # then print preserved pre-buffer (blanks/comments that originally followed Host)
         for(i=1;i<=preN;i++) print pre[i]
@@ -205,11 +323,10 @@ configure_ssh() {
       }
 
       if (in_tgt){
-        # If we haven’t inserted yet, figure out indentation on first real directive
+        # If not yet inserted, figure out indentation on first real directive
         if (!inserted){
           # skip our own (old) managed lines
-          if (raw ~ /^[ \t]*RemoteForward[ \t].*#[ \t]*ssh_remote_xdg_open: managed[ \t]*$/) next
-          if (raw ~ /^[ \t]*ExitOnForwardFailure[ \t].*#[ \t]*ssh_remote_xdg_open: managed[ \t]*$/) next
+          if (is_managed(raw)) next
 
           # classify the line
           if (line=="" || line ~ /^#/){
@@ -225,8 +342,7 @@ configure_ssh() {
           }
         } else {
           # Already inserted; just skip any old managed lines and pass others
-          if (raw ~ /^[ \t]*RemoteForward[ \t].*#[ \t]*ssh_remote_xdg_open: managed[ \t]*$/) next
-          if (raw ~ /^[ \t]*ExitOnForwardFailure[ \t].*#[ \t]*ssh_remote_xdg_open: managed[ \t]*$/) next
+          if (is_managed(raw)) next
           print raw
           next
         }
@@ -248,6 +364,9 @@ configure_ssh() {
         print "Host " tgt
         print "  " rf "  " tag
         print "  " eo "  " tag
+        print "  " cm "  " tag
+        print "  " cp "  " tag
+        print "  " cps "  " tag
       }
     }
   ' "$cfg" > "$tmp" || die "awk merge failed; SSH config unchanged"
@@ -256,13 +375,7 @@ configure_ssh() {
 
   info "Updated SSH config for host '${remote_host}' at: $cfg"
   info "→ RemoteForward set to 127.0.0.1:${remote_port} -> ${socket_path}"
-}
-
-remove_remote_helpers() {
-  local remote="$1"
-  info "Removing remote helper(s) from $remote"
-  ssh "$remote" "rm -f '$REMOTE_OPEN_LOCAL' '$REMOTE_XDG_SHIM' || true"
-  info "Done."
+  info "→ ControlMaster enabled (socket: ~/.ssh/sockets/)"
 }
 
 # Simple smoke test: connect via ssh and call open-local to see if it reaches local socket
@@ -355,7 +468,7 @@ Commands:
       Remove the injected files on the remote.
 
   configure-ssh <ssh-target>
-      Append a RemoteForward block to your local ~/.ssh/config.
+      Append RemoteForward and ControlMaster blocks to your local ~/.ssh/config.
 
   test <ssh-target>
       Quick smoke test that calls open-local on the remote (requires SSH with forwarded port active).
@@ -390,20 +503,29 @@ install_remote_helpers() {
 
   info "Installing remote helper(s) to '$remote:~/.local/bin'"
 
-  # Create remote bin dir with safe perms (expand on remote)
-  ssh "$remote" 'mkdir -p "$HOME/.local/bin" && chmod 700 "$HOME/.local/bin"' \
-    || die "Failed to create ~/.local/bin on remote"
+  # Create remote bin dir and data dir with safe perms (expand on remote)
+  ssh "$remote" 'mkdir -p "$HOME/.local/bin" "$HOME/.local/share/ssh_remote_xdg_open" && chmod 700 "$HOME/.local/bin"' \
+    || die "Failed to create directories on remote"
+
+  # Store the host alias so remote helpers can identify themselves to the local handler
+  info "Storing host alias '$remote' on remote"
+  ssh "$remote" "printf '%s' '$remote' > \"\$HOME/.local/share/ssh_remote_xdg_open/host_alias\""
 
   # ---- open-local ----
   info "Uploading open-local to remote"
   ssh "$remote" 'cat > "$HOME/.local/bin/open-local" && chmod +x "$HOME/.local/bin/open-local"' <<'REMOTE_OPEN_LOCAL_EOF'
 #!/bin/sh
-# Send NUL-delimited URLs to the forwarded TCP port on the remote,
+# Send NUL-delimited host\turl messages to the forwarded TCP port on the remote,
 # which sshd will forward back to the local UNIX socket.
 set -eu
 
 PORT="${OPEN_LOCAL_PORT:-19999}"
 HOST="127.0.0.1"
+ALIAS_FILE="$HOME/.local/share/ssh_remote_xdg_open/host_alias"
+HOST_ALIAS=""
+if [ -f "$ALIAS_FILE" ]; then
+  HOST_ALIAS=$(cat "$ALIAS_FILE")
+fi
 
 if [ $# -eq 0 ]; then
   echo "Usage: open-local <url> [more-urls...]" >&2
@@ -412,7 +534,7 @@ fi
 
 {
   for url in "$@"; do
-    printf '%s\0' "$url"
+    printf '%s\t%s\0' "$HOST_ALIAS" "$url"
   done
 } | socat - "TCP:${HOST}:${PORT}",connect-timeout=3
 REMOTE_OPEN_LOCAL_EOF
@@ -425,6 +547,11 @@ REMOTE_OPEN_LOCAL_EOF
 set -eu
 
 PORT="${OPEN_LOCAL_PORT:-19999}"
+ALIAS_FILE="$HOME/.local/share/ssh_remote_xdg_open/host_alias"
+HOST_ALIAS=""
+if [ -f "$ALIAS_FILE" ]; then
+  HOST_ALIAS=$(cat "$ALIAS_FILE")
+fi
 
 # Choose a native opener on the remote (Linux/macOS)
 if command -v xdg-open >/dev/null 2>&1; then
@@ -435,11 +562,11 @@ else
   FALLBACK_OPENER="/usr/bin/xdg-open"
 fi
 
-# If the tunnel is reachable, ship NUL-delimited URLs through it.
+# If the tunnel is reachable, ship NUL-delimited host\turl messages through it.
 if socat -u - "TCP:127.0.0.1:${PORT}",connect-timeout=3 </dev/null >/dev/null 2>&1; then
   {
     for url in "$@"; do
-      printf '%s\0' "$url"
+      printf '%s\t%s\0' "$HOST_ALIAS" "$url"
     done
   } | socat - "TCP:127.0.0.1:${PORT}" || exit $?
 else
@@ -464,7 +591,7 @@ REMOTE_XDG_SHIM_EOF
 remove_remote_helpers() {
   local remote="$1"
   info "Removing remote helper(s) from $remote"
-  ssh "$remote" 'rm -f "$HOME/.local/bin/open-local" "$HOME/.local/bin/xdg-open" || true'
+  ssh "$remote" 'rm -f "$HOME/.local/bin/open-local" "$HOME/.local/bin/xdg-open" || true; rm -rf "$HOME/.local/share/ssh_remote_xdg_open" || true'
   info "Done."
 }
 
@@ -477,11 +604,12 @@ case "$cmd" in
   help|-h|--help) usage ;;
   install-local)
     require_cmd systemctl
-    require_cmd xargs
     require_cmd xdg-open
+    require_cmd ssh
     if ! command -v socat >/dev/null 2>&1; then
       info "Warning: 'socat' not found locally. Remote helpers use socat; install it for best results."
     fi
+    write_local_handler
     write_systemd_units
     enable_socket
     ;;

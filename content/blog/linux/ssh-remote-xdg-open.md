@@ -27,8 +27,7 @@ normal browser handles it.
 
 On the local side, a user-level systemd socket listens on
 `/run/user/${UID}/ssh_remote_xdg_open.sock`. Each connection it
-receives spawns a short-lived service that runs `xargs -0 -n1
-xdg-open` to open each NUL-delimited URL it receives.
+receives spawns a handler that processes NUL-delimited messages.
 
 When the remote host connects via TCP to `127.0.0.1:19999`, SSH forwards
 the data back into your local UNIX socket.
@@ -39,6 +38,25 @@ automatically installed by the script):
  * `~/.local/bin/open-local` – sends URLs through the tunnel.
  * `~/.local/bin/xdg-open` – a shim that uses the tunnel if available,
    otherwise falls back to the normal opener.
+
+### Localhost port forwarding
+
+If the URL points to `localhost` on the remote machine (e.g., a dev
+server running on `http://localhost:8080`), the script can
+automatically set up an SSH local port forward so your local browser
+can reach it.
+
+To avoid port conflicts, each remote host is assigned a deterministic
+`127.x.x.x` loopback address derived from the host alias. For
+example, if your SSH host is called `foo`, its URLs might be rewritten
+to `http://127.42.17.3:8080`. This means you can have multiple remote
+hosts forwarding the same port without collisions, and bookmarks
+remain stable across sessions.
+
+This feature requires SSH `ControlMaster` multiplexing, which the
+`configure-ssh` command sets up automatically. The dynamic port
+forwards are added via `ssh -O forward` against the existing
+multiplexed connection.
 
 ## Set up the script
 
@@ -69,6 +87,9 @@ Host foo
     Hostname 192.168.1.1
     RemoteForward 127.0.0.1:19999 /run/user/1000/ssh_remote_xdg_open.sock
     ExitOnForwardFailure yes
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 10m
 ```
 
 You can also run the script to automatically add the `RemoteForward` and
