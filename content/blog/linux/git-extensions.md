@@ -4,6 +4,9 @@ date: 2026-01-31T00:00:00-06:00
 tags: ['linux', 'git']
 ---
 
+> **Note:** This post documents an older version of this idea written in Bash script form. 
+> A newer version has been [ported to Babashka]({{< ref "/blog/linux/git-extensions-babashka" >}}).
+
 Git is already a mass of arcane incantations and eldritch commands. So
 naturally, we're going to bolt more onto it. Why? Because typing the
 same 47-character SSH URL for the hundredth time is a rite of passage

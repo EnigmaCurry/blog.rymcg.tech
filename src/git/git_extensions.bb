@@ -934,31 +934,50 @@ Setup:
         git deploy-key list
         git remote-proto ssh")
 
+(defn- find-git-cmd
+  "Scan a sequence of argv strings for one starting with 'git-'.
+   Returns the extension name (e.g. 'deploy') or nil."
+  [parts]
+  (some (fn [part]
+          (let [base (str (fs/file-name part))]
+            (when (str/starts-with? base "git-")
+              (subs base 4))))
+        parts))
+
+(defn- detect-from-procfs
+  "Linux: read /proc/self/cmdline (null-separated argv)."
+  []
+  (let [bytes (java.nio.file.Files/readAllBytes
+               (java.nio.file.Paths/get "/proc/self/cmdline" (into-array String [])))
+        parts (loop [i 0 start 0 result []]
+                (if (>= i (alength bytes))
+                  (if (> i start)
+                    (conj result (String. bytes (int start) (int (- i start))))
+                    result)
+                  (if (zero? (aget bytes i))
+                    (recur (inc i) (inc i)
+                           (if (> i start)
+                             (conj result (String. bytes (int start) (int (- i start))))
+                             result))
+                    (recur (inc i) start result))))]
+    (find-git-cmd parts)))
+
+(defn- detect-from-ps
+  "macOS/BSD: use ps to read the command line for the current process."
+  []
+  (let [pid (.pid (java.lang.ProcessHandle/current))
+        result (proc/shell {:out :string :err :string :continue true}
+                           "ps" "-p" (str pid) "-o" "args=")
+        parts (when (zero? (:exit result))
+                (str/split (str/trim (:out result)) #"\s+"))]
+    (find-git-cmd parts)))
+
 (defn detect-extension-cmd
   "Detect the extension command from the invoked symlink name.
-   On Linux, reads /proc/self/cmdline to find the original argv."
+   Tries /proc/self/cmdline (Linux), then ps (macOS/BSD)."
   []
-  (try
-    (let [bytes (java.nio.file.Files/readAllBytes
-                 (java.nio.file.Paths/get "/proc/self/cmdline" (into-array String [])))
-          ;; Split on null bytes
-          parts (loop [i 0 start 0 result []]
-                  (if (>= i (alength bytes))
-                    (if (> i start)
-                      (conj result (String. bytes (int start) (int (- i start))))
-                      result)
-                    (if (zero? (aget bytes i))
-                      (recur (inc i) (inc i)
-                             (if (> i start)
-                               (conj result (String. bytes (int start) (int (- i start))))
-                               result))
-                      (recur (inc i) start result))))]
-      (some (fn [part]
-              (let [base (str (fs/file-name part))]
-                (when (str/starts-with? base "git-")
-                  (subs base 4))))
-            parts))
-    (catch Exception _ nil)))
+  (or (try (detect-from-procfs) (catch Exception _ nil))
+      (try (detect-from-ps) (catch Exception _ nil))))
 
 (let [symlink-cmd (detect-extension-cmd)
       ;; If invoked via symlink (git-deploy), use that command and all CLI args
