@@ -133,7 +133,9 @@
     (-> url (str/replace #"\.git$" "") (str/split #"/") last)))
 
 (defn deploy-normalize-url
-  "Normalize URL to SSH format (git@host:path.git)."
+  "Normalize URL to a canonical SSH remote, preserving a custom port.
+   No custom port  -> scp-style git@host:path.git
+   Custom SSH port -> ssh://git@host:port/path.git (scp-style can't carry a port)."
   [url]
   (let [url (str/replace url #"\.git$" "")]
     (cond
@@ -146,32 +148,18 @@
 
       (str/starts-with? url "ssh://")
       (let [rest (-> url (str/replace #"^ssh://" "") (str/replace #"^[^@]+@" ""))]
-        (if-let [[_ host _ _ path] (re-matches #"([^:/]+)(:([0-9]+))?/(.+)" rest)]
-          (str "git@" host ":" path ".git")
+        (if-let [[_ host _ port path] (re-matches #"([^:/]+)(:([0-9]+))?/(.+)" rest)]
+          (if port
+            (str "ssh://git@" host ":" port "/" path ".git")
+            (str "git@" host ":" path ".git"))
           (str url ".git")))
 
       :else (str url ".git"))))
 
-(defn deploy-alias-url?
-  "Check if URL uses a deploy key alias (git@deploy-...)."
-  [url]
-  (boolean (re-find #"^git@deploy-" url)))
-
-(defn deploy-extract-alias
-  "Extract alias from git@alias:path URL."
-  [url]
-  (second (re-matches #"git@([^:]+):.*" url)))
-
-(defn deploy-convert-remote-url
-  "Convert a remote URL to use the deploy key alias."
-  [url alias]
-  (if-let [{:keys [path]} (parse-remote-url url)]
-    (str "git@" alias ":" path ".git")
-    (fault (str "Cannot parse remote URL: " url))))
-
-;;; --- SSH Config Management ---
-
-(def ssh-config-file (str home "/.ssh/config"))
+;;; --- Deploy Key Management ---
+;;; Keys live in ~/.ssh/deploy-keys/ and are bound to a repo via that repo's
+;;; local core.sshCommand git config. The remote URL stays canonical and
+;;; nothing is written to ~/.ssh/config.
 
 (defn ssh-keys-dir []
   (let [dir (str home "/.ssh/deploy-keys")]
@@ -179,61 +167,33 @@
     (fs/set-posix-file-permissions dir "rwx------")
     dir))
 
-(defn deploy-generate-alias [host path]
+(defn deploy-generate-keyname
+  "Deploy key filename of the form deploy--<host>--<path> (slashes in the path
+   become single dashes). This is just the key's filename, not an SSH host alias."
+  [host path]
   (-> (str "deploy--" host "--" path)
-      (str/replace #"/" "-")
-      (str/replace #"-{2,}" "-")))
+      (str/replace #"/" "-")))
 
-(defn deploy-key-file-path [alias]
-  (str (ssh-keys-dir) "/" alias))
+(defn deploy-key-file-path [keyname]
+  (str (ssh-keys-dir) "/" keyname))
 
-(defn deploy-host-alias-exists? [alias]
-  (and (fs/exists? ssh-config-file)
-       (some #(= (str/trim %) (str "Host " alias))
-             (str/split-lines (slurp ssh-config-file)))))
+(defn deploy-ssh-command
+  "core.sshCommand value binding a repo to its deploy key. IdentitiesOnly=yes
+   offers only this key; a custom port travels in the remote URL, not here."
+  [key-file]
+  (str "ssh -i " key-file " -o IdentitiesOnly=yes"))
 
-(defn- remove-host-block
-  "Remove a Host block from SSH config content."
-  [content alias]
-  (let [lines (str/split-lines content)]
-    (->> (loop [[line & more] lines skip false result []]
-           (if (nil? line)
-             result
-             (if (re-matches #"Host .+" line)
-               (if (= (str/trim line) (str "Host " alias))
-                 (recur more true result)
-                 (recur more false (conj result line)))
-               (if skip
-                 (recur more skip result)
-                 (recur more false (conj result line))))))
-         (str/join "\n"))))
+(defn deploy-keyfile-from-sshcommand
+  "Extract the key file (token after -i) from a core.sshCommand value."
+  [cmd]
+  (second (re-find #"-i\s+(\S+)" cmd)))
 
-(defn deploy-add-host-alias [alias real-host key-file & [port]]
-  (fs/create-dirs (fs/parent ssh-config-file))
-  (let [existing (if (fs/exists? ssh-config-file) (slurp ssh-config-file) "")
-        separator (cond
-                    (str/blank? existing) ""
-                    (not (str/ends-with? existing "\n")) "\n\n"
-                    :else "\n")
-        entry (str separator
-                   "Host " alias "\n"
-                   "    HostName " real-host "\n"
-                   (when port (str "    Port " port "\n"))
-                   "    User git\n"
-                   "    IdentityFile " key-file "\n"
-                   "    IdentitiesOnly yes\n")]
-    (spit ssh-config-file entry :append true)
-    (fs/set-posix-file-permissions ssh-config-file "rw-------")
-    (stderr (str "## Added SSH host alias '" alias "'"))))
-
-(defn deploy-remove-host-alias [alias]
-  (when (fs/exists? ssh-config-file)
-    (spit ssh-config-file (remove-host-block (slurp ssh-config-file) alias))
-    (fs/set-posix-file-permissions ssh-config-file "rw-------")))
-
-(defn deploy-update-host-alias [alias real-host key-file & [port]]
-  (deploy-remove-host-alias alias)
-  (deploy-add-host-alias alias real-host key-file port))
+(defn deploy-repo-keyfile
+  "Key file path if dir's local core.sshCommand is bound to a deploy key, else nil."
+  [dir]
+  (when-let [cmd (git-out dir "config" "--local" "--get" "core.sshCommand")]
+    (when (str/includes? cmd "deploy-keys")
+      (deploy-keyfile-from-sshcommand cmd))))
 
 (defn deploy-generate-key [key-file comment]
   (proc/shell {:out :string :err :string}
@@ -245,24 +205,24 @@
 ;;; --- Deploy Key Setup ---
 
 (defn deploy-setup-key
-  "Setup deploy key for a remote in a given repo dir.
-   Returns {:alias :key-file :created?}."
-  [dir remote-name repo-port]
+  "Setup deploy key for a remote in a given repo dir. Binds the key via the
+   repo's local core.sshCommand; the remote URL is left canonical.
+   Returns {:keyname :key-file :created?}."
+  [dir remote-name]
   (let [remote-url (or (git-out dir "remote" "get-url" remote-name)
                        (fault (str "Remote '" remote-name "' not found")))]
-    (if (deploy-alias-url? remote-url)
+    (if-let [existing-key (deploy-repo-keyfile dir)]
       ;; Already configured
-      (let [alias (deploy-extract-alias remote-url)]
-        (stderr (str "## Already configured with deploy key: " alias))
-        {:alias alias :key-file (deploy-key-file-path alias) :created? false})
+      (do (stderr (str "## Already configured with deploy key: " (fs/file-name existing-key)))
+          {:keyname (fs/file-name existing-key) :key-file existing-key :created? false})
       ;; Parse and setup
       (let [{:keys [host path]} (or (parse-remote-url remote-url)
                                     (fault (str "Cannot parse remote URL: " remote-url)))
             _ (stderr (str "## Host: " host))
             _ (stderr (str "## Path: " path))
-            alias (deploy-generate-alias host path)
-            key-file (deploy-key-file-path alias)
-            _ (stderr (str "## SSH alias: " alias))
+            keyname (deploy-generate-keyname host path)
+            key-file (deploy-key-file-path keyname)
+            _ (stderr (str "## Key name: " keyname))
             _ (stderr (str "## Key file: " key-file))
             created? (if (fs/exists? key-file)
                        (do (stderr "## Deploy key already exists") false)
@@ -270,15 +230,10 @@
                          (deploy-generate-key key-file
                            (str "deploy-key@" hostname " " host ":" path))
                          true))]
-        (if (deploy-host-alias-exists? alias)
-          (stderr "## SSH host alias already configured")
-          (deploy-add-host-alias alias host key-file repo-port))
-        ;; Update remote URL
-        (let [new-url (deploy-convert-remote-url remote-url alias)]
-          (when (not= remote-url new-url)
-            (git! dir "remote" "set-url" remote-name new-url)
-            (stderr "## Updated remote URL to use deploy key")))
-        {:alias alias :key-file key-file :created? created?}))))
+        ;; Bind key to this repo via core.sshCommand (remote URL stays canonical)
+        (git! dir "config" "core.sshCommand" (deploy-ssh-command key-file))
+        (stderr "## Set core.sshCommand to use deploy key")
+        {:keyname keyname :key-file key-file :created? created?}))))
 
 ;;; --- Deploy Repository Setup ---
 
@@ -356,13 +311,17 @@ Options:
 
 Description:
     Clones a repository using a dedicated deploy key for authentication,
-    or converts an existing repository's remote to use a deploy key.
+    or converts an existing repository to use a deploy key.
+
+    The key is bound to the repository through its local core.sshCommand git
+    config, so the remote URL stays canonical (e.g. git@github.com:user/repo.git)
+    and nothing is written to ~/.ssh/config. Keys live in ~/.ssh/deploy-keys/.
 
     When given a URL:
     - Creates a new clone using a deploy key for authentication
 
     When given a path to an existing git repository:
-    - Offers to convert the existing remote to use a deploy key
+    - Offers to configure the repo to use a deploy key (remote URL unchanged)
     - If no remote exists, prompts for a URL
     - If already configured, tests the deploy key
 
@@ -477,7 +436,7 @@ Workflow:
           (when-not (git-ok? target-dir "rev-parse" "--git-dir")
             (fault (str "Directory is not a git repository: " target-dir)))
           (let [existing-url (git-out target-dir "remote" "get-url" remote)
-                already-configured (and existing-url (deploy-alias-url? existing-url))
+                already-configured (boolean (deploy-repo-keyfile target-dir))
                 repo-spec (cond
                             (nil? existing-url)
                             (do (println)
@@ -499,8 +458,6 @@ Workflow:
                                   (do (println "Aborted.") (System/exit 0)))))
                 {:keys [url branch]} (deploy-parse-repo-spec repo-spec)
                 branch (or branch-override branch)
-                repo-port (when-not already-configured
-                            (second (re-find #"^ssh://(?:[^@]+@)?[^:/]+:([0-9]+)/" url)))
                 url (if already-configured url (deploy-normalize-url url))]
 
             (stderr)
@@ -510,13 +467,13 @@ Workflow:
             (stderr)
 
             (let [key-info (if already-configured
-                             (let [alias (deploy-extract-alias url)]
-                               (stderr (str "## Deploy key already configured: " alias))
-                               {:key-file (deploy-key-file-path alias)})
+                             (let [key-file (deploy-repo-keyfile target-dir)]
+                               (stderr (str "## Deploy key already configured: " (fs/file-name key-file)))
+                               {:key-file key-file})
                              (do (deploy-init-repo target-dir url remote)
                                  (stderr)
                                  (stderr "## Setting up deploy key...")
-                                 (deploy-setup-key target-dir remote repo-port)))]
+                                 (deploy-setup-key target-dir remote)))]
               (stderr)
               (stderr "## Testing deploy key...")
               (if (deploy-test-key target-dir remote)
@@ -533,7 +490,6 @@ Workflow:
         ;; ---- Clone mode ----
         (let [{:keys [url branch]} (deploy-parse-repo-spec repo-spec)
               branch (or branch-override branch)
-              repo-port (second (re-find #"^ssh://(?:[^@]+@)?[^:/]+:([0-9]+)/" url))
               url (deploy-normalize-url url)
               dest (or destination (deploy-default-destination url))
               dest (if (str/starts-with? dest "/") dest
@@ -548,7 +504,7 @@ Workflow:
           (deploy-init-repo dest url remote)
           (stderr)
           (stderr "## Setting up deploy key...")
-          (let [key-info (deploy-setup-key dest remote repo-port)]
+          (let [key-info (deploy-setup-key dest remote)]
             (stderr)
             (stderr "## Testing deploy key...")
             (if (deploy-test-key dest remote)
@@ -574,27 +530,13 @@ Workflow:
           (do (println "Deploy keys:")
               (println)
               (doseq [key-file key-files]
-                (let [alias (fs/file-name key-file)
+                (let [keyname (fs/file-name key-file)
                       pub-file (str key-file ".pub")
-                      config-content (when (fs/exists? ssh-config-file)
-                                       (slurp ssh-config-file))
-                      in-config (and config-content
-                                     (some #(= (str/trim %) (str "Host " alias))
-                                           (str/split-lines config-content)))
-                      hostname (when in-config
-                                 ;; Extract HostName from the block
-                                 (let [lines (str/split-lines config-content)]
-                                   (loop [[line & more] lines found false]
-                                     (when line
-                                       (if (re-matches #"Host .+" line)
-                                         (recur more (= (str/trim line) (str "Host " alias)))
-                                         (if (and found (re-find #"HostName" line))
-                                           (str/trim (second (str/split (str/trim line) #"\s+" 2)))
-                                           (recur more found)))))))]
-                  (println (str "  " alias))
+                      ;; Key names are deploy--<host>--<path>; recover host for display
+                      hostname (second (re-matches #"deploy--([^-]+(?:-[^-]+)*)--.+" keyname))]
+                  (println (str "  " keyname))
                   (when hostname (println (str "    Host: " hostname)))
                   (println (str "    Key:  " key-file))
-                  (println (str "    SSH config: " (if in-config "yes" "no")))
                   (when (fs/exists? pub-file)
                     (let [result (proc/shell {:out :string :err :string :continue true}
                                             "ssh-keygen" "-lf" pub-file)]
@@ -604,34 +546,26 @@ Workflow:
                             (println (str "    Fingerprint: " fingerprint)))))))
                   (println)))))))))
 
-(defn deploy-key-show [alias]
-  (when (str/blank? alias)
-    (error "Missing alias argument")
+(defn deploy-key-show [keyname]
+  (when (str/blank? keyname)
+    (error "Missing key name argument")
     (System/exit 1))
-  (let [pub-file (str home "/.ssh/deploy-keys/" alias ".pub")]
+  (let [pub-file (str home "/.ssh/deploy-keys/" keyname ".pub")]
     (when-not (fs/exists? pub-file)
-      (fault (str "Deploy key not found: " alias)))
-    (println (str "Public key for " alias ":"))
+      (fault (str "Deploy key not found: " keyname)))
+    (println (str "Public key for " keyname ":"))
     (println)
     (print (slurp pub-file))
     (println)))
 
-(defn deploy-key-remove [alias]
-  (when (str/blank? alias)
-    (error "Missing alias argument")
+(defn deploy-key-remove [keyname]
+  (when (str/blank? keyname)
+    (error "Missing key name argument")
     (System/exit 1))
   (let [keys-dir (str home "/.ssh/deploy-keys")
-        key-file (str keys-dir "/" alias)
+        key-file (str keys-dir "/" keyname)
         pub-file (str key-file ".pub")]
     (let [found (atom false)]
-      ;; Remove from SSH config
-      (when (and (fs/exists? ssh-config-file)
-                 (some #(= (str/trim %) (str "Host " alias))
-                       (str/split-lines (slurp ssh-config-file))))
-        (spit ssh-config-file (remove-host-block (slurp ssh-config-file) alias))
-        (fs/set-posix-file-permissions ssh-config-file "rw-------")
-        (println (str "Removed SSH config entry: " alias))
-        (reset! found true))
       ;; Remove key files
       (when (fs/exists? key-file)
         (fs/delete key-file)
@@ -642,12 +576,12 @@ Workflow:
         (println (str "Removed public key: " pub-file))
         (reset! found true))
       (when-not @found
-        (fault (str "Deploy key not found: " alias)))
+        (fault (str "Deploy key not found: " keyname)))
       (println)
-      (println (str "Deploy key '" alias "' removed successfully."))
+      (println (str "Deploy key '" keyname "' removed successfully."))
       (println)
-      (println "Note: If any repositories are using this key, you'll need to")
-      (println "update their remote URLs or create a new deploy key."))))
+      (println "Note: Any repository still using this key has it set in its local")
+      (println "core.sshCommand (git config --unset core.sshCommand to clear it)."))))
 
 (def deploy-key-help-text
   "## git deploy-key - Manage deploy keys
@@ -656,8 +590,8 @@ Usage: git deploy-key <command> [args]
 
 Commands:
     list              List all deploy keys
-    show <alias>      Show the public key for an alias
-    remove <alias>    Remove a deploy key and its SSH config entry
+    show <name>       Show the public key for a key name
+    remove <name>     Remove a deploy key (private + public key files)
 
 Options:
     -h, --help        Show this help message
@@ -669,7 +603,9 @@ Examples:
 
 Files:
     Keys:   ~/.ssh/deploy-keys/
-    Config: ~/.ssh/config")
+
+Repositories bind to a key via their local core.sshCommand git config, not
+~/.ssh/config. The remote URL stays canonical (git@host:org/repo.git).")
 
 (defn deploy-key-main [args]
   (let [[subcommand & rest-args] args]

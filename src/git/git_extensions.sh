@@ -217,7 +217,9 @@ __deploy_repo_name_from_url() {
     echo "$name"
 }
 
-# Normalize URL to SSH format for consistency
+# Normalize URL to a canonical SSH remote, preserving a custom port.
+# No custom port  -> scp-style git@host:path.git
+# Custom SSH port -> ssh://git@host:port/path.git (scp-style can't carry a port)
 __deploy_normalize_url() {
     local url="$1"
 
@@ -232,15 +234,15 @@ __deploy_normalize_url() {
     elif [[ "$url" =~ ^git@ ]]; then
         # Already SSH format
         echo "${url}.git"
-    elif [[ "$url" =~ ^ssh:// ]]; then
-        # ssh://[user@]host[:port]/path format, convert to git@ format
-        local rest="${url#ssh://}"
-        rest="${rest#*@}"  # Remove user@ if present
-        # Extract host, optional port, and path (port is stripped here, handled via SSH config)
-        if [[ "$rest" =~ ^([^:/]+)(:([0-9]+))?/(.+)$ ]]; then
-            echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[4]}.git"
+    elif [[ "$url" =~ ^ssh://([^@]+@)?([^:/]+)(:([0-9]+))?/(.+)$ ]]; then
+        # ssh://[user@]host[:port]/path
+        local host="${BASH_REMATCH[2]}"
+        local port="${BASH_REMATCH[4]}"
+        local path="${BASH_REMATCH[5]}"
+        if [[ -n "$port" ]]; then
+            echo "ssh://git@${host}:${port}/${path}.git"
         else
-            echo "${url}.git"
+            echo "git@${host}:${path}.git"
         fi
     else
         # Unknown format, return as-is with .git
@@ -248,44 +250,9 @@ __deploy_normalize_url() {
     fi
 }
 
-# Check if URL is already using a deploy key alias
-__deploy_is_alias_url() {
-    local url="$1"
-    if [[ "$url" =~ ^git@deploy-[^:]+: ]]; then
-        return 0
-    fi
-    return 1
-}
-
-# Extract the existing alias from a deploy-key URL
-__deploy_extract_alias_from_url() {
-    local url="$1"
-    if [[ "$url" =~ ^git@([^:]+): ]]; then
-        echo "${BASH_REMATCH[1]}"
-    fi
-}
-
-# Convert a remote URL to use the deploy key alias
-__deploy_convert_remote_url() {
-    local url="$1"
-    local alias="$2"
-    local host path
-
-    if ! __deploy_parse_remote_url "$url" host path; then
-        fault "Cannot parse remote URL: $url"
-    fi
-
-    # Return in git@alias:path format
-    echo "git@${alias}:${path}.git"
-}
-
 #-----------------------------------------------------------
 # SSH Key Management
 #-----------------------------------------------------------
-
-__deploy_ssh_config_file() {
-    echo "${HOME}/.ssh/config"
-}
 
 __deploy_ssh_keys_dir() {
     local dir="${HOME}/.ssh/deploy-keys"
@@ -294,104 +261,50 @@ __deploy_ssh_keys_dir() {
     echo "$dir"
 }
 
-# Generate SSH host alias name from repo
-__deploy_generate_alias() {
+# Generate a deploy key name from repo, of the form deploy--<host>--<path>
+# (slashes in the path become single dashes). This is purely the key's filename
+# under ~/.ssh/deploy-keys/ - it is NOT an SSH host alias; the key is bound to
+# the repo via per-repo core.sshCommand, not ~/.ssh/config.
+__deploy_generate_keyname() {
     local host="$1"
     local path="$2"
-    echo "deploy--${host}--${path}" | tr '/' '-' | tr -s '-'
+    echo "deploy--${host}--${path}" | tr '/' '-'
 }
 
-# Get key file path for an alias
+# Get the key file path for a key name
 __deploy_key_file_path() {
-    local alias="$1"
+    local keyname="$1"
     local keys_dir
     keys_dir=$(__deploy_ssh_keys_dir)
-    echo "${keys_dir}/${alias}"
+    echo "${keys_dir}/${keyname}"
 }
 
-# Check if SSH host alias exists in config
-__deploy_host_alias_exists() {
-    local alias="$1"
-    local config_file
-    config_file=$(__deploy_ssh_config_file)
+# Build the core.sshCommand value that binds a repo to its deploy key.
+# IdentitiesOnly=yes ensures only this key is offered (ignores ssh-agent/defaults).
+# A custom port travels in the remote URL (ssh://host:port/...), so it is not
+# duplicated here.
+__deploy_ssh_command() {
+    local key_file="$1"
+    echo "ssh -i ${key_file} -o IdentitiesOnly=yes"
+}
 
-    if [[ -f "$config_file" ]]; then
-        grep -q "^Host ${alias}$" "$config_file" 2>/dev/null
-    else
-        return 1
+# Extract the key file from a core.sshCommand value (the token after -i)
+__deploy_keyfile_from_sshcommand() {
+    local cmd="$1"
+    if [[ "$cmd" =~ -i[[:space:]]+([^[:space:]]+) ]]; then
+        echo "${BASH_REMATCH[1]}"
     fi
 }
 
-# Add SSH host alias to config
-__deploy_add_host_alias() {
-    local alias="$1"
-    local real_host="$2"
-    local key_file="$3"
-    local port="${4:-}"
-    local config_file
-    config_file=$(__deploy_ssh_config_file)
-
-    mkdir -p "$(dirname "$config_file")"
-
-    # Add newline if file exists and doesn't end with one
-    if [[ -f "$config_file" ]] && [[ -s "$config_file" ]]; then
-        if [[ $(tail -c1 "$config_file" | wc -l) -eq 0 ]]; then
-            echo "" >> "$config_file"
-        fi
-        echo "" >> "$config_file"
+# If a repo is already configured with a deploy-key core.sshCommand, echo its
+# key file path; otherwise echo nothing.
+__deploy_repo_keyfile() {
+    local dir="$1"
+    local cmd
+    cmd=$(git -C "$dir" config --local --get core.sshCommand 2>/dev/null || true)
+    if [[ "$cmd" == *deploy-keys* ]]; then
+        __deploy_keyfile_from_sshcommand "$cmd"
     fi
-
-    {
-        echo "Host ${alias}"
-        echo "    HostName ${real_host}"
-        [[ -n "$port" ]] && echo "    Port ${port}"
-        echo "    User git"
-        echo "    IdentityFile ${key_file}"
-        echo "    IdentitiesOnly yes"
-    } >> "$config_file"
-
-    chmod 600 "$config_file"
-    stderr "## Added SSH host alias '${alias}'"
-}
-
-# Remove SSH host alias from config
-__deploy_remove_host_alias() {
-    local alias="$1"
-    local config_file
-    config_file=$(__deploy_ssh_config_file)
-
-    if [[ ! -f "$config_file" ]]; then
-        return 0
-    fi
-
-    local tmp_file
-    tmp_file=$(mktemp)
-    awk -v alias="$alias" '
-        BEGIN { skip=0 }
-        /^Host / {
-            if ($2 == alias) {
-                skip=1
-                next
-            } else {
-                skip=0
-            }
-        }
-        !skip { print }
-    ' "$config_file" > "$tmp_file"
-
-    mv "$tmp_file" "$config_file"
-    chmod 600 "$config_file"
-}
-
-# Update SSH host alias in config
-__deploy_update_host_alias() {
-    local alias="$1"
-    local real_host="$2"
-    local key_file="$3"
-    local port="${4:-}"
-
-    __deploy_remove_host_alias "$alias"
-    __deploy_add_host_alias "$alias" "$real_host" "$key_file" "$port"
 }
 
 # Generate a new deploy key
@@ -409,23 +322,25 @@ __deploy_generate_key() {
 # Deploy Key Setup
 #-----------------------------------------------------------
 
-# Setup deploy key for a remote - returns the alias name
-# Sets KEY_FILE and KEY_CREATED variables
+# Setup deploy key for a remote - returns the key name
+# Sets KEY_FILE and KEY_CREATED variables.
+# The remote URL is left canonical; the key is bound to the repo via the
+# per-repo core.sshCommand git config.
 __deploy_setup_key() {
     local remote_name="${1:-origin}"
 
     local remote_url
     remote_url=$(git remote get-url "$remote_name" 2>/dev/null) || fault "Remote '${remote_name}' not found"
 
-    # Check if already using a deploy key alias
-    if __deploy_is_alias_url "$remote_url"; then
-        local existing_alias
-        existing_alias=$(__deploy_extract_alias_from_url "$remote_url")
-        KEY_FILE=$(__deploy_key_file_path "$existing_alias")
+    # Check if this repo is already bound to a deploy key
+    local existing_key
+    existing_key=$(__deploy_repo_keyfile ".")
+    if [[ -n "$existing_key" ]]; then
+        KEY_FILE="$existing_key"
         KEY_CREATED=false
 
-        stderr "## Already configured with deploy key: ${existing_alias}"
-        echo "$existing_alias"
+        stderr "## Already configured with deploy key: $(basename "$KEY_FILE")"
+        echo "$(basename "$KEY_FILE")"
         return 0
     fi
 
@@ -438,12 +353,12 @@ __deploy_setup_key() {
     stderr "## Host: ${host}"
     stderr "## Path: ${path}"
 
-    # Generate alias and key file path
-    local alias
-    alias=$(__deploy_generate_alias "$host" "$path")
-    KEY_FILE=$(__deploy_key_file_path "$alias")
+    # Generate key name and key file path
+    local keyname
+    keyname=$(__deploy_generate_keyname "$host" "$path")
+    KEY_FILE=$(__deploy_key_file_path "$keyname")
 
-    stderr "## SSH alias: ${alias}"
+    stderr "## Key name: ${keyname}"
     stderr "## Key file: ${KEY_FILE}"
 
     KEY_CREATED=false
@@ -456,23 +371,11 @@ __deploy_setup_key() {
         KEY_CREATED=true
     fi
 
-    # Setup or update SSH host alias
-    if __deploy_host_alias_exists "$alias"; then
-        stderr "## SSH host alias already configured"
-    else
-        __deploy_add_host_alias "$alias" "$host" "$KEY_FILE" "$REPO_PORT"
-    fi
+    # Bind the key to this repo via core.sshCommand (remote URL stays canonical)
+    git config core.sshCommand "$(__deploy_ssh_command "$KEY_FILE")"
+    stderr "## Set core.sshCommand to use deploy key"
 
-    # Update the git remote to use the alias
-    local new_url
-    new_url=$(__deploy_convert_remote_url "$remote_url" "$alias")
-
-    if [[ "$remote_url" != "$new_url" ]]; then
-        git remote set-url "$remote_name" "$new_url"
-        stderr "## Updated remote URL to use deploy key"
-    fi
-
-    echo "$alias"
+    echo "$keyname"
 }
 
 #-----------------------------------------------------------
@@ -603,13 +506,17 @@ Options:
 
 Description:
     Clones a repository using a dedicated deploy key for authentication,
-    or converts an existing repository's remote to use a deploy key.
+    or converts an existing repository to use a deploy key.
+
+    The key is bound to the repository through its local core.sshCommand git
+    config, so the remote URL stays canonical (e.g. git@github.com:user/repo.git)
+    and nothing is written to ~/.ssh/config. Keys live in ~/.ssh/deploy-keys/.
 
     When given a URL:
     - Creates a new clone using a deploy key for authentication
 
     When given a path to an existing git repository:
-    - Offers to convert the existing remote to use a deploy key
+    - Offers to configure the repo to use a deploy key (remote URL unchanged)
     - If no remote exists, prompts for a URL
     - If already configured, tests the deploy key
 
@@ -736,8 +643,8 @@ __deploy_main() {
             if [[ -z "$repo_spec" ]]; then
                 fault "No URL provided"
             fi
-        elif __deploy_is_alias_url "$existing_url"; then
-            # Already using deploy key
+        elif [[ -n "$(__deploy_repo_keyfile "$target_dir")" ]]; then
+            # Already bound to a deploy key via core.sshCommand
             repo_spec="$existing_url"
             already_configured=true
         else
@@ -767,14 +674,9 @@ __deploy_main() {
         REPO_BRANCH="$branch_override"
     fi
 
-    # Skip normalization if already configured (URL is already in deploy-key format)
-    REPO_PORT=""
+    # Skip normalization if already configured (remote already canonical)
     if [[ "$already_configured" != "true" ]]; then
-        # Extract port from ssh:// URLs before normalization (which runs in a subshell)
-        if [[ "$REPO_URL" =~ ^ssh://([^@]+@)?([^:/]+):([0-9]+)/ ]]; then
-            REPO_PORT="${BASH_REMATCH[3]}"
-        fi
-        # Normalize URL to SSH format
+        # Normalize URL to a canonical SSH remote (port preserved via ssh:// form)
         REPO_URL=$(__deploy_normalize_url "$REPO_URL")
     fi
 
@@ -793,11 +695,11 @@ __deploy_main() {
     stderr ""
 
     if [[ "$already_configured" == "true" ]]; then
-        # Already configured - just need to get the key file path for potential error messages
-        local existing_alias
-        existing_alias=$(__deploy_extract_alias_from_url "$REPO_URL")
-        KEY_FILE=$(__deploy_key_file_path "$existing_alias")
-        stderr "## Deploy key already configured: ${existing_alias}"
+        # Already configured - enter the repo so its local core.sshCommand applies,
+        # and recover the key file path for potential error messages.
+        cd "$destination"
+        KEY_FILE=$(__deploy_repo_keyfile ".")
+        stderr "## Deploy key already configured: $(basename "$KEY_FILE")"
     else
         # Initialize the repository (or update existing)
         __deploy_init_repo "$destination" "$REPO_URL" "$remote_name"
@@ -900,7 +802,6 @@ __deploy_main() {
 
 __deploy_key_list() {
     local keys_dir="${HOME}/.ssh/deploy-keys"
-    local config_file="${HOME}/.ssh/config"
 
     if [[ ! -d "$keys_dir" ]]; then
         echo "No deploy keys found."
@@ -909,11 +810,11 @@ __deploy_key_list() {
 
     local keys=()
     while IFS= read -r -d '' key_file; do
-        local alias
-        alias=$(basename "$key_file")
+        local keyname
+        keyname=$(basename "$key_file")
         # Skip .pub files
-        [[ "$alias" == *.pub ]] && continue
-        keys+=("$alias")
+        [[ "$keyname" == *.pub ]] && continue
+        keys+=("$keyname")
     done < <(find "$keys_dir" -maxdepth 1 -type f -print0 2>/dev/null)
 
     if [[ ${#keys[@]} -eq 0 ]]; then
@@ -924,27 +825,20 @@ __deploy_key_list() {
     echo "Deploy keys:"
     echo ""
 
-    for alias in "${keys[@]}"; do
-        local key_file="${keys_dir}/${alias}"
+    for keyname in "${keys[@]}"; do
+        local key_file="${keys_dir}/${keyname}"
         local pub_file="${key_file}.pub"
-        local in_config="no"
         local hostname=""
 
-        # Check if alias exists in ssh config
-        if [[ -f "$config_file" ]] && grep -q "^Host ${alias}$" "$config_file" 2>/dev/null; then
-            in_config="yes"
-            # Extract HostName from config
-            hostname=$(awk -v alias="$alias" '
-                BEGIN { found=0 }
-                /^Host / { found = ($2 == alias) }
-                found && /HostName/ { print $2; exit }
-            ' "$config_file")
+        # Key names are deploy--<host>--<path>; recover the host for display
+        # (host has single dashes at most, so match up to the first "--")
+        if [[ "$keyname" =~ ^deploy--([^-]+(-[^-]+)*)--(.+)$ ]]; then
+            hostname="${BASH_REMATCH[1]}"
         fi
 
-        echo "  ${alias}"
+        echo "  ${keyname}"
         [[ -n "$hostname" ]] && echo "    Host: ${hostname}"
         echo "    Key:  ${key_file}"
-        echo "    SSH config: ${in_config}"
 
         if [[ -f "$pub_file" ]]; then
             local fingerprint
@@ -961,22 +855,22 @@ __deploy_key_list() {
 #-----------------------------------------------------------
 
 __deploy_key_show() {
-    local alias="$1"
+    local keyname="$1"
     local keys_dir="${HOME}/.ssh/deploy-keys"
-    local key_file="${keys_dir}/${alias}"
+    local key_file="${keys_dir}/${keyname}"
     local pub_file="${key_file}.pub"
 
-    if [[ -z "$alias" ]]; then
-        error "Missing alias argument"
+    if [[ -z "$keyname" ]]; then
+        error "Missing key name argument"
         __deploy_key_help
         exit 1
     fi
 
     if [[ ! -f "$pub_file" ]]; then
-        fault "Deploy key not found: ${alias}"
+        fault "Deploy key not found: ${keyname}"
     fi
 
-    echo "Public key for ${alias}:"
+    echo "Public key for ${keyname}:"
     echo ""
     cat "$pub_file"
     echo ""
@@ -987,42 +881,18 @@ __deploy_key_show() {
 #-----------------------------------------------------------
 
 __deploy_key_remove() {
-    local alias="$1"
+    local keyname="$1"
     local keys_dir="${HOME}/.ssh/deploy-keys"
-    local config_file="${HOME}/.ssh/config"
-    local key_file="${keys_dir}/${alias}"
+    local key_file="${keys_dir}/${keyname}"
     local pub_file="${key_file}.pub"
 
-    if [[ -z "$alias" ]]; then
-        error "Missing alias argument"
+    if [[ -z "$keyname" ]]; then
+        error "Missing key name argument"
         __deploy_key_help
         exit 1
     fi
 
     local found=false
-
-    # Remove from SSH config
-    if [[ -f "$config_file" ]] && grep -q "^Host ${alias}$" "$config_file" 2>/dev/null; then
-        local tmp_file
-        tmp_file=$(mktemp)
-        awk -v alias="$alias" '
-            BEGIN { skip=0 }
-            /^Host / {
-                if ($2 == alias) {
-                    skip=1
-                    next
-                } else {
-                    skip=0
-                }
-            }
-            !skip { print }
-        ' "$config_file" > "$tmp_file"
-
-        mv "$tmp_file" "$config_file"
-        chmod 600 "$config_file"
-        echo "Removed SSH config entry: ${alias}"
-        found=true
-    fi
 
     # Remove key files
     if [[ -f "$key_file" ]]; then
@@ -1038,14 +908,14 @@ __deploy_key_remove() {
     fi
 
     if [[ "$found" == "false" ]]; then
-        fault "Deploy key not found: ${alias}"
+        fault "Deploy key not found: ${keyname}"
     fi
 
     echo ""
-    echo "Deploy key '${alias}' removed successfully."
+    echo "Deploy key '${keyname}' removed successfully."
     echo ""
-    echo "Note: If any repositories are using this key, you'll need to"
-    echo "update their remote URLs or create a new deploy key."
+    echo "Note: Any repository still using this key has it set in its local"
+    echo "core.sshCommand (git config --unset core.sshCommand to clear it)."
 }
 
 #-----------------------------------------------------------
@@ -1060,8 +930,8 @@ Usage: git deploy-key <command> [args]
 
 Commands:
     list              List all deploy keys
-    show <alias>      Show the public key for an alias
-    remove <alias>    Remove a deploy key and its SSH config entry
+    show <name>       Show the public key for a key name
+    remove <name>     Remove a deploy key (private + public key files)
 
 Options:
     -h, --help        Show this help message
@@ -1078,7 +948,9 @@ Examples:
 
 Files:
     Keys:   ~/.ssh/deploy-keys/
-    Config: ~/.ssh/config
+
+Repositories bind to a key via their local core.sshCommand git config, not
+~/.ssh/config. The remote URL stays canonical (git@host:org/repo.git).
 EOF
 }
 

@@ -78,12 +78,22 @@ git deploy git@github.com:EnigmaCurry/secret-project.git
 On first run, it:
 
 1. Generates an ed25519 SSH key in `~/.ssh/deploy-keys/`
-2. Adds an SSH host alias to `~/.ssh/config`
+2. Binds the key to the repository via its local `core.sshCommand` git
+   config, leaving the remote URL canonical
 3. Shows you the public key to add to your git server
 4. Exits with an error (because the key isn't authorized yet)
 
 After you add the key to GitHub/GitLab/Forgejo, run the same command
 again. This time it succeeds and clones the repository.
+
+The repository keeps a normal remote URL
+(`git@github.com:EnigmaCurry/secret-project.git`); nothing is written
+to `~/.ssh/config`. Git is told to use the deploy key for *this repo
+only* through a per-repo setting:
+
+```bash
+git config core.sshCommand "ssh -i ~/.ssh/deploy-keys/<key> -o IdentitiesOnly=yes"
+```
 
 You can also convert an existing repository to use a deploy key:
 
@@ -106,7 +116,7 @@ git deploy-key list
 # Show a key's public key (for re-adding to git servers)
 git deploy-key show deploy--github.com--enigmacurry-project
 
-# Remove a deploy key and its SSH config entry
+# Remove a deploy key (its private and public key files)
 git deploy-key remove deploy--github.com--enigmacurry-project
 ```
 

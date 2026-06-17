@@ -7,7 +7,7 @@ tags: ['linux', 'git', 'clojure', 'babashka']
 In a [previous post]({{< ref "/blog/linux/git-extensions" >}}), I
 introduced `git_extensions.sh` -- a monolithic bash script providing
 custom git subcommands (`git vendor`, `git deploy`, `git deploy-key`,
-`git remote-proto`). It worked fine. It also weighed in at 1,590 lines
+`git remote-proto`). It worked fine. It was also a sprawling monolith
 of bash, with global variables named things like
 `VENDOR_SSH_PORT` and URL parsing done through cascading regex in
 `BASH_REMATCH`. The kind of code where adding a feature means holding
@@ -34,7 +34,7 @@ The pitch for porting a bash script to Babashka:
 - **Actual testable functions.** Each function takes arguments and
   returns values. No subshell surprises, no nameref tricks (`local
   -n`), no quoting emergencies.
-- **63% less code.** 580 lines of Clojure vs 1,590 lines of bash, with
+- **Less code.** Noticeably smaller than the bash version, with
   identical functionality and CLI interface.
 
 The tradeoff is a runtime dependency -- you need `bb` on your PATH.
@@ -76,13 +76,16 @@ Clojure equivalents:
 | `local -n _host=$2` | Just return a map |
 | `check_deps git ssh-keygen` | `(check-deps "git" "ssh-keygen")` |
 | `git remote get-url origin` | `(git-out dir "remote" "get-url" "origin")` |
-| `awk '...' "$config_file" > "$tmp_file"` | Line processing with `loop`/`recur` |
+| `git config core.sshCommand ...` | `(git! dir "config" "core.sshCommand" ...)` |
 
-The SSH config manipulation (adding/removing Host blocks) was the most
-interesting part. The bash version uses awk with state tracking. The
-Clojure version does the same thing with a `loop` that tracks a
-`skip` flag -- structurally identical, but without awk's implicit line
-iteration.
+> **Update:** Both versions originally bound a deploy key to a repo by
+> generating an SSH host alias in `~/.ssh/config` and rewriting the
+> remote URL to use it (`git@deploy--github.com--user-repo:...`). They
+> now use a per-repo `core.sshCommand` instead, which keeps the remote
+> URL canonical and writes nothing to `~/.ssh/config`. This deleted all
+> the SSH-config-munging code (adding/removing/parsing `Host` blocks) --
+> which had been the most awkward part of both ports -- in favor of a
+> single `git config` call.
 
 The one genuinely tricky part was symlink detection. Babashka resolves
 `*file*` to the actual script, not the symlink. The solution tries two
