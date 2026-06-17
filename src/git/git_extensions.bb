@@ -195,6 +195,15 @@
     (when (str/includes? cmd "deploy-keys")
       (deploy-keyfile-from-sshcommand cmd))))
 
+(defn local-hostname
+  "Best-effort hostname for deploy key comments. HOSTNAME is usually not
+   exported to the environment, so fall back to the `hostname` command."
+  []
+  (or (not-empty (System/getenv "HOSTNAME"))
+      (let [r (proc/shell {:out :string :err :string :continue true} "hostname")]
+        (not-empty (str/trim (:out r))))
+      "localhost"))
+
 (defn deploy-generate-key [key-file comment]
   (proc/shell {:out :string :err :string}
               "ssh-keygen" "-t" "ed25519" "-f" key-file "-N" "" "-C" comment)
@@ -226,7 +235,7 @@
             _ (stderr (str "## Key file: " key-file))
             created? (if (fs/exists? key-file)
                        (do (stderr "## Deploy key already exists") false)
-                       (let [hostname (or (System/getenv "HOSTNAME") "localhost")]
+                       (let [hostname (local-hostname)]
                          (deploy-generate-key key-file
                            (str "deploy-key@" hostname " " host ":" path))
                          true))]

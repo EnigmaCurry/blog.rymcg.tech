@@ -367,7 +367,9 @@ __deploy_setup_key() {
     if [[ -f "$KEY_FILE" ]]; then
         stderr "## Deploy key already exists"
     else
-        __deploy_generate_key "$KEY_FILE" "deploy-key@${HOSTNAME:-localhost} ${host}:${path}"
+        local localhostname
+        localhostname="${HOSTNAME:-$(hostname 2>/dev/null || echo localhost)}"
+        __deploy_generate_key "$KEY_FILE" "deploy-key@${localhostname} ${host}:${path}"
         KEY_CREATED=true
     fi
 
