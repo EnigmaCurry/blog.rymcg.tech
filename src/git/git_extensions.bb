@@ -13,6 +13,7 @@
 ;;;   - deploy: Clone repositories using deploy key authentication
 ;;;   - deploy-key: Manage deploy keys (list, show, remove)
 ;;;   - remote-proto: Convert remote URL protocol (https, git, ssh)
+;;;   - autopull: Pull this repo when GitHub receives a push
 ;;;
 ;;; ============================================================
 
@@ -20,7 +21,9 @@
   (:require [babashka.fs :as fs]
             [babashka.process :as proc]
             [clojure.string :as str]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [cheshire.core :as json]
+            [org.httpkit.server :as http]))
 
 (def original-args *command-line-args*)
 (def home (System/getProperty "user.home"))
@@ -849,6 +852,191 @@ Examples:
                 (println (str "Updated: " new-url)))))))))
 
 ;;; ============================================================
+;;; Autopull Extension
+;;; ============================================================
+;;; Runs `gh webhook forward` for the current GitHub repo and a small local
+;;; HTTP server. On each forwarded push event, runs `git pull --ff-only`.
+;;; Intended for local dev preview, paired with a live-reload static server.
+
+(def autopull-help-text
+  "## git autopull - Pull this repository when GitHub receives a push
+
+Usage: git autopull [options]
+
+Options:
+    --remote <name>      Remote to pull from (default: origin)
+    --branch <name>      Branch to watch/pull (default: current branch)
+    --port <port>        Local webhook receiver port (default: 3000)
+    --path <path>        Local webhook receiver path (default: /webhook)
+    --events <events>    Events for gh webhook forward (default: push)
+    --no-initial-pull    Do not run git pull once before watching
+    -h, --help           Show this help message
+
+Description:
+    Runs `gh webhook forward` for the current GitHub repository and blocks.
+    When a push event for the watched branch is received, runs:
+
+        git pull --ff-only <remote> <branch>
+
+    This is intended for local/dev use. Pair it with a live-reload static
+    server such as:
+
+        npx browser-sync start --server . --files .
+
+Requirements:
+    gh
+    gh extension install cli/gh-webhook
+
+Examples:
+    git autopull
+    git autopull --branch main
+    git autopull --remote upstream --branch master
+    git autopull --port 3456")
+
+(defn autopull-parse-args [args]
+  (loop [[arg & more] args
+         opts {:remote "origin"
+               :branch nil
+               :port "3000"
+               :path "/webhook"
+               :events "push"
+               :initial-pull? true}]
+    (if (nil? arg)
+      opts
+      (case arg
+        "--remote" (recur (rest more) (assoc opts :remote (first more)))
+        "--branch" (recur (rest more) (assoc opts :branch (first more)))
+        "--port"   (recur (rest more) (assoc opts :port (first more)))
+        "--path"   (recur (rest more) (assoc opts :path (first more)))
+        "--events" (recur (rest more) (assoc opts :events (first more)))
+        "--no-initial-pull" (recur more (assoc opts :initial-pull? false))
+        ("-h" "--help") (do (println autopull-help-text) (System/exit 0))
+        (do (error "Unknown option:" arg)
+            (println autopull-help-text)
+            (System/exit 1))))))
+
+(defn autopull-current-branch [dir]
+  (or (not-empty (git-out dir "branch" "--show-current"))
+      (fault "Could not determine current branch; pass --branch explicitly")))
+
+(defn autopull-github-repo-from-remote
+  "Return the OWNER/REPO slug for dir's remote, requiring a github.com host."
+  [dir remote]
+  (let [url (or (git-out dir "remote" "get-url" remote)
+                (fault (str "Remote '" remote "' not found")))
+        {:keys [host path]} (or (parse-remote-url url)
+                                (fault (str "Cannot parse remote URL: " url)))]
+    (when-not (= host "github.com")
+      (fault (str "git autopull expects a GitHub remote; got host: " host)))
+    (str/replace path #"^/" "")))
+
+(defn autopull-pull!
+  "Run git pull --ff-only without exiting on failure (keeps the watcher alive)."
+  [dir remote branch]
+  (let [r (proc/shell {:dir dir :continue true} "git" "pull" "--ff-only" remote branch)]
+    (if (zero? (:exit r))
+      (stderr "## Pull complete.")
+      (stderr (str "## Pull failed (git exited " (:exit r) ").")))))
+
+(defn autopull-handle-push!
+  "Pull if the push ref matches the watched branch. Serialized via pull-lock."
+  [dir remote branch pull-lock ref]
+  (let [wanted (str "refs/heads/" branch)]
+    (if (not= ref wanted)
+      (stderr (str "## Ignoring push to " ref "; watching " wanted))
+      (locking pull-lock
+        (stderr (str "## Push received for " branch "; pulling..."))
+        (autopull-pull! dir remote branch)))))
+
+(defn autopull-handler
+  "Ring handler for forwarded GitHub webhooks. Responds immediately and pulls
+   asynchronously so the webhook delivery is not blocked by git."
+  [dir remote branch pull-lock]
+  (fn [req]
+    (try
+      (if (not= :post (:request-method req))
+        {:status 405 :body "method not allowed\n"}
+        (let [event (get-in req [:headers "x-github-event"])
+              body  (when-let [b (:body req)] (slurp b))]
+          (cond
+            (= event "ping")
+            (do (stderr "## Received ping event")
+                {:status 202 :body "pong\n"})
+
+            (not= event "push")
+            (do (stderr (str "## Ignoring event: " event))
+                {:status 202 :body "ignored\n"})
+
+            :else
+            (let [ref (:ref (json/parse-string body true))]
+              (stderr (str "## Received push: " ref))
+              (future (autopull-handle-push! dir remote branch pull-lock ref))
+              {:status 202 :body "pull queued\n"}))))
+      (catch Exception e
+        (stderr (str "## Handler error: " (.getMessage e)))
+        {:status 500 :body "error\n"}))))
+
+(defn autopull-check-gh-webhook! []
+  (check-deps "git" "gh")
+  (let [r (proc/shell {:out :string :err :string :continue true} "gh" "webhook" "--help")]
+    (when-not (zero? (:exit r))
+      (stderr "The gh webhook extension does not appear to be installed.")
+      (stderr)
+      (stderr "Install it with:")
+      (stderr "  gh extension install cli/gh-webhook")
+      (System/exit 1))))
+
+(defn autopull-main [args]
+  (let [{:keys [remote branch port path events initial-pull?]} (autopull-parse-args args)]
+    (autopull-check-gh-webhook!)
+    (let [dir (System/getProperty "user.dir")]
+      (when-not (git-ok? dir "rev-parse" "--git-dir")
+        (fault "Not a git repository"))
+      (let [branch    (or branch (autopull-current-branch dir))
+            repo      (autopull-github-repo-from-remote dir remote)
+            port-num  (or (parse-long port) (fault (str "Invalid port: " port)))
+            url       (str "http://127.0.0.1:" port-num path)
+            pull-lock (Object.)
+            stop-srv  (atom nil)
+            gh-proc   (atom nil)
+            cleanup!  (fn []
+                        (when-let [p @gh-proc]
+                          (try (proc/destroy-tree p) (catch Exception _ nil)))
+                        (when-let [stop @stop-srv]
+                          (try (stop) (catch Exception _ nil))))]
+
+        (.addShutdownHook (Runtime/getRuntime) (Thread. cleanup!))
+
+        (stderr (str "## Repository: " repo))
+        (stderr (str "## Directory:  " dir))
+        (stderr (str "## Remote:     " remote))
+        (stderr (str "## Branch:     " branch))
+        (stderr (str "## URL:        " url))
+        (stderr)
+
+        (when initial-pull?
+          (stderr "## Initial pull...")
+          (autopull-pull! dir remote branch)
+          (stderr))
+
+        (reset! stop-srv
+                (http/run-server (autopull-handler dir remote branch pull-lock)
+                                 {:ip "127.0.0.1" :port port-num}))
+        (stderr (str "## Listening on " url))
+
+        (let [p (proc/process ["gh" "webhook" "forward"
+                               "--repo" repo
+                               "--events" events
+                               "--url" url]
+                              {:inherit true})]
+          (reset! gh-proc p)
+          (stderr "## Started gh webhook forward.")
+          (stderr "## Press Ctrl-C to stop.")
+          @p
+          (stderr "## gh webhook forward exited.")
+          (cleanup!))))))
+
+;;; ============================================================
 ;;; Main Dispatcher
 ;;; ============================================================
 
@@ -863,6 +1051,7 @@ Available extensions:
     deploy        Clone repositories using deploy key authentication
     deploy-key    Manage deploy keys (list, show, remove)
     remote-proto  Convert remote URL protocol (https, git, ssh)
+    autopull      Pull this repo when GitHub receives a push
 
 Run 'git <extension> --help' for extension-specific help.
 
@@ -872,12 +1061,14 @@ Setup:
         ln -s /path/to/git_extensions.bb ~/.local/bin/git-deploy
         ln -s /path/to/git_extensions.bb ~/.local/bin/git-deploy-key
         ln -s /path/to/git_extensions.bb ~/.local/bin/git-remote-proto
+        ln -s /path/to/git_extensions.bb ~/.local/bin/git-autopull
 
     Then use as:
         git vendor org/repo
         git deploy <repo-url>
         git deploy-key list
-        git remote-proto ssh")
+        git remote-proto ssh
+        git autopull")
 
 (defn- find-git-cmd
   "Scan a sequence of argv strings for one starting with 'git-'.
@@ -936,6 +1127,7 @@ Setup:
     "deploy"       (deploy-main args)
     "deploy-key"   (deploy-key-main args)
     "remote-proto" (remote-proto-main args)
+    "autopull"     (autopull-main args)
     ("-h" "--help" "help" nil) (do (println main-help-text) (System/exit 0))
     (do (error "Unknown extension:" extension-cmd)
         (println main-help-text)
