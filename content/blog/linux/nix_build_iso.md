@@ -5,4 +5,4 @@ tags: ['linux', 'nixos']
 draft: true
 ---
 
-{{< code file="/src/nix/nix-build-iso.sh" language="shell" >}}
+{{< code file="/src/nix/nix_build_iso.sh" language="shell" >}}
