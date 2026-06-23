@@ -986,6 +986,31 @@ Examples:
       (stderr "  gh extension install cli/gh-webhook")
       (System/exit 1))))
 
+(defn autopull-clear-stale-hooks!
+  "Delete any leftover `gh webhook forward` relay hooks on repo.
+
+   gh-webhook registers its server-side relay with name \"cli\" (normal
+   webhooks use name \"web\"), and starting a new forward fails with HTTP 422
+   if a prior session didn't clean up. Remove those orphans so autopull is
+   idempotent. Best-effort: warns but does not abort on failure."
+  [repo]
+  (let [r (proc/shell {:out :string :err :string :continue true}
+                      "gh" "api" (str "repos/" repo "/hooks"))]
+    (if-not (zero? (:exit r))
+      (stderr (str "## Warning: could not list webhooks (gh exited "
+                   (:exit r) "); continuing."))
+      (let [hooks (try (json/parse-string (:out r))
+                       (catch Exception _ nil))
+            stale (filter #(= "cli" (get % "name")) hooks)]
+        (doseq [h stale]
+          (let [id (get h "id")
+                d  (proc/shell {:out :string :err :string :continue true}
+                               "gh" "api" "-X" "DELETE"
+                               (str "repos/" repo "/hooks/" id))]
+            (if (zero? (:exit d))
+              (stderr (str "## Removed stale gh-webhook relay hook " id "."))
+              (stderr (str "## Warning: failed to remove stale hook " id ".")))))))))
+
 (defn autopull-main [args]
   (let [{:keys [remote branch port path events initial-pull?]} (autopull-parse-args args)]
     (autopull-check-gh-webhook!)
@@ -1023,6 +1048,8 @@ Examples:
                 (http/run-server (autopull-handler dir remote branch pull-lock)
                                  {:ip "127.0.0.1" :port port-num}))
         (stderr (str "## Listening on " url))
+
+        (autopull-clear-stale-hooks! repo)
 
         (let [p (proc/process ["gh" "webhook" "forward"
                                "--repo" repo
