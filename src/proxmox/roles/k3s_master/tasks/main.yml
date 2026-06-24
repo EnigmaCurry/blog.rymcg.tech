@@ -1,0 +1,23 @@
+- name: Create k3s config directory
+  become: yes
+  file:
+    path: /etc/rancher/k3s
+    state: directory
+
+- name: Create k3s config file
+  become: yes
+  template:
+    src: config.yaml
+    dest: /etc/rancher/k3s/config.yaml
+    mode: 0644
+
+- name: Download k3s installer
+  become: yes
+  get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s_install.sh
+    mode: 0700
+
+- name: Install k3s
+  become: yes
+  shell: /tmp/k3s_install.sh

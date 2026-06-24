@@ -1,0 +1,5 @@
+- name: Download Ubuntu 20.04 (focal) cloud image
+  get_url:
+    url: "{{ ubuntu_focal_cloud_image_url }}"
+    dest: "{{ ubuntu_focal_cloud_image }}"
+

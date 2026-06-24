@@ -1,0 +1,4 @@
+prod/
+kustomize
+/*.yaml
+/*env.sh

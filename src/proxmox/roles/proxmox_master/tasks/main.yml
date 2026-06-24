@@ -1,0 +1,10 @@
+- name: Check cluster status
+  shell: pvecm status | grep -e "^Node ID"
+  register: cluster_status
+  ignore_errors: yes
+  changed_when: False
+
+- name: Create cluster
+  command: "pvecm create {{ proxmox_cluster }}"
+  when: "cluster_status.rc==1"
+

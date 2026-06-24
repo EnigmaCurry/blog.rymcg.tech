@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+source /etc/firewall_helpers.sh
+
+## Reset all rules:
+reset
+
+## Public ports:
+# SSH
+port_open_tcp {{ proxmox_public_interface }} {{ proxmox_master_ip }} 22
+
+## Ping from anywhere:
+allow_ping {{ proxmox_public_interface }}
+
+## Allow select external subnets to access admin ports
+{% for subnet in proxmox_external_client_subnets %}
+exe iptables -A INPUT -p tcp -m tcp -s {{ subnet }} --dport 8006 -j ACCEPT
+{% endfor %}
+
+## Load extra configs from other modules:
+mkdir -p /etc/firewall.d
+for file in /etc/firewall.d/*.sh; do
+    if [ -x "$file" ]; then
+        echo "## Running firewall script: $file"
+        $file
+    fi
+done
+
+## IP masquerading for entire VM subnet
+masquerade {{ proxmox_trunk_interface }} {{ proxmox_trunk_ip_prefix }}.0.0/16
+set_routes {{ proxmox_trunk_interface }} {{ proxmox_trunk_ip_prefix }}.0.0/16
+
+## default rules catch-all
+default_rules

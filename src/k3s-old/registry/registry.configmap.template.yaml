@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry
+data:
+  config.yml: |
+    version: 0.1
+    log:
+      fields:
+        service: registry
+    http:
+      addr: :5000
+      headers:
+        X-Content-Type-Options: [nosniff]
+    auth:
+      htpasswd:
+        realm: ${HTPASSWD_REALM}
+        path: /auth/htpasswd
+    storage:
+      s3:
+        secure: true
+      delete:
+        enabled: true
+    health:
+      storagedriver:
+        enabled: true
+        interval: 10s
+        threshold: 3

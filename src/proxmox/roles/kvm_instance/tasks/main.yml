@@ -1,0 +1,37 @@
+- assert:
+    that:
+      - "100 <= id < 1000"
+    fail_msg: "KVM ID ({{ id }}) must be within range 100 to 1000"
+
+- set_fact:
+    id: "{{ id | int}}"
+    id_str: "{{ id | string }}"
+
+- set_fact:
+    vlan: "{{ id_str[0] + '00' }}"
+    subnet_index: "{{ id_str[0] }}"
+    ip_index: "{{ id_str[-2:] }}"
+
+- set_fact:
+    name: "{{ name | default(id_str) }}"
+    template: "{{ template | default('ubuntu_focal') }}"
+    bridge: "{{ proxmox_trunk_interface }}"
+    ip_address: "{{ proxmox_trunk_ip_prefix }}.{{ subnet_index }}.1{{ ip_index }}"
+    gateway: "{{ proxmox_trunk_ip_prefix }}.{{ subnet_index }}.1"
+    memory: "{{ proxmox_instance_sizes[size].ram * 1024 | int }}"
+    cores: "{{ proxmox_instance_sizes[size].cpu | int }}"
+    disk_size: "{{ volumes.root | default('10G') }}"
+    state: "{{ state | default('started') }}"
+    cluster: true
+
+- name: Create KVM instance id={{ id }}
+  include_role:
+    name: kvm_clone
+
+- name: Firewall for KVM ip={{ ip_address }} on {{ proxmox_trunk_interface }}
+  template:
+    src: routes.sh.j2
+    dest: /etc/firewall.d/kvm_{{ id }}.sh
+    mode: 0700
+  notify: restart firewall
+

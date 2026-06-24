@@ -1,0 +1,72 @@
+## This file reads values from the Vault.
+## Alternative, non-vault example values are provided as comments.
+
+## Name of cluster to create
+#proxmox_cluster: pve
+proxmox_cluster: "{{ vault_proxmox_cluster }}"
+
+## The SSH alias for the proxmox server
+#proxmox_ansible_host: proxmox1
+proxmox_ansible_host: "{{ vault_proxmox_ansible_host }}"
+## The real hostname of the server:
+#proxmox_master_node: pve-east-1
+proxmox_master_node: "{{ vault_proxmox_master_node }}"
+## The full domain of the server:
+#proxmox_domain: pve.rymcg.tech
+proxmox_domain: "{{ vault_proxmox_domain }}"
+## Root user is authenticated locally (non-LDAP by default):
+#proxmox_root: "root@pam"
+proxmox_root: "{{ vault_proxmox_root }}"
+
+## The name of the public network interface
+#proxmox_public_interface: eno1
+proxmox_public_interface: "{{ vault_proxmox_public_interface }}"
+## The name of the VM bridge interface (this interface will be created)
+#proxmox_trunk_interface: vmbr0
+proxmox_trunk_interface: "{{ vault_proxmox_trunk_interface }}"
+## The Public network information, set by your LAN or ISP:
+#proxmox_master_ip: 192.0.2.1
+proxmox_master_ip: "{{ vault_proxmox_master_ip }}"
+#proxmox_public_netmask: 255.255.255.0
+proxmox_public_netmask: "{{ vault_proxmox_public_netmask }}"
+#proxmox_public_gateway: 10.13.13.1
+proxmox_public_gateway: "{{ vault_proxmox_public_gateway }}"
+#promox_public_network: 10.13.13.0/24
+promox_public_network: "{{ vault_proxmox_public_network }}"
+
+## Each block of VMs has a /24 subnet (ID range 100 is 10.10.1.0/24, 200 is
+## 10.10.2.0/24, etc)
+## VM IP addresses are assigned automatically (static) based upon the VM ID:
+## - VM ID 100 translates to the ip 10.10.1.100 (network 10.10.1.0/24)
+## - VM ID 201 translates to the ip 10.10.2.101 (network 10.10.2.0/24)
+## - VM ID 299 translates to the ip 10.10.2.199 (network 10.10.2.0/24)
+## - VM ID 999 translates to the ip 10.10.9.199 (network 10.10.9.0/24)
+## Note that last octet is never below 100 and never more than 199.
+## The entire /16 subnet is assigned to the trunk interface
+## (10.10.0.0 -> 10.10.255.255)
+## network_prefix is the first two octets of the /16 IP address space:
+#proxmox_trunk_ip_prefix: 10.10
+proxmox_trunk_ip_prefix: "{{ vault_proxmox_trunk_ip_prefix }}"
+
+## Read the root password from the vault, don't change this here:
+#proxmox_root_password: changeme
+proxmox_root_password: "{{ vault_proxmox_root_password }}"
+## core ssh keys are default keys for VM accounts unless otherwise specified
+#core_ssh_keys: ["ssh-rsa AAAA..."]
+core_ssh_keys: "{{ vault_core_ssh_keys }}"
+
+## Specify external IPs allowed to access the dashboard:
+## If you do this on public network, you MUST setup TLS/SSL!!
+#proxmox_external_client_subnets: []
+proxmox_external_client_subnets: "{{ vault_proxmox_external_client_subnets }}"
+
+## Configure Proxmox client (ansible) to require trusted TLS.
+## Default is False, because the client accesses localhost API and thus unnecessary.
+#proxmox_client_verify_ssl: False
+proxmox_client_verify_ssl: "{{ vault_proxmox_client_verify_ssl }}"
+
+#proxmox_kvm_admin: "root@pam"
+proxmox_kvm_admin: "{{ vault_proxmox_kvm_admin }}"
+#proxmox_kvm_admin_password: changeme
+proxmox_kvm_admin_password: "{{ vault_proxmox_kvm_admin_password }}"
+

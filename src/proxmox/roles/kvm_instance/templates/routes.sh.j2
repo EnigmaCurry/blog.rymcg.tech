@@ -1,0 +1,5 @@
+set -e
+
+source /etc/firewall_helpers.sh
+
+set_routes {{ proxmox_trunk_interface }} {{ ip_address }}/32

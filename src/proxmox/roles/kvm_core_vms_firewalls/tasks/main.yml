@@ -1,0 +1,11 @@
+- name: Create /etc/firewall.d
+  file:
+    path: "/etc/firewall.d"
+    state: directory
+
+- name: Create core KVM firewall rules
+  template:
+    src: core_kvm_firewall.sh
+    dest: /etc/firewall.d/100_core_kvm.sh
+    mode: 0700
+  notify: restart firewall

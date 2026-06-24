@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: traefik-ingress-lb
+  name: traefik
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
+      name: traefik-ingress-lb
+  template:
+    metadata:
+      labels:
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
+    spec:
+      containers:
+      - args:
+        - --api
+        - --log.level=INFO
+        - --api.insecure=false
+        - --api.dashboard=false
+        - --accesslog
+        - --global.checknewversion=true
+        - --entryPoints.web.address=:80
+        - --entryPoints.websecure.address=:443
+        - --entrypoints.web.http.redirections.entryPoint.to=websecure
+        - --entrypoints.websecure.http.tls.certResolver=default
+        - --ping=true
+        - --providers.kubernetescrd=true
+        - --providers.kubernetesingress=true
+        - --certificatesresolvers.default.acme.storage=/traefik-data/acme.json
+        - --certificatesresolvers.default.acme.tlschallenge=true
+        - --certificatesresolvers.default.acme.caserver=${ACME_SERVER}
+        - --certificatesresolvers.default.acme.email=${ACME_EMAIL}
+        - --entrypoints.ssh.address=:${SSH_PORT}
+        image: ${TRAEFIK_IMAGE}
+        name: traefik-ingress-lb
+        volumeMounts:
+        - name: traefik-data
+          mountPath: /traefik-data
+        ports:
+        - containerPort: 80
+          hostPort: ${HTTP_PORT}
+          name: web
+        - containerPort: 443
+          hostPort: ${HTTPS_PORT}
+          name: websecure
+        - containerPort: ${SSH_PORT}
+          hostPort: ${SSH_PORT}
+          name: ssh
+        securityContext:
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - ALL
+      serviceAccountName: traefik-ingress-controller
+      terminationGracePeriodSeconds: 60
+      volumes:
+      - name: traefik-data
+        persistentVolumeClaim:
+          claimName: traefik-data

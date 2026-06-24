@@ -1,0 +1,11 @@
+template: ubuntu-focal
+memory: 512
+cores: 1
+sockets: 1
+state: present
+ciuser: ubuntu
+nameserver: 1.0.0.1
+searchdomain: "{{ proxmox_domain }}"
+ip_address: "dhcp"
+gateway: "dhcp"
+disk_size: "10G"

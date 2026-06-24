@@ -1,0 +1,4 @@
+- name: Disable password login
+  lineinfile: dest={{ sshd_config }} regexp="^(#\s*)?PasswordAuthentication " line="PasswordAuthentication no"
+  notify: restart sshd
+
