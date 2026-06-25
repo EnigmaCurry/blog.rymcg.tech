@@ -1,0 +1,16 @@
+# Special cases from the old blog URLs.
+/blog/license/  https://book.rymcg.tech/license/  301
+/blog/license   https://book.rymcg.tech/license/  301
+/blog/page/1/   https://book.rymcg.tech/blog/     301
+/blog/page/1    https://book.rymcg.tech/blog/     301
+/blog/page/2/   https://book.rymcg.tech/blog/     301
+/blog/page/2    https://book.rymcg.tech/blog/     301
+/blog/page/3/   https://book.rymcg.tech/blog/     301
+/blog/page/3    https://book.rymcg.tech/blog/     301
+/blog/page/4/   https://book.rymcg.tech/blog/     301
+/blog/page/4    https://book.rymcg.tech/blog/     301
+/blog/page/5/   https://book.rymcg.tech/blog/     301
+/blog/page/5    https://book.rymcg.tech/blog/     301
+
+# Preserve every other path.
+/*             https://book.rymcg.tech/:splat  301
