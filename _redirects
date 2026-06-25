@@ -12,5 +12,6 @@
 /blog/page/5/   https://book.rymcg.tech/blog/     301
 /blog/page/5    https://book.rymcg.tech/blog/     301
 
+
 # Preserve every other path.
 /*             https://book.rymcg.tech/:splat  301
