@@ -7,9 +7,15 @@ Deploy this branch to a static host that supports Netlify-style `_redirects`,
 such as Netlify or Cloudflare Pages. Requests receive real `301` redirects to
 `https://book.rymcg.tech`.
 
+Cloudflare Pages settings:
+
+- Production branch: `static-redirects`
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Root directory: `/`
+
 Special cases:
 
 - `/blog/license/` redirects to `/license/`.
 - `/blog/page/1/` through `/blog/page/5/` redirect to `/blog/`.
 - Every other path redirects to the same path on `book.rymcg.tech`.
-
