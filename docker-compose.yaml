@@ -1,0 +1,43 @@
+# Minimal redirect-only stack: no real service runs.
+# The container exists solely to carry Traefik labels. Every request is
+# redirected by the redirectRegex middlewares before Traefik would forward
+# to a backend, so the "service" port below is never actually connected to.
+
+services:
+  redirect:
+    image: alpine:3.20
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # Router: catch the old host, terminate TLS, run the redirect chain.
+      - "traefik.http.routers.blog.rule=Host(`blog.rymcg.tech`)"
+      - "traefik.http.routers.blog.entrypoints=websecure"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.middlewares=blog-license,blog-pages,blog-catchall"
+
+      # A service is required by Traefik even though nothing is ever proxied.
+      # Nothing listens on :80 in this container; the catch-all redirect fires first.
+      - "traefik.http.services.blog.loadbalancer.server.port=80"
+
+      # 1. /blog/license[/]  -> /license/
+      - "traefik.http.middlewares.blog-license.redirectregex.regex=^https?://[^/]+/blog/license/?$$"
+      - "traefik.http.middlewares.blog-license.redirectregex.replacement=https://book.rymcg.tech/license/"
+      - "traefik.http.middlewares.blog-license.redirectregex.permanent=true"
+
+      # 2. /blog/page/{1..5}[/]  -> /blog/
+      - "traefik.http.middlewares.blog-pages.redirectregex.regex=^https?://[^/]+/blog/page/[1-5]/?$$"
+      - "traefik.http.middlewares.blog-pages.redirectregex.replacement=https://book.rymcg.tech/blog/"
+      - "traefik.http.middlewares.blog-pages.redirectregex.permanent=true"
+
+      # 3. everything else  -> same path on book.rymcg.tech (also covers "/")
+      - "traefik.http.middlewares.blog-catchall.redirectregex.regex=^https?://[^/]+/(.*)$$"
+      - "traefik.http.middlewares.blog-catchall.redirectregex.replacement=https://book.rymcg.tech/$${1}"
+      - "traefik.http.middlewares.blog-catchall.redirectregex.permanent=true"
+
+networks:
+  traefik:
+    external: true
