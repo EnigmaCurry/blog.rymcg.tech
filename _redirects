@@ -13,5 +13,6 @@
 /blog/page/5    https://book.rymcg.tech/blog/     301
 
 # Preserve every other path.
-/              https://book.rymcg.tech/         301
-/*             https://book.rymcg.tech/:splat  301
+# `!` forces the redirect even when a static file (index.html) exists at the path.
+/              https://book.rymcg.tech/         301!
+/*             https://book.rymcg.tech/:splat  301!
