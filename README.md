@@ -1,3 +1,9 @@
-# blog.rymcg.tech
+# blog.rymcg.tech has MOVED
 
-This is the hugo source code for [blog.rymcg.tech](https://blog.rymcg.tech)
+The blog (and all of the old posts) are now available at:
+
+https://book.rymcg.tech
+
+The source code now lives at:
+
+https://github.com/EnigmaCurry/org
