@@ -89,6 +89,30 @@
   [dir & args]
   (zero? (:exit (apply proc/shell {:dir dir :out :string :err :string :continue true} "git" args))))
 
+(defn shell-timeout
+  "Run a command, killing it if it exceeds timeout-secs.
+  Returns the process result map, or nil if it timed out.
+  Does not use the `timeout` program, which is absent on macOS."
+  [opts timeout-secs & args]
+  (let [p (apply proc/process (merge {:in :inherit :out :string :err :string} opts) args)
+        r (deref p (* 1000 (long timeout-secs)) ::timeout)]
+    (if (= ::timeout r)
+      (do (proc/destroy-tree p) @p nil)
+      r)))
+
+(defn git-timeout?
+  "Run git in dir, return true if it exits 0 within timeout-secs."
+  [dir timeout-secs & args]
+  (let [r (apply shell-timeout {:dir dir} timeout-secs "git" args)]
+    (boolean (and r (zero? (:exit r))))))
+
+(defn git-out-timeout
+  "Run git in dir, return trimmed stdout, or nil on failure or timeout."
+  [dir timeout-secs & args]
+  (let [r (apply shell-timeout {:dir dir} timeout-secs "git" args)]
+    (when (and r (zero? (:exit r)))
+      (str/trim (:out r)))))
+
 (defn git!
   "Run git in dir with output to terminal, exit on failure."
   [dir & args]
@@ -269,17 +293,16 @@
   (git! dest "config" "checkout.defaultRemote" remote-name))
 
 (defn deploy-test-key [dir remote-name & [timeout-secs]]
-  (let [t (str (or timeout-secs 10))]
-    (zero? (:exit (proc/shell {:dir dir :out :string :err :string :continue true}
-                              "timeout" t "git" "ls-remote" "--heads" remote-name)))))
+  (git-timeout? dir (or timeout-secs 10) "ls-remote" "--heads" remote-name))
 
-(defn deploy-get-default-branch [dir remote-name]
-  (let [result (git-out dir "ls-remote" "--symref" remote-name "HEAD")]
+(defn deploy-get-default-branch [dir remote-name & [timeout-secs]]
+  (let [t (or timeout-secs 10)
+        result (git-out-timeout dir t "ls-remote" "--symref" remote-name "HEAD")]
     (or (when result
           (some #(second (re-matches #"ref:\s+refs/heads/(\S+)\s+HEAD" %))
                 (str/split-lines result)))
         ;; Fallback: check common names
-        (let [branches (->> (str/split-lines (or (git-out dir "ls-remote" "--heads" remote-name) ""))
+        (let [branches (->> (str/split-lines (or (git-out-timeout dir t "ls-remote" "--heads" remote-name) ""))
                             (keep #(second (re-matches #".*refs/heads/(.+)" %))))]
           (or (some #{"main"} branches)
               (some #{"master"} branches)

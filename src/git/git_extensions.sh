@@ -73,6 +73,29 @@ check_deps(){
     if [[ -n "$missing" ]]; then fault "Missing dependencies:${missing}"; fi
 }
 
+# Run a command with a timeout in seconds: run_timeout SECS CMD [ARG...]
+# `timeout` is GNU coreutils and is not installed on macOS, so fall back to
+# gtimeout, and then to a watchdog that kills the command itself. The
+# watchdog signals only the direct child, not its descendants.
+run_timeout() {
+    local secs="$1"; shift
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$secs" "$@"
+    elif command -v gtimeout >/dev/null 2>&1; then
+        gtimeout "$secs" "$@"
+    else
+        "$@" &
+        local cmd_pid=$!
+        ( sleep "$secs"; kill -TERM "$cmd_pid" 2>/dev/null ) &
+        local watchdog_pid=$!
+        local rc=0
+        wait "$cmd_pid" 2>/dev/null || rc=$?
+        kill -TERM "$watchdog_pid" 2>/dev/null || true
+        { wait "$watchdog_pid"; } 2>/dev/null || true
+        return "$rc"
+    fi
+}
+
 # Prompt for yes/no confirmation
 # Returns 0 for yes, 1 for no
 ask_yes_no() {
@@ -432,7 +455,7 @@ __deploy_test_key() {
     local remote_name="$1"
     local timeout_secs="${2:-10}"
 
-    if timeout "$timeout_secs" git ls-remote --heads "$remote_name" >/dev/null 2>&1; then
+    if run_timeout "$timeout_secs" git ls-remote --heads "$remote_name" >/dev/null 2>&1; then
         return 0
     fi
     return 1
@@ -441,9 +464,10 @@ __deploy_test_key() {
 # Get the default branch from the remote
 __deploy_get_default_branch() {
     local remote_name="$1"
+    local timeout_secs="${2:-10}"
 
     local default_ref
-    default_ref=$(git ls-remote --symref "$remote_name" HEAD 2>/dev/null | grep "^ref:" | awk '{print $2}' | sed 's|refs/heads/||')
+    default_ref=$(run_timeout "$timeout_secs" git ls-remote --symref "$remote_name" HEAD 2>/dev/null | grep "^ref:" | awk '{print $2}' | sed 's|refs/heads/||' || true)
 
     if [[ -n "$default_ref" ]]; then
         echo "$default_ref"
@@ -452,7 +476,7 @@ __deploy_get_default_branch() {
 
     # Fallback: check common branch names
     local branches
-    branches=$(git ls-remote --heads "$remote_name" 2>/dev/null | awk '{print $2}' | sed 's|refs/heads/||')
+    branches=$(run_timeout "$timeout_secs" git ls-remote --heads "$remote_name" 2>/dev/null | awk '{print $2}' | sed 's|refs/heads/||' || true)
 
     for try_branch in main master develop; do
         if echo "$branches" | grep -q "^${try_branch}$"; then
